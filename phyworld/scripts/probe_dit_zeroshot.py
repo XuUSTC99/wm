@@ -87,32 +87,49 @@ def extract_dit_embeddings(vae, transformer, pix_uint8,
     return embs
 
 
-def fit_eval_collision(emb, prop, state, coll, ep_idx, n_ep, train_frac=0.8, seed=0):
+def build_multiframe_feats(emb_per_frame, ep_idx, step_idx, K):
+    N, D = emb_per_frame.shape
+    feats = np.zeros((N, K * D), dtype=np.float32)
+    valid = np.zeros(N, dtype=bool)
+    by_ep = {}
+    for i in range(N):
+        by_ep.setdefault(int(ep_idx[i]), []).append((int(step_idx[i]), i))
+    for ep, lst in by_ep.items():
+        lst.sort()
+        ordered = [idx for _, idx in lst]
+        for k, idx in enumerate(ordered):
+            if k >= K - 1:
+                ctx = ordered[k - K + 1:k + 1]
+                feats[idx] = np.concatenate([emb_per_frame[j] for j in ctx])
+                valid[idx] = True
+    return feats, valid
+
+
+def fit_eval_collision(emb, prop, state, coll, ep_idx, step_idx, n_ep, train_frac=0.8, seed=0, K=1, valid_mask=None):
     train_eps, test_eps = split_episodes(n_ep, train_frac, seed)
-    mask_tr = np.isin(ep_idx, train_eps)
-    mask_te = np.isin(ep_idx, test_eps)
+    base_tr = np.isin(ep_idx, train_eps)
+    base_te = np.isin(ep_idx, test_eps)
+    if valid_mask is None:
+        valid_mask = np.ones(len(ep_idx), dtype=bool)
+    mask_tr = base_tr & valid_mask
+    mask_te = base_te & valid_mask
     mu, sigma = emb[mask_tr].mean(0), emb[mask_tr].std(0) + 1e-6
     e_tr = (emb[mask_tr] - mu) / sigma
     e_te = (emb[mask_te] - mu) / sigma
 
     pos_x = prop[:, [0, 2]]
     vel_x = state[:, [0, 2]]
-    print(f"\n  {'target':18s}  {'R² / AUC'}")
-    # pos_x
+    print(f"  [K={K}] train={mask_tr.sum()}, test={mask_te.sum()}, feat_dim={emb.shape[1]}")
+    print(f"  {'target':18s}  {'R² / AUC'}")
     m = Ridge(alpha=1.0); m.fit(e_tr, pos_x[mask_tr])
-    r2 = r2_score(pos_x[mask_te], m.predict(e_te))
-    print(f"  {'pos_x R²':18s}  {r2:+.4f}")
-    # vel_x
+    print(f"  {'pos_x R²':18s}  {r2_score(pos_x[mask_te], m.predict(e_te)):+.4f}")
     m = Ridge(alpha=1.0); m.fit(e_tr, vel_x[mask_tr])
-    r2 = r2_score(vel_x[mask_te], m.predict(e_te))
-    print(f"  {'vel_x R²':18s}  {r2:+.4f}")
-    # collision AUC
+    print(f"  {'vel_x R²':18s}  {r2_score(vel_x[mask_te], m.predict(e_te)):+.4f}")
     if coll[mask_tr].sum() > 1 and coll[mask_tr].sum() < mask_tr.sum():
         clf = LogisticRegression(class_weight="balanced", max_iter=1000, C=1.0)
         clf.fit(e_tr, coll[mask_tr])
         p = clf.predict_proba(e_te)[:, 1]
-        auc = roc_auc_score(coll[mask_te], p)
-        print(f"  {'collision AUC':18s}  {auc:.4f}")
+        print(f"  {'collision AUC':18s}  {roc_auc_score(coll[mask_te], p):.4f}")
 
 
 def main():
@@ -143,18 +160,33 @@ def main():
         state = f["state"][:N]
         coll = f["collision_event"][:N]
         ep_idx = f["episode_idx"][:N]
+        step_idx = f["step_idx"][:N]
         ep_len = f["ep_len"][:]
     pix_u8 = torch.from_numpy(pix).permute(0, 3, 1, 2).contiguous()
     n_ep = len(np.unique(ep_idx))
     print(f"  using {N} frames over {n_ep} trajs", flush=True)
 
-    print(f"\n[encode] DiT-XL zero-shot ...", flush=True)
-    emb = extract_dit_embeddings(vae, transformer, pix_u8,
-                                  batch_size=args.batch_size, device=args.device)
+    emb_cache = os.path.expanduser("~/agent_memory/wm/artifacts/embeddings/dit_xl_collision_emb_32k.npy")
+    os.makedirs(os.path.dirname(emb_cache), exist_ok=True)
+    if os.path.exists(emb_cache):
+        print(f"[cache] loading {emb_cache}", flush=True)
+        emb = np.load(emb_cache)
+    else:
+        print(f"\n[encode] DiT-XL zero-shot ...", flush=True)
+        emb = extract_dit_embeddings(vae, transformer, pix_u8,
+                                      batch_size=args.batch_size, device=args.device)
+        np.save(emb_cache, emb)
+        print(f"  cached to {emb_cache}", flush=True)
     print(f"  emb shape: {emb.shape}", flush=True)
 
     print(f"\n=== DiT-XL-2-256 zero-shot (ImageNet pretrained, NOT fine-tuned on phyworld) ===")
-    fit_eval_collision(emb, prop, state, coll, ep_idx, n_ep, seed=args.seed)
+    print(f"\n[K=1 single-frame]")
+    fit_eval_collision(emb, prop, state, coll, ep_idx, step_idx, n_ep, seed=args.seed, K=1)
+
+    print(f"\n[K=4 multi-frame]")
+    feats_k4, valid_k4 = build_multiframe_feats(emb, ep_idx, step_idx, K=4)
+    fit_eval_collision(feats_k4, prop, state, coll, ep_idx, step_idx, n_ep,
+                       seed=args.seed, K=4, valid_mask=valid_k4)
 
     print(f"\nTotal {time.time()-t0:.1f}s")
 

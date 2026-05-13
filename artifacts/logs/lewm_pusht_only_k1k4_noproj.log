@@ -1,0 +1,38 @@
+[build] lewm-pusht JEPA architecture
+15:23:06.283 | INFO    (46943, stable_pretraining.backbone.utils) | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+  JEPA total: 18.03 M params
+[load] weights from /home/qlib/.stable_worldmodel/lewm_paper_pusht/weights.pt
+  loaded keys: 303 / 303 (unexpected=0, missing=0)
+[load] data /home/qlib/.stable_worldmodel/phyworld_collision.h5
+  using 32000 frames over 1000 trajs
+
+[encode] lewm-pusht (frozen, no phyworld FT) ...
+  encoded 128/32000
+  encoded 6528/32000
+  encoded 12928/32000
+  encoded 19328/32000
+  encoded 25728/32000
+  cached to /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_pusht_only_collision_emb_32k_no_projector.npy
+/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/linear_model/_ridge.py:213: LinAlgWarning: Ill-conditioned matrix (rcond=2.50491e-08): result may not be accurate.
+  return linalg.solve(A, Xy, assume_a="pos", overwrite_a=True).T
+/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/linear_model/_ridge.py:213: LinAlgWarning: Ill-conditioned matrix (rcond=2.50491e-08): result may not be accurate.
+  return linalg.solve(A, Xy, assume_a="pos", overwrite_a=True).T
+  emb shape: (32000, 192), projector=off
+
+=== lewm-pusht ZERO-SHOT (no phyworld FT, projector=off) ===
+
+[K=1 single-frame]
+  [K=1] train=25600, test=6400, feat_dim=192
+  target              R² / AUC
+  pos_x R²            +0.8857
+  vel_x R²            +0.6044
+  collision AUC       0.9569
+
+[K=4 multi-frame]
+  [K=4] train=23200, test=5800, feat_dim=768
+  target              R² / AUC
+  pos_x R²            +0.9308
+  vel_x R²            +0.8780
+  collision AUC       0.9817
+
+Total 34.4s
