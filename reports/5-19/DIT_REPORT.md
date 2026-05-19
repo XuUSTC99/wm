@@ -48,7 +48,7 @@
 
 ## 1. 实验动机
 
-[COLLISION_REPORT.md §2.5](COLLISION_REPORT.md) 的修正结论确认了 LeWM 的 "negative result" 主要由 (random init) × (单帧 probe) 联合造成；用 paper-init + K=4 后 vel_x R² 从 0.487 跳到 0.883。但还有一个**遗留疑问**没拆开：
+[COLLISION_REPORT.md §2.5](../5-12/COLLISION_REPORT.md) 的修正结论确认了 LeWM 的 "negative result" 主要由 (random init) × (单帧 probe) 联合造成；用 paper-init + K=4 后 vel_x R² 从 0.487 跳到 0.883。但还有一个**遗留疑问**没拆开：
 
 > paper-init 把 vel_x 从 0.62 → 0.88 的提升里，**PushT 视觉知识** 和 **collision 上的物理训练** 各贡献多少？
 
@@ -84,11 +84,11 @@
 | K=1: train/test 帧数 | 25 600 / 6 400 |
 | K=4: train/test 帧数 | 23 200 / 5 800 |
 
-数据规模比 [COLLISION_REPORT.md](COLLISION_REPORT.md) 用的 160k 帧小（DiT-XL forward 慢，本机 GPU 上 ~330s 编码 32k 帧已是合理 cap），但 K=4 测试集 5 800 帧足以让 R² 估计稳定到 ±0.01。
+数据规模比 [COLLISION_REPORT.md](../5-12/COLLISION_REPORT.md) 用的 160k 帧小（DiT-XL forward 慢，本机 GPU 上 ~330s 编码 32k 帧已是合理 cap），但 K=4 测试集 5 800 帧足以让 R² 估计稳定到 ±0.01。
 
 ### 2.3 Embedding 提取
 
-实现细节见 [phyworld/scripts/probe_dit_zeroshot.py](../phyworld/scripts/probe_dit_zeroshot.py)。
+实现细节见 [phyworld/scripts/probe_dit_zeroshot.py](../../phyworld/scripts/probe_dit_zeroshot.py)。
 
 ```
 uint8 224×224×3
@@ -114,7 +114,7 @@ mean-pool over tokens
 
 ### 2.4 Probe 协议
 
-完全沿用 [COLLISION_REPORT §2.1](COLLISION_REPORT.md)：
+完全沿用 [COLLISION_REPORT §2.1](../5-12/COLLISION_REPORT.md)：
 
 - Ridge regression（α=1）on (pos_x, vel_x)，target 是 `proprio[:, [0, 2]]` / `state[:, [0, 2]]` 两个球的 x 坐标 / 速度。
 - LogReg balanced on collision_event。
@@ -128,10 +128,10 @@ Ridge 在 1152 维 / 4608 维 emb 上会触发 sklearn `Ill-conditioned matrix` 
 ## 3. 结果
 
 > 原始 run logs（按时间排序）:
-> - [artifacts/logs/dit_xl_zeroshot_k1.log](../artifacts/logs/dit_xl_zeroshot_k1.log) / [dit_xl_zeroshot_k4.log](../artifacts/logs/dit_xl_zeroshot_k4.log) — DiT zero-shot
-> - [artifacts/logs/lewm_pusht_only_k1k4_noproj.log](../artifacts/logs/lewm_pusht_only_k1k4_noproj.log) — LeWM frozen pusht-only
-> - [artifacts/logs/dit_xl_lora_collision_2ep.log](../artifacts/logs/dit_xl_lora_collision_2ep.log) — DiT LoRA 2-epoch + re-probe
-> - 全 7-target 重跑：[probe_all_targets_dit_zeroshot.log](../artifacts/logs/probe_all_targets_dit_zeroshot.log) / [_lewm_pusht_only.log](../artifacts/logs/probe_all_targets_lewm_pusht_only.log) / [_dit_lora.log](../artifacts/logs/probe_all_targets_dit_lora.log)
+> - [artifacts/logs/dit_xl_zeroshot_k1.log](../../artifacts/logs/dit_xl_zeroshot_k1.log) / [dit_xl_zeroshot_k4.log](../../artifacts/logs/dit_xl_zeroshot_k4.log) — DiT zero-shot
+> - [artifacts/logs/lewm_pusht_only_k1k4_noproj.log](../../artifacts/logs/lewm_pusht_only_k1k4_noproj.log) — LeWM frozen pusht-only
+> - [artifacts/logs/dit_xl_lora_collision_2ep.log](../../artifacts/logs/dit_xl_lora_collision_2ep.log) — DiT LoRA 2-epoch + re-probe
+> - 全 7-target 重跑：[probe_all_targets_dit_zeroshot.log](../../artifacts/logs/probe_all_targets_dit_zeroshot.log) / [_lewm_pusht_only.log](../../artifacts/logs/probe_all_targets_lewm_pusht_only.log) / [_dit_lora.log](../../artifacts/logs/probe_all_targets_dit_lora.log)
 
 ### 3.1 DiT-XL zero-shot
 
@@ -144,7 +144,7 @@ K=1 → K=4 让 vel_x 从 0.68 跳到 0.89（+0.21），coll AUC 从 0.959 跳�
 
 ### 3.2 LeWM frozen pusht-only（new）
 
-最直接的 "PushT visual 是否够用" 测试：把 [`quentinll/lewm-pusht`](https://huggingface.co/quentinll/lewm-pusht) 权重原封不动加载到 JEPA 架构，**零 phyworld 微调**，直接 probe collision。脚本：[probe_lewm_pusht_only.py](../phyworld/scripts/probe_lewm_pusht_only.py)。`--no-projector`，K=4 multi-frame。
+最直接的 "PushT visual 是否够用" 测试：把 [`quentinll/lewm-pusht`](https://huggingface.co/quentinll/lewm-pusht) 权重原封不动加载到 JEPA 架构，**零 phyworld 微调**，直接 probe collision。脚本：[probe_lewm_pusht_only.py](../../phyworld/scripts/probe_lewm_pusht_only.py)。`--no-projector`，K=4 multi-frame。
 
 ```
 权重加载: 303 / 303 keys (unexpected=0, missing=0)  -- 完美匹配
@@ -152,7 +152,7 @@ K=1 → K=4 让 vel_x 从 0.68 跳到 0.89（+0.21），coll AUC 从 0.959 跳�
 [K=4]  pos_x 0.9308   vel_x 0.8780   speed 0.4857   mass 0.9451   mass_ratio 0.8864   accel_x 0.2706   coll AUC 0.9817
 ```
 
-跟 [COLLISION_REPORT §2.5](COLLISION_REPORT.md) 里 paper-init+8ep 的 K=4 (pos_x 0.911, vel_x 0.883, mass_ratio 0.826, coll AUC 0.952) 对比：
+跟 [COLLISION_REPORT §2.5](../5-12/COLLISION_REPORT.md) 里 paper-init+8ep 的 K=4 (pos_x 0.911, vel_x 0.883, mass_ratio 0.826, coll AUC 0.952) 对比：
 
 | Target (K=4) | paper-init+8ep | **pusht-only** | Δ |
 |---|---:|---:|---:|
@@ -165,7 +165,7 @@ K=1 → K=4 让 vel_x 从 0.68 跳到 0.89（+0.21），coll AUC 从 0.959 跳�
 
 ### 3.3 DiT-XL + LoRA 2 epoch 微调（new）
 
-LoRA rank=16 加在 DiT-XL transformer 最后 4 个 block 的 attention Q/K/V/out，VAE 冻结；目标函数 = 原生 DDPM noise prediction；class_labels=1000 (null)；data = 32k phyworld_collision 帧 × 2 epoch = 4000 steps，AdamW lr=1e-4。脚本：[dit_lora_finetune_probe.py](../phyworld/scripts/dit_lora_finetune_probe.py)。
+LoRA rank=16 加在 DiT-XL transformer 最后 4 个 block 的 attention Q/K/V/out，VAE 冻结；目标函数 = 原生 DDPM noise prediction；class_labels=1000 (null)；data = 32k phyworld_collision 帧 × 2 epoch = 4000 steps，AdamW lr=1e-4。脚本：[dit_lora_finetune_probe.py](../../phyworld/scripts/dit_lora_finetune_probe.py)。
 
 ```
 LoRA 参数: 0.590 M trainable / 750.4 M total (0.079%)
@@ -360,7 +360,7 @@ phyworld_collision 整张图就是 (黑底 + 2 圆 + 颜色 1-2 种)，信息熵
 
 **LeWM JEPA 微调在 7 个 probe target 上不是单调 hurt，是 trade-off**：换 0.06 的 speed + 0.01 的 mass，**代价**是 pos/mass_ratio/accel/coll_AUC 各掉 0.02-0.04。
 
-可能的解释（推测）：JEPA 训练目标是预测下一帧 latent，**鼓励 encoder 编码"在接下来会变什么"的信息**。speed = |velocity| 直接决定下一帧偏移幅度，被 prediction loss 大量放大；而 absolute position、collision boolean 这种"当前帧静态"信号，对预测没什么帮助，被弱化。这跟 [COLLISION_REPORT §2.3 (b)](COLLISION_REPORT.md) 提到的 "projector 在压缩对 prediction 无用的信息" 是同一机制，但这次出现在 projector 之前（no-projector probe）—— **encoder 本身在按 prediction 目标重构表征**。
+可能的解释（推测）：JEPA 训练目标是预测下一帧 latent，**鼓励 encoder 编码"在接下来会变什么"的信息**。speed = |velocity| 直接决定下一帧偏移幅度，被 prediction loss 大量放大；而 absolute position、collision boolean 这种"当前帧静态"信号，对预测没什么帮助，被弱化。这跟 [COLLISION_REPORT §2.3 (b)](../5-12/COLLISION_REPORT.md) 提到的 "projector 在压缩对 prediction 无用的信息" 是同一机制，但这次出现在 projector 之前（no-projector probe）—— **encoder 本身在按 prediction 目标重构表征**。
 
 回到 §4 的"为啥 fine-tune 反而变差"：trajectory 数据告诉我们**机制 (A) catastrophic forgetting 不是完整答案**。更准确的描述是 **(B) fine-tune 目标和 probe 目标的对齐度** —— JEPA loss 选择性地保留了对预测下一帧有用的信息（speed, mass），抛弃了对预测没用的信息（absolute pos, collision_event）。**不是"忘掉了"，是"主动地重新分配了 encoder 容量"**。
 
@@ -421,7 +421,7 @@ LoRA 权重单调放大（0.31 → 0.44 → 0.58），最终某一步 gradient �
 
 ### 6.2 修正：三协议对照
 
-[phyworld/scripts/probe_ood_per_partition.py](../phyworld/scripts/probe_ood_per_partition.py) 同时跑三个协议：
+[phyworld/scripts/probe_ood_per_partition.py](../../phyworld/scripts/probe_ood_per_partition.py) 同时跑三个协议：
 
 | 协议 | Ridge 拟合数据 | 测试数据 | 设计目的 |
 |---|---|---|---|
@@ -436,7 +436,7 @@ LoRA 权重单调放大（0.31 → 0.44 → 0.58），最终某一步 gradient �
 
 ### 6.3 结果：4 个 encoder 全部 "A 低 + B 高"
 
-在 4 个 encoder × 4 个 partition × 6 个 target 上跑完两协议（embedding cache 在 [artifacts/embeddings/*_collision_eval_emb_52k*.npy](../artifacts/embeddings/)，原 log 在 [artifacts/logs/ood_per_partition_*.log](../artifacts/logs/)）。**both-OOD partition** 上 A vs B 对比：
+在 4 个 encoder × 4 个 partition × 6 个 target 上跑完两协议（embedding cache 在 [artifacts/embeddings/*_collision_eval_emb_52k*.npy](../../artifacts/embeddings/)，原 log 在 [artifacts/logs/ood_per_partition_*.log](../../artifacts/logs/)）。**both-OOD partition** 上 A vs B 对比：
 
 | Encoder | params | pretrain | A pos_x | **B pos_x** | A mass_ratio | **B mass_ratio** | A vel_x | **B vel_x** |
 |---|---:|---|---:|---:|---:|---:|---:|---:|
@@ -545,10 +545,10 @@ phyworld 论文测的是**生成式 rollout**：
 - **DiT LoRA 微调只跑了 2 epoch**：理论上 4-8 epoch 才能稳定收敛。但 LoRA loss 抖动太大很难看趋势，2 epoch 已经能体现 net negative 方向。LeWM 16-epoch 结果会进一步约束这个 caveat。
 - **Probe target 5/7 是新加的（speed / mass / mass_ratio / accel_x / collision_event）**，跟早期 LeWM probe 报告里只有 pos_x / vel_x / collision 三项不完全对齐。但所有新 target 都跨三个 encoder 一致测，内部对比是 apples-to-apples。
 - **缓存路径**：
-  - DiT zero-shot emb: [artifacts/embeddings/dit_xl_collision_emb_32k.npy](../artifacts/embeddings/dit_xl_collision_emb_32k.npy) (147 MB)
-  - LeWM pusht-only emb: [artifacts/embeddings/lewm_pusht_only_collision_emb_32k_no_projector.npy](../artifacts/embeddings/lewm_pusht_only_collision_emb_32k_no_projector.npy) (25 MB)
-  - DiT LoRA emb: [artifacts/embeddings/dit_xl_lora_collision_emb_32k.npy](../artifacts/embeddings/dit_xl_lora_collision_emb_32k.npy) (147 MB)
-  - DiT LoRA 权重: [artifacts/embeddings/dit_xl_lora_collision/](../artifacts/embeddings/dit_xl_lora_collision/)
+  - DiT zero-shot emb: [artifacts/embeddings/dit_xl_collision_emb_32k.npy](../../artifacts/embeddings/dit_xl_collision_emb_32k.npy) (147 MB)
+  - LeWM pusht-only emb: [artifacts/embeddings/lewm_pusht_only_collision_emb_32k_no_projector.npy](../../artifacts/embeddings/lewm_pusht_only_collision_emb_32k_no_projector.npy) (25 MB)
+  - DiT LoRA emb: [artifacts/embeddings/dit_xl_lora_collision_emb_32k.npy](../../artifacts/embeddings/dit_xl_lora_collision_emb_32k.npy) (147 MB)
+  - DiT LoRA 权重: [artifacts/embeddings/dit_xl_lora_collision/](../../artifacts/embeddings/dit_xl_lora_collision/)
 
 ---
 
@@ -558,6 +558,6 @@ phyworld 论文测的是**生成式 rollout**：
 
 1. **等 LeWM 16-epoch 走势出来** —— 决定是否还要补 DiT LoRA 4-8 epoch（如 LeWM 是 U 型，DiT 大概率也需要更多 epoch 才能稳定 net positive）。
 2. **跑 ViT-tiny ImageNet-init frozen probe**（~10 min）—— 完成 FINAL §7 #3 的"必要性"侧验证。如果 5.5M ViT-tiny ImageNet init 也能拿到 0.85+ K=4 vel_x，那 §4.2 的"通用视觉预训练就够"结论被三方独立验证。
-3. **跑 DiT-XL zero-shot 在 uniform_motion 上**（~5 min）—— uniform_motion 是更简单的 1-ball 1D 任务，对比 [UNIFORM_MOTION_REPORT.md](UNIFORM_MOTION_REPORT.md) 看 pattern 是否一致。
+3. **跑 DiT-XL zero-shot 在 uniform_motion 上**（~5 min）—— uniform_motion 是更简单的 1-ball 1D 任务，对比 [UNIFORM_MOTION_REPORT.md](../5-12/UNIFORM_MOTION_REPORT.md) 看 pattern 是否一致。
 4. **跑 DiT-XL zero-shot 在 PHYRE OOT 上** —— 验证 §4.4 "复杂 → 简单域 transfer 廉价" 假说。如果 DiT-XL 在 PHYRE 上也优于 LeWM collision-trained encoder，说明 LeWM 训练完全没有"物理域专长"。
 5. **在非 toy 物理 dataset 上跑同样对比**（Something-Something / PhysIQ / BAIR）—— 给 §4.4 "DiT 赢是 phyworld 的失败"假说提供反证 / 正证。
