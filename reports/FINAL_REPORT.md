@@ -600,7 +600,7 @@ le-wm 论文还 release 了 `lewm-cube`（3D 立方体抓取任务），我们�
 
 1. ⭐ **N2（parabola）训练 + probe** —— **最重要的缺口**：本报告只覆盖 N1 + N3，N2（F=ma 在恒定重力下）完全没测。要补完"le-wm 是否学到了完整牛顿运动定律"这个问题，必须做 parabola 实验。预估 ~6-8 h（生成数据 + 训练 + 多帧 probe v_y / 推断 a_y）。
 2. **random-init multi-frame 消歧**（7.4 节）—— 成本低、答案清楚
-3. **ImageNet ViT-tiny init 对照**——便宜地验证"是否 paper init 不必，通用视觉 pretraining 已足够"
+3. ~~**ImageNet ViT-tiny init 对照**~~ —— **已被 DiT-XL zero-shot 实验间接回答**。注：Google 原版 ViT-tiny 没释放，只有 DeiT-tiny（patch=16，和 LeWM patch=14 不匹配），需 patch embed interpolation 才能用。鉴于 DiT-XL zero-shot 已经验证了"通用 ImageNet 预训练能在 phyworld 上做物理 probe ≈ LeWM trained"这一假设，该实验优先级降低
 4. **数据增强 / 背景随机化**——破除 shortcut 天花板，让 trained 优势更显著
 5. **加 MLP probe 做辅助诊断**——量化"线性 probe 低估"了多少
 6. **跑 phyworld 30K-3M 大数据集**——验证当前结论在数据量充足时仍成立

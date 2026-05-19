@@ -1,0 +1,25 @@
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_pusht_only_collision_eval_emb_52k_noproj.npy  shape=(52320, 192)
+  partition 0 (ID): 115 eps / 3680 frames
+  partition 1 (r-OOD): 449 eps / 14368 frames
+  partition 2 (v-OOD): 165 eps / 5280 frames
+  partition 3 (both-OOD): 906 eps / 28992 frames
+
+========== PROTOCOL A: Ridge fit on ID-train, tested per-partition (original, confounded) ==========
+  A.ID        (train_n=2944, test_n=736):  pos_x=+0.859  vel_x=+0.565  speed=+0.043  mass=+0.801  mass_ratio=+0.729  collision_event=+0.943
+  A.r-OOD     (train_n=2944, test_n=2880):  pos_x=+0.593  vel_x=+0.287  speed=+0.029  mass=+0.741  mass_ratio=+0.255  collision_event=+0.793
+  A.v-OOD     (train_n=2944, test_n=1056):  pos_x=+0.853  vel_x=+0.316  speed=-0.091  mass=+0.818  mass_ratio=+0.751  collision_event=+0.743
+  A.both-OOD  (train_n=2944, test_n=5792):  pos_x=+0.005  vel_x=-0.043  speed=+0.061  mass=+0.524  mass_ratio=-0.102  collision_event=+0.653
+
+========== PROTOCOL B: Ridge fit per-partition (each partition's own train fold) ==========
+  B.ID        (train_n=2944, test_n=736):  pos_x=+0.859  vel_x=+0.565  speed=+0.043  mass=+0.801  mass_ratio=+0.729  collision_event=+0.943
+  B.r-OOD     (train_n=11488, test_n=2880):  pos_x=+0.699  vel_x=+0.593  speed=+0.551  mass=+0.922  mass_ratio=+0.792  collision_event=+0.920
+  B.v-OOD     (train_n=4224, test_n=1056):  pos_x=+0.904  vel_x=+0.524  speed=+0.183  mass=+0.911  mass_ratio=+0.899  collision_event=+0.813
+  B.both-OOD  (train_n=23200, test_n=5792):  pos_x=+0.745  vel_x=+0.684  speed=+0.812  mass=+0.937  mass_ratio=+0.932  collision_event=+0.886
+
+========== DIAGNOSTIC: A vs B per partition ==========
+  (large B−A on OOD partition → probe extrapolation was the issue, not encoder)
+  Δ on r-OOD    :  pos_x=+0.106  vel_x=+0.305  speed=+0.523  mass=+0.181  mass_ratio=+0.537  collision_event=+0.127
+  Δ on v-OOD    :  pos_x=+0.051  vel_x=+0.208  speed=+0.274  mass=+0.093  mass_ratio=+0.148  collision_event=+0.070
+  Δ on both-OOD :  pos_x=+0.740  vel_x=+0.728  speed=+0.751  mass=+0.413  mass_ratio=+1.034  collision_event=+0.233
+
+[json] saved → /home/qlib/agent_memory/wm/artifacts/logs/ood_per_partition_lewm_pusht_only_collision_eval_emb_52k_noproj.json

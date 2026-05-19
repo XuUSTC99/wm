@@ -1,0 +1,73 @@
+=== LeWM epoch 12 ===
+[load] ckpt /home/qlib/.stable_worldmodel/collision_paperinit_16ep/lewm_collision_paperinit_16ep_epoch_12_object.ckpt
+  loaded JEPA, 18.03 M params
+[load] data /home/qlib/.stable_worldmodel/phyworld_collision.h5
+  pix shape: torch.Size([32000, 3, 224, 224])
+  encoded 128/32000
+  encoded 6528/32000
+  encoded 12928/32000
+  encoded 19328/32000
+  encoded 25728/32000
+  emb shape: (32000, 192), encoding took 24.6s
+  saved → /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch12.npy
+
+--- probe epoch 12 ---
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch12.npy  shape=(32000, 192)
+
+=== K=1 (single-frame) ===
+  [K=1] train=25600, test=6400, feat_dim=192
+    pos_x                R²    +0.8681
+    vel_x                R²    +0.6129
+    speed                R²    +0.3910
+    mass                 R²    +0.9358
+    mass_ratio           R²    +0.8329
+    accel_x              R²    +0.1217
+    collision_event      AUC   0.9458
+
+=== K=4 (multi-frame) ===
+  [K=4] train=23200, test=5800, feat_dim=768
+    pos_x                R²    +0.9154
+    vel_x                R²    +0.8759
+    speed                R²    +0.5446
+    mass                 R²    +0.9558
+    mass_ratio           R²    +0.8616
+    accel_x              R²    +0.2355
+    collision_event      AUC   0.9746
+
+=== LeWM epoch 16 ===
+[load] ckpt /home/qlib/.stable_worldmodel/collision_paperinit_16ep/lewm_collision_paperinit_16ep_epoch_16_object.ckpt
+  loaded JEPA, 18.03 M params
+[load] data /home/qlib/.stable_worldmodel/phyworld_collision.h5
+  pix shape: torch.Size([32000, 3, 224, 224])
+  encoded 128/32000
+  encoded 6528/32000
+  encoded 12928/32000
+  encoded 19328/32000
+  encoded 25728/32000
+  emb shape: (32000, 192), encoding took 27.2s
+  saved → /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch16.npy
+
+--- probe epoch 16 ---
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch16.npy  shape=(32000, 192)
+
+=== K=1 (single-frame) ===
+  [K=1] train=25600, test=6400, feat_dim=192
+    pos_x                R²    +0.8640
+    vel_x                R²    +0.6126
+    speed                R²    +0.3903
+    mass                 R²    +0.9362
+    mass_ratio           R²    +0.8375
+    accel_x              R²    +0.1181
+    collision_event      AUC   0.9446
+
+=== K=4 (multi-frame) ===
+  [K=4] train=23200, test=5800, feat_dim=768
+    pos_x                R²    +0.9126
+    vel_x                R²    +0.8752
+    speed                R²    +0.5417
+    mass                 R²    +0.9557
+    mass_ratio           R²    +0.8642
+    accel_x              R²    +0.2341
+    collision_event      AUC   0.9741
+
+DONE epoch 12+16

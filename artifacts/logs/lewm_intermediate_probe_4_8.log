@@ -1,0 +1,73 @@
+=== LeWM epoch 4 ===
+[load] ckpt /home/qlib/.stable_worldmodel/collision_paperinit_16ep/lewm_collision_paperinit_16ep_epoch_4_object.ckpt
+  loaded JEPA, 18.03 M params
+[load] data /home/qlib/.stable_worldmodel/phyworld_collision.h5
+  pix shape: torch.Size([32000, 3, 224, 224])
+  encoded 128/32000
+  encoded 6528/32000
+  encoded 12928/32000
+  encoded 19328/32000
+  encoded 25728/32000
+  emb shape: (32000, 192), encoding took 27.6s
+  saved → /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch4.npy
+
+--- probe epoch 4 ---
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch4.npy  shape=(32000, 192)
+
+=== K=1 (single-frame) ===
+  [K=1] train=25600, test=6400, feat_dim=192
+    pos_x                R²    +0.8570
+    vel_x                R²    +0.6173
+    speed                R²    +0.3956
+    mass                 R²    +0.9294
+    mass_ratio           R²    +0.8210
+    accel_x              R²    +0.1297
+    collision_event      AUC   0.9480
+
+=== K=4 (multi-frame) ===
+  [K=4] train=23200, test=5800, feat_dim=768
+    pos_x                R²    +0.9087
+    vel_x                R²    +0.8731
+    speed                R²    +0.5320
+    mass                 R²    +0.9518
+    mass_ratio           R²    +0.8490
+    accel_x              R²    +0.2448
+    collision_event      AUC   0.9750
+
+=== LeWM epoch 8 ===
+[load] ckpt /home/qlib/.stable_worldmodel/collision_paperinit_16ep/lewm_collision_paperinit_16ep_epoch_8_object.ckpt
+  loaded JEPA, 18.03 M params
+[load] data /home/qlib/.stable_worldmodel/phyworld_collision.h5
+  pix shape: torch.Size([32000, 3, 224, 224])
+  encoded 128/32000
+  encoded 6528/32000
+  encoded 12928/32000
+  encoded 19328/32000
+  encoded 25728/32000
+  emb shape: (32000, 192), encoding took 27.8s
+  saved → /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch8.npy
+
+--- probe epoch 8 ---
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/lewm_collision_16ep_emb_32k_epoch8.npy  shape=(32000, 192)
+
+=== K=1 (single-frame) ===
+  [K=1] train=25600, test=6400, feat_dim=192
+    pos_x                R²    +0.8653
+    vel_x                R²    +0.6152
+    speed                R²    +0.3987
+    mass                 R²    +0.9355
+    mass_ratio           R²    +0.8429
+    accel_x              R²    +0.1282
+    collision_event      AUC   0.9484
+
+=== K=4 (multi-frame) ===
+  [K=4] train=23200, test=5800, feat_dim=768
+    pos_x                R²    +0.9132
+    vel_x                R²    +0.8794
+    speed                R²    +0.5516
+    mass                 R²    +0.9551
+    mass_ratio           R²    +0.8671
+    accel_x              R²    +0.2404
+    collision_event      AUC   0.9741
+
+DONE epoch 4+8

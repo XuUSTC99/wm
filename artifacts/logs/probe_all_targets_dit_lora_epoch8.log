@@ -1,0 +1,27 @@
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/dit_xl_lora_collision_emb_32k_epoch8.npy  shape=(32000, 1152)
+
+=== K=1 (single-frame) ===
+  [K=1] train=25600, test=6400, feat_dim=1152
+Traceback (most recent call last):
+  File "/home/qlib/agent_memory/wm/phyworld/scripts/probe_all_targets.py", line 159, in <module>
+    main()
+  File "/home/qlib/agent_memory/wm/phyworld/scripts/probe_all_targets.py", line 142, in main
+    fit_eval_targets(
+  File "/home/qlib/agent_memory/wm/phyworld/scripts/probe_all_targets.py", line 81, in fit_eval_targets
+    m = Ridge(alpha=1.0); m.fit(e_tr, y[mask_tr])
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/base.py", line 1365, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/linear_model/_ridge.py", line 1238, in fit
+    X, y = validate_data(
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 2971, in validate_data
+    X, y = check_X_y(X, y, **check_params)
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 1368, in check_X_y
+    X = check_array(
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 1105, in check_array
+    _assert_all_finite(
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 120, in _assert_all_finite
+    _assert_all_finite_element_wise(
+  File "/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 169, in _assert_all_finite_element_wise
+    raise ValueError(msg_err)
+ValueError: Input X contains NaN.
+Ridge does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values

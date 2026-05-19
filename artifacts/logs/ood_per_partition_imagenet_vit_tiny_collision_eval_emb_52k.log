@@ -1,0 +1,25 @@
+[load] emb /home/qlib/agent_memory/wm/artifacts/embeddings/imagenet_vit_tiny_collision_eval_emb_52k.npy  shape=(52320, 192)
+  partition 0 (ID): 115 eps / 3680 frames
+  partition 1 (r-OOD): 449 eps / 14368 frames
+  partition 2 (v-OOD): 165 eps / 5280 frames
+  partition 3 (both-OOD): 906 eps / 28992 frames
+
+========== PROTOCOL A: Ridge fit on ID-train, tested per-partition (original, confounded) ==========
+  A.ID        (train_n=2944, test_n=736):  pos_x=+0.837  vel_x=+0.530  speed=+0.107  mass=+0.829  mass_ratio=+0.776  collision_event=+0.915
+  A.r-OOD     (train_n=2944, test_n=2880):  pos_x=+0.507  vel_x=+0.355  speed=+0.024  mass=+0.793  mass_ratio=+0.245  collision_event=+0.725
+  A.v-OOD     (train_n=2944, test_n=1056):  pos_x=+0.831  vel_x=+0.428  speed=-0.011  mass=+0.815  mass_ratio=+0.744  collision_event=+0.731
+  A.both-OOD  (train_n=2944, test_n=5792):  pos_x=-0.026  vel_x=+0.111  speed=+0.008  mass=+0.627  mass_ratio=-0.077  collision_event=+0.754
+
+========== PROTOCOL B: Ridge fit per-partition (each partition's own train fold) ==========
+  B.ID        (train_n=2944, test_n=736):  pos_x=+0.837  vel_x=+0.530  speed=+0.107  mass=+0.829  mass_ratio=+0.776  collision_event=+0.915
+  B.r-OOD     (train_n=11488, test_n=2880):  pos_x=+0.637  vel_x=+0.547  speed=+0.411  mass=+0.922  mass_ratio=+0.762  collision_event=+0.843
+  B.v-OOD     (train_n=4224, test_n=1056):  pos_x=+0.864  vel_x=+0.500  speed=+0.383  mass=+0.885  mass_ratio=+0.868  collision_event=+0.749
+  B.both-OOD  (train_n=23200, test_n=5792):  pos_x=+0.716  vel_x=+0.663  speed=+0.767  mass=+0.934  mass_ratio=+0.908  collision_event=+0.822
+
+========== DIAGNOSTIC: A vs B per partition ==========
+  (large B−A on OOD partition → probe extrapolation was the issue, not encoder)
+  Δ on r-OOD    :  pos_x=+0.130  vel_x=+0.192  speed=+0.387  mass=+0.130  mass_ratio=+0.517  collision_event=+0.118
+  Δ on v-OOD    :  pos_x=+0.033  vel_x=+0.073  speed=+0.394  mass=+0.070  mass_ratio=+0.124  collision_event=+0.018
+  Δ on both-OOD :  pos_x=+0.742  vel_x=+0.552  speed=+0.760  mass=+0.307  mass_ratio=+0.985  collision_event=+0.068
+
+[json] saved → /home/qlib/agent_memory/wm/artifacts/logs/ood_per_partition_imagenet_vit_tiny_collision_eval_emb_52k.json
