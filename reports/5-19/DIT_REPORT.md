@@ -24,7 +24,7 @@
 | pixel-stats (9-D) | — | — | 0 | 0.763 | 0.516 | 0.354 | 0.936 | 0.692 | 0.041 | 0.752 |
 | random ViT-tiny | 5.5 M | — | 0 | 0.747 | 0.573 | 0.350 | 0.933 | 0.742 | 0.045 | 0.831 |
 | LeWM from-scratch | 5.5 M | — | 8 ep | 0.814 | 0.594 | — | — | 0.666 | — | — |
-| **ImageNet ViT-tiny** | 5.5 M | **ImageNet-21k+1k** | 0 | 0.903 | 0.754 | 0.369 | 0.934 | 0.782 | 0.138 | 0.944 |
+| **ImageNet ViT-tiny**[^1] | 5.5 M | **ImageNet-21k+1k** | 0 | 0.903 | 0.754 | 0.369 | 0.934 | 0.782 | 0.138 | 0.944 |
 | LeWM paper-init+8ep | 5.5 M | PushT | 8 ep | 0.911 | 0.883 | — | — | 0.826 | — | 0.952 (K=1) |
 | **LeWM pusht-only (frozen)** | 5.5 M | **PushT** | 0 | **0.931** | 0.878 | 0.486 | 0.945 | **0.886** | 0.271 | **0.982** |
 | **LeWM 16ep epoch 16** | 5.5 M | PushT + 16ep | 16 ep | 0.913 | 0.875 | **0.542** | **0.956** | 0.864 | 0.234 | 0.974 |
@@ -123,6 +123,36 @@ mean-pool over tokens
 
 Ridge 在 1152 维 / 4608 维 emb 上会触发 sklearn `Ill-conditioned matrix` warning（rcond ~ 1e-8），但 α=1 的正则项足以让数值稳定 —— LeWM 的 192 维 emb 上没遇到，是因为维度更低。
 
+#### Target 定义（避免 vel_x vs speed 混淆）
+
+7 个 probe target 全部走 [probe_all_targets.py](../../phyworld/scripts/probe_all_targets.py)，每个的精确定义：
+
+| Target | 类型 | 维度 | 计算 |
+|---|---|---|---|
+| pos_x | Ridge R² | 2D | `proprio[:, [0, 2]]`（两球 x 坐标） |
+| **vel_x** | Ridge R² | **2D** | **`state[:, [0, 2]]`**（两球**有符号** x 速度 vx1, vx2） |
+| **speed** | Ridge R² | **1D** | **`sqrt(vx1² + vx2²)`** — `vel_x` 向量的 L2 norm |
+| mass | Ridge R² | 2D | `mass`（两球质量）|
+| mass_ratio | Ridge R² | 1D | `mass[:, 0] / mass[:, 1]` |
+| accel_x | Ridge R² | 2D | episode 内 `vel_x` 的 forward diff |
+| collision_event | LogReg AUC | 1 bit | 当前帧是否碰撞 |
+
+**vel_x ≠ speed 的关键区别**（两层差异）：
+
+- `vel_x` 是有符号的两球水平速度（2 个数 per frame），Ridge 输出 `w·emb` 直接拟合
+- `speed = sqrt(vx1² + vx2²)` —— 注意这里是**两球 x 速度的 L2 norm**，**不是单球物理速度 ||(vx, vy)||**。因为 phyworld collision 是 1D（vy 始终为 0），单球物理 speed 等于 |vx|，但 `probe_all_targets.py` 计算的是**两球**的 (vx1, vx2) 联合 L2 norm。**命名"speed"实际有点误导**。
+
+**两层非线性叠加导致 Ridge R² 低**：
+
+1. **协议层**：线性 probe Ridge 输出 `w·emb`，**无法表达 sqrt / abs / 平方** —— 即使 encoder 完美记住 (vx1, vx2)，Ridge 也算不出它们的 L2 norm。  
+2. **target 定义层**：当前 speed 不是物理 speed，而是**两球速度的"联合幅度"**，没什么直观物理对应。
+
+所以 **speed R² 主要测的是"信息是否以非线性可读形式编码"**，跟 encoder 学到了什么没直接关系。各模型 speed 都低（0.35–0.55）是协议 + 命名问题，**不是 encoder 实力问题**。
+
+要测 speed 真实可读性需要 **MLP probe**（非线性能力），不在我们这次 linear-probe 协议范围内。所以**主要看 vel_x，speed 当 sanity 参考即可**。
+
+> **TODO**：如果重做 probe，应该把这个 target 重命名为 `vel_x_norm` 或干脆删掉（vel_x 的 R² 已经测了同样的物理量）。
+
 ---
 
 ## 3. 结果
@@ -215,7 +245,7 @@ K=4 结果：
 |---|---:|---|---:|---:|---:|---:|---:|---:|---:|
 | pixel-stats | — | — | 0.763 | 0.516 | 0.354 | 0.936 | 0.692 | 0.041 | 0.752 |
 | random ViT-tiny | 5.5 M | — | 0.747 | 0.573 | 0.350 | 0.933 | 0.742 | 0.045 | 0.831 |
-| **ImageNet ViT-tiny** | **5.5 M** | **ImageNet-21k+1k** | **0.903** | **0.754** | **0.369** | **0.934** | **0.782** | **0.138** | **0.944** |
+| **ImageNet ViT-tiny**[^1] | **5.5 M** | **ImageNet-21k+1k** | **0.903** | **0.754** | **0.369** | **0.934** | **0.782** | **0.138** | **0.944** |
 | LeWM pusht-only | 5.5 M | PushT | 0.931 | 0.878 | 0.486 | 0.945 | 0.886 | 0.271 | 0.982 |
 | DiT-XL zero-shot | 749.8 M | ImageNet diffusion | 0.919 | 0.890 | 0.435 | 0.943 | 0.842 | 0.409 | 0.990 |
 
@@ -561,3 +591,7 @@ phyworld 论文测的是**生成式 rollout**：
 3. **跑 DiT-XL zero-shot 在 uniform_motion 上**（~5 min）—— uniform_motion 是更简单的 1-ball 1D 任务，对比 [UNIFORM_MOTION_REPORT.md](../5-12/UNIFORM_MOTION_REPORT.md) 看 pattern 是否一致。
 4. **跑 DiT-XL zero-shot 在 PHYRE OOT 上** —— 验证 §4.4 "复杂 → 简单域 transfer 廉价" 假说。如果 DiT-XL 在 PHYRE 上也优于 LeWM collision-trained encoder，说明 LeWM 训练完全没有"物理域专长"。
 5. **在非 toy 物理 dataset 上跑同样对比**（Something-Something / PhysIQ / BAIR）—— 给 §4.4 "DiT 赢是 phyworld 的失败"假说提供反证 / 正证。
+
+---
+
+[^1]: **ImageNet ViT-tiny 数据源**：[`timm/vit_tiny_patch16_224.augreg_in21k_ft_in1k`](https://huggingface.co/timm/vit_tiny_patch16_224.augreg_in21k_ft_in1k)（也可用 timm 库直接 `timm.create_model("vit_tiny_patch16_224.augreg_in21k_ft_in1k", pretrained=True)` 拉取）。5.7 M 参数，ViT-tiny/16，在 ImageNet-21k 上监督预训练后在 ImageNet-1k 上 fine-tune，使用 augreg 训练策略。Google 原版 ViT 只释放了 base/large/huge，**timm 维护的这条线是社区最标准的 ViT-tiny pretrained 权重**。提取脚本：[`encode_vit_baselines.py --mode imagenet_vit_tiny`](../../phyworld/scripts/encode_vit_baselines.py)。

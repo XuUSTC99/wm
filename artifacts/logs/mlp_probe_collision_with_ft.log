@@ -1,0 +1,49 @@
+/home/qlib/agent_memory/wm/le-wm/.venv/lib/python3.10/site-packages/sklearn/linear_model/_logistic.py:473: ConvergenceWarning: lbfgs failed to converge after 1000 iteration(s) (status=1):
+STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
+
+Increase the number of iterations to improve the convergence (max_iter=1000).
+You might also want to scale the data as shown in:
+    https://scikit-learn.org/stable/modules/preprocessing.html
+Please also refer to the documentation for alternative solver options:
+    https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression
+  n_iter_i = _check_optimize_result(
+
+###########################################################################
+# COLLISION  (2-layer MLP, hidden=512, dropout=0.0)
+###########################################################################
+
+===========================================================================
+ LeWM pusht-only frozen (5.5M)  [COLLISION, dropout=0.0]
+===========================================================================
+  train=37932, test=9483, feat_dim=768
+  MLPs + LogReg trained in 10.8s
+ partition         n    pos MSE     pos ρ    vel MSE     vel ρ   coll AUC
+ AGGREGATE      9483     6.0133   +0.8906     0.0275   +0.9074     0.9530
+ ID              609     0.6567   +0.9670     0.0095   +0.9353     0.9756
+ r-OOD          2639     3.5417   +0.9164     0.0255   +0.9159     0.9511
+ v-OOD           957     1.0646   +0.9613     0.0099   +0.9310     0.9637
+ both-OOD       5278     8.7645   +0.8777     0.0338   +0.9018     0.9502
+
+===========================================================================
+ LeWM paper-init+collision 16ep FT (5.5M)  [COLLISION, dropout=0.0]
+===========================================================================
+  train=37932, test=9483, feat_dim=768
+  MLPs + LogReg trained in 9.4s
+ partition         n    pos MSE     pos ρ    vel MSE     vel ρ   coll AUC
+ AGGREGATE      9483     5.8714   +0.8931     0.0305   +0.8847     0.9435
+ ID              609     1.2400   +0.9320     0.0173   +0.8699     0.9615
+ r-OOD          2639     3.9663   +0.9061     0.0275   +0.8954     0.9357
+ v-OOD           957     1.3354   +0.9438     0.0179   +0.8488     0.9672
+ both-OOD       5278     8.1808   +0.8862     0.0359   +0.8878     0.9409
+
+===========================================================================
+ DiT-XL zero-shot (749.8M)  [COLLISION, dropout=0.0]
+===========================================================================
+  train=37932, test=9483, feat_dim=4608
+  MLPs + LogReg trained in 27.7s
+ partition         n    pos MSE     pos ρ    vel MSE     vel ρ   coll AUC
+ AGGREGATE      9483     3.0217   +0.9444     0.0194   +0.9315     0.9759
+ ID              609     0.9620   +0.9618     0.0095   +0.9330     0.9922
+ r-OOD          2639     3.4637   +0.9156     0.0260   +0.8982     0.9748
+ v-OOD           957     1.4245   +0.9332     0.0103   +0.9100     0.9774
+ both-OOD       5278     3.3280   +0.9527     0.0190   +0.9479     0.9751
