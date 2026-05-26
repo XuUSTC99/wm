@@ -1,7 +1,7 @@
 # Negative Result 复盘 + 修正报告
 
 **日期**：2026-05-26
-**主题**：phyworld OOD 初版结论 "encoder 在 OOD 上崩溃" 被推翻——实际是 **probe 协议 + R² 指标双重误导**。换成 LeWM 论文同款的 **MSE + Pearson ρ + 2-layer MLP probe** 后，**encoder 表征在所有 partition 上一致好**。同时确立：collision 上 FT ≈ frozen（净负 0.02 ρ），uniform_motion 上 FT > frozen（净正 0.02 ρ，leak-free 验证过）—— **FT 行为依任务而异，不能笼统说"frozen 总赢"**。
+**主题**：phyworld OOD 初版结论 "encoder 在 OOD 上崩溃" 被推翻——实际是 **probe 协议 + R² 指标双重误导**。换成 LeWM 论文同款的 **MSE + Pearson ρ + 2-layer MLP probe** 后，**encoder 表征在所有 partition 上一致好**。在三个 phyworld 物理域（collision / uniform_motion / parabola）上确立：FT 净效应取决于 frozen 是否到 ceiling——**collision (ceiling 0.91) FT 净负 0.02；uniform_motion (gap 0.97) FT 净正 0.02；parabola vx (gap, ID 仅 0.76) FT 净正 0.026 ρ；parabola vy (ceiling 0.98) FT 几乎无变化**。Leak-free 训练 3 个域上全部验证过。
 **前文参考**：[5-12/FINAL_REPORT.md](../5-12/FINAL_REPORT.md) · [5-12/UNIFORM_MOTION_REPORT.md](../5-12/UNIFORM_MOTION_REPORT.md) · [5-19/DIT_REPORT.md](../5-19/DIT_REPORT.md)
 
 ---
@@ -14,7 +14,8 @@
 | **修正 1** probe 协议 | K=4 multi-frame + Ridge 在全量 ID+OOD 混合 fit → "崩溃" 消失 | ✅ |
 | **修正 2** 评估指标 | R² 跨 partition 不可比；换成 **MSE + Pearson ρ**（LeWM-paper 标准）| ✅ |
 | **修正 3** probe 强度 | 加跑 **2-layer MLP**（LeWM 同款，直接 import `stable_pretraining.backbone.mlp.MLP`）| ✅ |
-| **新结论** | frozen encoder vel ρ ≥ 0.89 跨 partition 一致；**collision 上 FT ≈ frozen 略负，uniform_motion 上 FT 真增益 +0.02 ρ**（leak-free 验证）| ✅ |
+| **新结论** | frozen encoder vel ρ ≥ 0.74 跨 partition 一致；FT 净效应 = f(frozen-到-ceiling 距离)：**collision (ceiling) Δ −0.022, uniform/parabola-vx (gap) Δ +0.02~+0.026, parabola-vy (ceiling) Δ +0.005**（leak-free 三域验证）| ✅ |
+| **Caveat** | 测的是 **state encoding**（从 emb 读当前帧 pos/vel），不是 future prediction。"能编码 vy" ≠ "能预测抛物线运动"——后者需要 ARPredictor + multi-step rollout | ⚠️ |
 
 ---
 
@@ -193,14 +194,28 @@ Parabola = 单球抛物线运动（水平 vx 常量 + 垂直 vy 受重力线性�
 | | r-OOD | 0.032 | +0.967 | 0.016 | +0.996 | 0.332 | 0.641 ⚠️ | 0.050 | +0.986 |
 | | v-OOD | 0.083 | +0.966 | 0.075 | +0.963 | 0.196 | +0.920 | 0.122 | +0.974 |
 | | both-OOD | 0.068 | +0.973 | 0.059 | +0.972 | 0.392 | +0.877 | 0.088 | +0.976 |
-| **LeWM paper-init 20ep FT (leak-free)** | AGGREGATE | _训练中，等结果填_ | | | | | | | |
+| **LeWM paper-init 20ep FT (leak-free)** | AGGREGATE | 0.149 | +0.922 | 0.061 | **+0.969** 🔥 | 0.124 | **+0.934** ✅ | 0.026 | **+0.987** 🔥 |
+| (5.5M, 845-traj leak-free) | ID | 0.074 | +0.939 | 0.023 | +0.991 | 0.078 | **+0.825** ✅ | 0.010 | +0.996 |
+| | r-OOD | 0.074 | +0.936 | 0.036 | +0.986 | 0.092 | **+0.823** ✅ | 0.011 | +0.995 |
+| | v-OOD | 0.136 | +0.945 | 0.081 | +0.959 | 0.105 | +0.952 | 0.036 | +0.982 |
+| | both-OOD | 0.210 | +0.908 | 0.074 | +0.963 | 0.163 | +0.937 | 0.031 | +0.985 |
 
-**关键观察（待 FT 数据补齐后再深入）**：
+**关键观察**：
 
 1. **vy 是 frozen encoder 最好读的物理量**：LeWM 0.982, DiT 0.978 ρ aggregate，几乎完美。原因是重力让 vy 在一条 traj 内从 0 线性变到 −0.77（**强 within-traj signal**），K=4 多帧 probe 直接读出来。
 2. **pos_y 也很强**（ρ 0.967 / 0.978）：抛物线运动让 pos_y 在一条 traj 内变化巨大（9 → −5.6），跟 within-traj 简单 linear pos_x 比，信号丰富很多。
 3. **vx 仍然像 uniform_motion 一样难** (LeWM ID ρ=0.76, DiT ID ρ=0.67)：水平方向是常量速度，跟 uniform_motion 同款挑战。
 4. **DiT-XL 在 vx 上又过拟合**（vx ID 0.67），跟 uniform_motion 现象一致 → 同样的 4608-D 高维问题。
+5. **FT 显著拉高 vx（+0.064 r/agg ρ over frozen），vy 也微涨**。Per-partition vx ID: 0.761 → 0.825 (+0.064), r-OOD: 0.741 → 0.823 (+0.082)。FT 在 parabola 上同 uniform_motion **同向加分**——共同点：frozen 在常量速度方向有 gap，FT 让 encoder 把常量速度信号更线性化到 emb。
+6. **FT 对 pos_y/vy（已经接近天花板）几乎无影响**：vy AGG 0.982→0.987（+0.005），pos_y 0.967→0.969（+0.002）。**ceiling 现象**，跟 collision FT 在 high-ρ 维度退化是不同的机制。
+
+---
+
+> **⚠️ Caveat: 这是 state encoding，不是 future prediction**
+>
+> 上表测的是 **probe 从 `encoder(frame_t)` 读出当前帧 pos/vel** 的能力（K=4 用 t−3…t 四帧 emb concat），完全没用 LeWM 的 ARPredictor 做 t+1 外推。**vy ρ=0.98 只说明 emb 里编码了当前 vy 的信息，不代表模型「理解了重力」或「能外推抛物线」**。
+>
+> K=4 做的多帧差分本质是数学恒等式（连续帧 pos 差 ≈ vel），不是物理律学习。要测「能预测抛物线运动」必须 (a) 训 ARPredictor + (b) 在多步 rollout 下评 MSE。目前结论上限：**encoder 把当前帧的瞬时 pos/vel 解出来了，包括 OOD 球大小/初速**。
 
 ---
 
@@ -216,6 +231,12 @@ Parabola = 单球抛物线运动（水平 vx 常量 + 垂直 vy 受重力线性�
 | **uniform_motion** | LeWM pusht-only | 5.5M | **0** | 0.969 |
 | uniform_motion | LeWM paper-init **leak-free FT** | 5.5M | 20 ep | **0.986**（**Δ +0.017** ✅）|
 | uniform_motion | DiT-XL zero-shot | 749.8M | **0** | 0.923（0.954 dropout=0.3）|
+| **parabola** vx | LeWM pusht-only | 5.5M | **0** | 0.908 |
+| parabola vx | LeWM paper-init **leak-free FT** | 5.5M | 20 ep | **0.934**（**Δ +0.026** ✅）|
+| parabola vx | DiT-XL zero-shot | 749.8M | **0** | 0.864 |
+| **parabola** vy | LeWM pusht-only | 5.5M | **0** | 0.982 |
+| parabola vy | LeWM paper-init **leak-free FT** | 5.5M | 20 ep | 0.987（Δ +0.005, ceiling）|
+| parabola vy | DiT-XL zero-shot | 749.8M | **0** | 0.978 |
 
 ### 7.2 Per-partition vel/vx ρ MLP（FT 行为差异最戏剧）
 
@@ -237,18 +258,40 @@ Parabola = 单球抛物线运动（水平 vx 常量 + 垂直 vy 受重力线性�
 | v-OOD | 0.983 | 0.992 | +0.009 |
 | both-OOD | 0.969 | 0.990 | **+0.021** ✅ |
 
-### 7.3 解读：为什么两个数据集走相反方向
+**Parabola vx**（水平方向，常量速度，跟 uniform_motion 同款挑战）：
 
-| | collision | uniform_motion |
-|---|---|---|
-| **FT 净效应** | **−0.022 ρ**（净负）| **+0.017 ρ**（净正） |
-| **数据集物理** | 2 球 + 撞击瞬间，多事件 | 单球匀速，vx 恒等 |
-| **frozen pretrain 是否接近 ceiling** | **是**（vel ρ 0.91，提升空间小）| **否**（vx ρ 0.97，FT 还能填 +0.02）|
-| **机制** | catastrophic forgetting 通用 motion 特征 | FT 学到 phyworld 单球速度先验 |
+| Partition | LeWM frozen | LeWM FT leak-free | Δ FT − frozen |
+|---|---|---|---|
+| ID | 0.761 | 0.825 | **+0.064** ✅ |
+| r-OOD | 0.741 | 0.823 | **+0.082** ✅ |
+| v-OOD | 0.934 | 0.952 | +0.018 |
+| both-OOD | 0.912 | 0.937 | **+0.025** ✅ |
+
+**Parabola vy**（垂直方向，重力 → strong within-traj signal，frozen 已接近 ceiling）：
+
+| Partition | LeWM frozen | LeWM FT leak-free | Δ FT − frozen |
+|---|---|---|---|
+| ID | 0.994 | 0.996 | +0.002（ceiling）|
+| r-OOD | 0.993 | 0.995 | +0.002 |
+| v-OOD | 0.979 | 0.982 | +0.003 |
+| both-OOD | 0.979 | 0.985 | +0.006 |
+
+### 7.3 解读：为什么三个数据集走不同方向
+
+| | collision | uniform_motion | parabola (vx) | parabola (vy) |
+|---|---|---|---|---|
+| **FT 净效应** | **−0.022 ρ**（净负）| **+0.017 ρ**（净正）| **+0.026 ρ**（净正）| +0.005（ceiling）|
+| **数据集物理** | 2 球 + 撞击，多事件 | 单球匀速 vx 恒等 | 单球抛物，vx 恒等 | 单球抛物，vy 随时间线性 |
+| **frozen 是否接近 ceiling** | **是**（0.91）| **否**（0.97 还能填 gap）| **否**（0.91，ID 仅 0.76）| **是**（0.98+）|
+| **机制** | catastrophic forgetting 通用 motion 特征 | FT 学单球常量速度先验 | 同 uniform_motion，FT 填常量速度的 gap | 已经天花板，FT 无 margin |
 
 **结论不要笼统说"frozen 总比 FT 好"**，更准确的说法：
 
-> **frozen pretrain 在 collision 上已接近 ceiling（0.91 ρ），FT 没有 margin 学新东西反而 net negative；uniform_motion 上 frozen pretrain 留了 gap（0.97 ρ），FT 真的能填这个 gap。FT 的净效应取决于 frozen pretrain domain 跟 task domain 的距离，以及是否已经到 task ceiling**。
+> **FT 的净效应取决于 frozen pretrain 是否已经到 task ceiling**。
+> - 接近 ceiling（collision 0.91 / parabola vy 0.98）→ FT 无 margin，要么持平要么 net negative；
+> - 留有 gap（uniform vx 0.97 / parabola vx 0.91，ID partition 仅 0.76）→ FT 真的能填这个 gap，+0.02 到 +0.08 ρ。
+>
+> Parabola vx 是最干净的例证：frozen ID ρ 才 0.76（常量水平速度难读），FT 一上来直接 +0.064，r-OOD 更是 +0.082。这跟 uniform_motion 走的是同一条路径，**说明常量速度方向是 frozen pretrain 缺乏的 prior，FT 在 phyworld 上能补这个 gap**。
 
 ---
 
@@ -258,7 +301,7 @@ Parabola = 单球抛物线运动（水平 vx 常量 + 垂直 vy 受重力线性�
 |---|---|
 | LeWM 在 OOD 上崩溃 → 没学到通用物理 | LeWM/DiT 表征在所有 partition 上 ρ ≥ 0.74，"崩溃"是 R² + ID-only fit + K=1 三重协议问题 |
 | 用 R² 衡量物理 probing | 用 **MSE + Pearson ρ + Ridge/MLP 双 probe**（跟 LeWM Table 1 一致）|
-| 需要在 phyworld 上微调才能学到物理 | **取决于任务**：collision 不需要（frozen 已 ceiling）；uniform_motion 需要（FT 真的 +0.02 ρ） |
+| 需要在 phyworld 上微调才能学到物理 | **取决于是否到 ceiling**：collision/parabola-vy 已 ceiling，FT 无 margin；uniform_motion / parabola-vx 留有 gap，FT +0.02 ~ +0.08 ρ |
 | LeWM 的优势是 JEPA + phyworld 训练 | **参数效率**（5.5M ≈ 749M DiT，差 0.03 ρ）；预训练域影响大（PushT > ImageNet）|
 
 ---
@@ -288,8 +331,17 @@ Parabola = 单球抛物线运动（水平 vx 常量 + 垂直 vy 受重力线性�
 | LeWM pusht-only uniform_motion emb | artifacts/embeddings/lewm_pusht_only_uniform_motion_emb_37k_noproj.npy |
 | DiT-XL zero-shot uniform_motion emb | artifacts/embeddings/dit_xl_zeroshot_uniform_motion_emb_37k.npy |
 | **LeWM leak-free FT uniform_motion emb** | artifacts/embeddings/lewm_uniform_paperinit_leakfree_uniform_motion_emb_37k_noproj.npy |
-| LeWM leak-free FT ckpt | ~/.stable_worldmodel/uniform_paperinit_leakfree/ |
-| FT-train 80% 子集 h5 | ~/.stable_worldmodel/phyworld_uniform_motion_train80.h5 |
-| 80%/20% traj 切分 | ~/.stable_worldmodel/uniform_train_eps.npy + uniform_test_eps.npy |
+| LeWM leak-free FT ckpt（uniform）| ~/.stable_worldmodel/uniform_paperinit_leakfree/ |
+| FT-train 80% 子集 h5（uniform）| ~/.stable_worldmodel/phyworld_uniform_motion_train80.h5 |
+| 80%/20% traj 切分（uniform）| ~/.stable_worldmodel/uniform_train_eps.npy + uniform_test_eps.npy |
+| LeWM pusht-only parabola emb | artifacts/embeddings/lewm_pusht_only_parabola_emb_noproj.npy |
+| DiT-XL zero-shot parabola emb | artifacts/embeddings/dit_xl_zeroshot_parabola_emb.npy |
+| **LeWM leak-free FT parabola emb** | artifacts/embeddings/lewm_parabola_paperinit_leakfree_parabola_emb_noproj.npy |
+| LeWM leak-free FT ckpt（parabola）| ~/.stable_worldmodel/parabola_paperinit_leakfree/ |
+| FT-train 80% 子集 h5（parabola）| ~/.stable_worldmodel/phyworld_parabola_train80.h5 |
+| 80%/20% traj 切分（parabola）| ~/.stable_worldmodel/parabola_train_eps.npy + parabola_test_eps.npy |
+| Parabola encode + Ridge 脚本 | [encode_parabola_paperinit_leakfree.py](../../phyworld/scripts/encode_parabola_paperinit_leakfree.py) |
+| MLP probe log（parabola + FT）| /tmp/mlp_probe_parabola_ft.log |
+| Ridge probe log（parabola FT）| /tmp/lewm_parabola_ft_ridge.log |
 | 初版（要修正的）章节 | [5-12/FINAL_REPORT.md §6.5](../5-12/FINAL_REPORT.md) · [5-12/COLLISION_REPORT.md §6.5](../5-12/COLLISION_REPORT.md) |
 | 5-19 frozen vs FT 对比（R² 版） | [5-19/DIT_REPORT.md §2 / §3 / §4](../5-19/DIT_REPORT.md) |
