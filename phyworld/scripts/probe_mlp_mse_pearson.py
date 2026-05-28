@@ -328,9 +328,17 @@ def main():
         run_collision(f'{args.emb_dir}/lewm_pusht_only_collision_eval_emb_52k_noproj.npy',
                       'LeWM pusht-only frozen (5.5M)', args)
         run_collision(f'{args.emb_dir}/lewm_16ep_epoch16_collision_eval_emb_52k_noproj.npy',
-                      'LeWM paper-init+collision 16ep FT (5.5M)', args)
+                      'LeWM paper-init+collision 16ep FT (5.5M, PARTITION-LEAKED)', args)
         run_collision(f'{args.emb_dir}/dit_xl_zeroshot_collision_eval_emb_52k.npy',
                       'DiT-XL zero-shot (749.8M)', args)
+        ft_id1k = f'{args.emb_dir}/lewm_collision_paperinit_id1k_collision_eval_emb_52k_noproj.npy'
+        if os.path.exists(ft_id1k):
+            run_collision(ft_id1k,
+                          'LeWM collision_paperinit FT 20ep ID-ONLY 1k (5.5M)', args)
+        dit_id1k = f'{args.emb_dir}/dit_xl_lora_id1k_collision_eval_emb_52k.npy'
+        if os.path.exists(dit_id1k):
+            run_collision(dit_id1k,
+                          'DiT-XL LoRA FT 8ep ID-ONLY 1k (749.8M)', args)
 
     if args.domain in ("uniform_motion", "all"):
         print("\n" + "#" * 75)
@@ -341,7 +349,15 @@ def main():
         run_uniform(f'{args.emb_dir}/dit_xl_zeroshot_uniform_motion_emb_37k.npy',
                     'DiT-XL zero-shot (749.8M, no phyworld)', args)
         run_uniform(f'{args.emb_dir}/lewm_uniform_paperinit_leakfree_uniform_motion_emb_37k_noproj.npy',
-                    'LeWM uniform_paperinit FT 20ep LEAK-FREE (5.5M)', args)
+                    'LeWM uniform_paperinit FT 20ep PARTITION-LEAKED (5.5M)', args)
+        ft_id1k = f'{args.emb_dir}/lewm_uniform_paperinit_id1k_uniform_motion_emb_37k_noproj.npy'
+        if os.path.exists(ft_id1k):
+            run_uniform(ft_id1k,
+                        'LeWM uniform_paperinit FT 20ep ID-ONLY 1k (5.5M)', args)
+        dit_id1k = f'{args.emb_dir}/dit_xl_lora_id1k_uniform_motion_emb_37k.npy'
+        if os.path.exists(dit_id1k):
+            run_uniform(dit_id1k,
+                        'DiT-XL LoRA FT 4ep ID-ONLY 1k (749.8M)', args)
 
     if args.domain in ("parabola", "all"):
         print("\n" + "#" * 75)
@@ -351,11 +367,18 @@ def main():
                      'LeWM pusht-only frozen (5.5M, no phyworld)', args)
         run_parabola(f'{args.emb_dir}/dit_xl_zeroshot_parabola_emb.npy',
                      'DiT-XL zero-shot (749.8M, no phyworld)', args)
-        # parabola FT (leak-free) — only if cached emb exists
         ft_cache = f'{args.emb_dir}/lewm_parabola_paperinit_leakfree_parabola_emb_noproj.npy'
         if os.path.exists(ft_cache):
             run_parabola(ft_cache,
-                         'LeWM parabola_paperinit FT 20ep LEAK-FREE (5.5M)', args)
+                         'LeWM parabola_paperinit FT 20ep PARTITION-LEAKED (5.5M)', args)
+        ft_id1k = f'{args.emb_dir}/lewm_parabola_paperinit_id1k_parabola_emb_noproj.npy'
+        if os.path.exists(ft_id1k):
+            run_parabola(ft_id1k,
+                         'LeWM parabola_paperinit FT 20ep ID-ONLY 1k (5.5M)', args)
+        dit_id1k = f'{args.emb_dir}/dit_xl_lora_id1k_parabola_emb.npy'
+        if os.path.exists(dit_id1k):
+            run_parabola(dit_id1k,
+                         'DiT-XL LoRA FT 8ep ID-ONLY 1k (749.8M)', args)
 
 
 if __name__ == "__main__":
