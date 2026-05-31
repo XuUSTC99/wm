@@ -121,4 +121,4 @@ per-partition latent cosine（aggregate over all horizons，所以混了 drift �
 - **数值发散**（parabola h=28 nMSE 爆炸）：可加 latent norm clipping 或只报 h≤16。
 - 数据 log：`/tmp/rollout_{collision,uniform,parabola}.log`
 
-> **后续（已做）**：针对本报告暴露的"长程 cos 衰减 + 解码弱"两个问题，做了 PIWM-style deep-supervision 实验 → 见 [piwm_deepsup_results.md](piwm_deepsup_results.md)。结论：加 linear probe 监督 position 后，**长程 cos +0.06~0.10、OOD cos +0.12~0.15、position 解码 +0.15~0.32（ID 到 0.96）**；velocity 因未监督无改善。
+> **后续（已做）**：针对本报告暴露的"长程 cos 衰减 + 解码弱"两个问题，做了 PIWM-style deep-supervision 实验 → 见 [piwm_deepsup_results.md](piwm_deepsup_results.md)。结论：加 linear probe 监督 position 后，**长程 cos +0.06~0.10、OOD cos +0.12~0.15、position 解码 +0.15~0.32（ID 到 0.96）、vy 解码也提升**；但**只监督 position 有代价**——vx 在高速 OOD partition 上反被牺牲（−0.18~0.20）。velocity 需 K=4（拼 4 个预测 latent）+ 训练时直接监督 vel 才完整。

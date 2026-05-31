@@ -80,13 +80,15 @@ probe 应用到 **predicted（rollout）emb**，per-partition：
 
 ---
 
-## 5. velocity：K=1 读不出，K=4 救起来（用户提议，已验证）
+## 5. velocity：vy 被救起，vx 在高速 OOD 上反被 probe 牺牲
 
-**K=1（单帧）解码 velocity 几乎失败**——预期之内：probe loss 只监督了 **position**，且单帧本就读不出速度（§6 早证 vel 需多帧差分）。
+**K=1（单帧）解码 velocity 几乎失败**——单帧本就读不出速度（§6 早证 vel 需多帧差分）。
 
-**修法：K=4——把 rollout 预测出的连续 4 个 latent 拼起来再解码**（`[ê_{k-3},…,ê_k]`，跟 §6 在真实 emb 上的 K=4 同款，只是作用在预测 latent 上）。一个澄清：rollout **能**做 K=4，predictor 吐的是整条预测序列，拼 4 帧即可；唯一真约束是必须留在 projector 空间（projector 不可逆）。
+**修法：K=4——把 rollout 预测出的连续 4 个 latent 拼起来再解码**（`[ê_{k-3},…,ê_k]`，跟 §6 在真实 emb 上的 K=4 同款，只是作用在预测 latent 上）。澄清：rollout **能**做 K=4，predictor 吐的是整条预测序列，拼 4 帧即可；唯一真约束是必须留在 projector 空间（projector 不可逆）。
 
-**结果：从 rollout 预测 latent 解码 vy ρ（per-partition）**
+### 5.1 vy（垂直，重力驱动）—— deep-sup + K=4 都帮忙
+
+从 rollout 预测 latent 解码 **vy ρ**（per-partition）：
 
 | partition | baseline K=1 | baseline K=4 | +probe K=1 | +probe K=4 |
 |---|---|---|---|---|
@@ -95,16 +97,32 @@ probe 应用到 **predicted（rollout）emb**，per-partition：
 | v-OOD | **0.413** | **0.873** 🔥 | 0.912 | 0.923 |
 | both-OOD | 0.603 | **0.794** | 0.903 | 0.935 |
 
-vx（水平常量速度，最难）同样普遍抬升但绝对值低（baseline v-OOD 0.413→0.649；+probe ID 0.287→0.585）。
+→ vy 上 K=4 和 +probe **都正向**：baseline v-OOD K=1→K=4 从 0.41→0.87；+probe 进一步抬到 0.92。原因：重力让 vy 跟 pos_y 强耦合，监督 position 顺带帮了 vy。
 
-**两个结论**：
+### 5.2 vx（水平，常量速度）—— +probe 在高速 OOD 上**反而更差**
 
-1. **K=4 对 velocity 是必需的**——baseline v-OOD vy 从 0.41→0.87（+0.46）。验证 "vel 需要多帧差分" 在 rollout 上同样成立。
-2. **deep-supervision 与 K=4 正交互补**：probe 救 position 的单帧可读性，K=4 救 velocity 的多帧可读性。**最佳组合 = +probe & K=4**（vy 全 partition 0.92–0.99）。
+从 rollout 预测 latent 解码 **vx ρ**（per-partition）：
 
-**caveat**：K=4 的 velocity 改善集中在短/中 horizon；长 horizon（h≥16）4 帧都已漂移，K=4 差分跟着噪，vy 仍出 nan/负 ρ。长程仍受 rollout 漂移限制。
+| partition | baseline K=1 | +probe K=1 | baseline K=4 | +probe K=4 |
+|---|---|---|---|---|
+| ID | 0.328 | 0.287 | 0.304 | **0.585** ✅ |
+| r-OOD | 0.407 | 0.462 | 0.612 | 0.662 ✅ |
+| v-OOD | **0.584** | 0.413 ❌ | **0.649** | 0.450 ❌ |
+| both-OOD | 0.527 | 0.603 | **0.696** | 0.515 ❌ |
 
-**仍未做**：把 `loss.probe.target` 扩成 pos+vel（训练时直接监督速度），看能否连长 horizon 的 velocity 也救起来。
+→ **这是 +probe 的一个真实代价，不是噪声**：
+- ID / r-OOD 上 +probe 帮了 vx（K=4: ID 0.30→0.59, r-OOD 0.61→0.66）
+- **但高速 partition（v-OOD / both-OOD）上 +probe 把 vx 拉低 0.18~0.20**（K=4: v-OOD 0.649→0.450, both-OOD 0.696→0.515），K=1 上同样（v-OOD 0.584→0.413）
+
+**机制解读**：probe **只监督 position，且只在 ID 数据（vx∈[1,4]）上**。把 emb 压成 "position 线性可读" 的重组对 vy 有利、对解耦的 vx 不利——尤其外推到没见过的高速 OOD，vx 这种细微速度区分被挤压。**监督 position ≠ 监督 velocity，对 vx 甚至是负迁移**。
+
+### 5.3 结论
+
+1. **K=4 对 velocity 普遍有用**——多帧差分恢复速度信号（baseline v-OOD vy 0.41→0.87）。验证 "vel 需要多帧差分" 在 rollout 上成立。
+2. **deep-supervision 不是免费午餐**：监督 position 帮了 position + vy，**但在高速 OOD 上牺牲了 vx**。"全面改善" 是过头的说法——vx 高速 OOD 是反例。
+3. **caveat**：K=4 的 velocity 改善集中在短/中 horizon；长 horizon（h≥16）4 帧都已漂移，K=4 差分跟着噪，仍出 nan/负 ρ。
+
+**该做的修正**：把 `loss.probe.target` 扩成 pos+vel（训练时**直接监督速度**），预期能消除对 vx 的负迁移——这是 §8 的首要待办。
 
 ---
 
@@ -115,11 +133,11 @@ vx（水平常量速度，最难）同样普遍抬升但绝对值低（baseline 
 | 长程 cos（h=8 / h=16）| ✅ +0.063 / +0.098 |
 | OOD cos（r/v/both-OOD）| ✅ **+0.12 ~ +0.15（最强）** |
 | 解码 position | ✅ **+0.15 ~ +0.32，ID 到 0.96** |
-| 解码 velocity（K=1）| ⚠️ 未监督，无改善 |
-| 解码 velocity（K=4）| ✅ 多帧拼接救起来（baseline v-OOD vy 0.41→0.87）；+probe & K=4 最佳 |
+| 解码 vy | ✅ +probe 帮忙（重力让 vy 耦合 pos_y）；K=4 进一步救（baseline v-OOD 0.41→0.87）|
+| 解码 vx | ⚠️ **混合**：ID/r-OOD 帮，**高速 OOD（v/both）+probe 反降 0.18~0.20** |
 | pred_loss | ✅ 无退化（0.0046）|
 
-> **结论**：PIWM-style deep-supervision linear probe 在 parabola 上**同时改善了长程 rollout 余弦相似度和 position 解码**，正好命中 rollout_results 提出的两个目标。velocity 单帧（K=1）读不出，但用 **K=4 拼 4 个预测 latent** 即可救起（deep-supervision 与 K=4 正交互补，最佳组合 +probe & K=4）。这是 PIWM 原则 1（latent 对齐物理量）的轻量验证；如需进一步压长程漂移，可上原则 2（physics-structured dynamics 替换 ARPredictor）。
+> **结论**：PIWM-style deep-supervision linear probe 在 parabola 上**改善了长程 rollout 余弦相似度、position 解码、以及 vy 解码**——命中 rollout_results 的主要目标。**但不是免费午餐**：probe 只监督 position，对解耦的 **vx 在高速 OOD partition 上是负迁移**（−0.18~0.20）。K=4（拼 4 个预测 latent）对 velocity 普遍有用，但救不了 vx 的这个退化。这验证了 PIWM 原则 1（latent 对齐物理量）有效，同时暴露其局限——**只对齐 position 会偏科**；正确做法是训练时同时监督 pos+vel（§8 首要待办）。如需进一步压长程漂移，可上原则 2（physics-structured dynamics 替换 ARPredictor）。
 
 ---
 
