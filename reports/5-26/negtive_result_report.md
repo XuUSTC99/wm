@@ -546,7 +546,8 @@ vy 全部 ceiling（0.98+），FT 三个版本无差别。
 
 1. **DiT LoRA ID-only FT × 3** ✅ 已完成，见 §6.4.8
 2. **ARPredictor rollout 测试** ✅ 已完成，见 [rollout_results.md](rollout_results.md)。结论：ARPredictor 1-step 预测很准（cos 0.98-0.99 含 OOD），但多步 AR rollout 复合误差漂移（collision 最快、uniform 最慢），OOD 上漂移更甚。**能编码当前状态 ≠ 能长程预测轨迹**。proposal 原文 [arpredictor_rollout_proposal.md](arpredictor_rollout_proposal.md)
-3. **重写 [5-12/COLLISION_REPORT §6.5](../5-12/COLLISION_REPORT.md) OOD 段落**：用新 MSE + ρ + MLP 数据替换 R²-only 叙事
+3. **PIWM deep-supervision（实验 A）** ✅ 已完成，见 [piwm_deepsup_results.md](piwm_deepsup_results.md)。LeWM FT 加 linear probe 监督 position（toggleable `loss.probe.enabled`）→ parabola 上 **长程 cos +0.06~0.10、OOD cos +0.12~0.15、position 解码 +0.15~0.32（ID 0.63→0.96）**，pred_loss 无退化；velocity 未监督故无改善。验证 PIWM 原则 1（latent 对齐物理量）有效。
+4. **重写 [5-12/COLLISION_REPORT §6.5](../5-12/COLLISION_REPORT.md) OOD 段落**：用新 MSE + ρ + MLP 数据替换 R²-only 叙事
 4. **画 scatter plot**：x=true, y=pred, partition 着色 —— 论文里直观展示"所有 partition 都贴 y=x 线"
 5. **AutoTuneMLP sweep**：LeWM 原版 probe 扫多种 hidden_dim/lr/dropout，挑最好的；我们目前用单一 hidden=512、Adam lr=1e-3，要严格对齐 paper Table 1 数字应该跑 sweep
 

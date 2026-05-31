@@ -120,3 +120,5 @@ per-partition latent cosine（aggregate over all horizons，所以混了 drift �
 - **没跑真·planning**（给 start+goal 搜 action）：phyworld 是被动数据集，`swm.World` 里没有交互式 simulator，要跑得先搭 phyworld env，工程量大。
 - **数值发散**（parabola h=28 nMSE 爆炸）：可加 latent norm clipping 或只报 h≤16。
 - 数据 log：`/tmp/rollout_{collision,uniform,parabola}.log`
+
+> **后续（已做）**：针对本报告暴露的"长程 cos 衰减 + 解码弱"两个问题，做了 PIWM-style deep-supervision 实验 → 见 [piwm_deepsup_results.md](piwm_deepsup_results.md)。结论：加 linear probe 监督 position 后，**长程 cos +0.06~0.10、OOD cos +0.12~0.15、position 解码 +0.15~0.32（ID 到 0.96）**；velocity 因未监督无改善。

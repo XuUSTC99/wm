@@ -39,7 +39,18 @@ def lejepa_forward(self, batch, stage, cfg):
     # LeWM loss
     output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
     output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
-    output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]  
+    output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]
+
+    # Deep-supervision linear probe loss (PIWM-style, arXiv:2504.03861).
+    # Aligns projector-space emb with physical state (proprio = position) so emb
+    # carries linearly-decodable physics -> rollout-predicted embs decode better
+    # + reduced distribution drift. Toggle via loss.probe.enabled for ablation.
+    probe_cfg = cfg.loss.get("probe", None)
+    if probe_cfg is not None and probe_cfg.get("enabled", False):
+        target = torch.nan_to_num(batch[probe_cfg.get("target", "proprio")], 0.0)  # (B,T,P) normalized
+        probe_pred = self.model.probe_head(emb)  # (B,T,P)
+        output["probe_loss"] = (probe_pred - target).pow(2).mean()
+        output["loss"] = output["loss"] + probe_cfg.get("weight", 1.0) * output["probe_loss"]
 
     losses_dict = {f"{stage}/{k}": v.detach() for k, v in output.items() if "loss" in k}
     self.log_dict(losses_dict, on_step=True, sync_dist=True)
@@ -122,6 +133,12 @@ def run(cfg):
         projector=projector,
         pred_proj=predictor_proj,
     )
+
+    # Deep-supervision linear probe head (PIWM-style). Built unconditionally for
+    # ckpt consistency; only contributes to loss when loss.probe.enabled=true.
+    # Linear (not MLP) to match the deep-supervision paper (arXiv:2504.03861).
+    probe_target_dim = cfg.wm.get(f"{cfg.loss.get('probe', {}).get('target', 'proprio')}_dim", embed_dim)
+    world_model.probe_head = torch.nn.Linear(embed_dim, probe_target_dim)
 
     init_ckpt = cfg.get("init_from_ckpt")
     if init_ckpt:

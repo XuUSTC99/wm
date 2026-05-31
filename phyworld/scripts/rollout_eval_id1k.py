@@ -65,8 +65,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--domain", choices=list(DOMAINS), required=True)
     ap.add_argument("--max-trajs", type=int, default=400, help="cap eval trajs for speed")
+    ap.add_argument("--ckpt", default=None, help="override ckpt (e.g. +probe model); norm/data still per-domain")
+    ap.add_argument("--tag", default="", help="label for this run in the header")
     args = ap.parse_args()
     cfg = DOMAINS[args.domain]
+    ckpt_path = args.ckpt or cfg["ckpt"]
     dev = 'cuda'
     t0 = time.time()
 
@@ -76,9 +79,10 @@ def main():
     a_mean = np.nan_to_num(tr_act).mean(0)
     a_std = np.nan_to_num(tr_act).std(0) + 1e-8
     print(f"[norm] action mean={a_mean}, std={a_std}  (from {cfg['train_h5'].split('/')[-1]})", flush=True)
+    print(f"[ckpt] {ckpt_path}  {('tag='+args.tag) if args.tag else ''}", flush=True)
 
     # ---- load model ----
-    model = torch.load(cfg["ckpt"], map_location='cpu', weights_only=False).to(dev).eval()
+    model = torch.load(ckpt_path, map_location='cpu', weights_only=False).to(dev).eval()
     for p in model.parameters(): p.requires_grad_(False)
 
     # ---- load eval data ----
@@ -229,6 +233,60 @@ def main():
         m = te & (horizon == h)
         if m.sum() < 20: continue
         pv = rv.predict(z(pred_E[m]))
+        rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+        print(f"  h={h:3d}  n={m.sum():5d}  " + "  ".join(f"vel{d}ρ={r:+.3f}" for d, r in enumerate(rhos)))
+
+    # ==================== K=4 decode (stack 4 consecutive rolled-out latents) ====================
+    # Rows are appended per-episode in frame order, so within an episode consecutive
+    # rows = consecutive frames. K=4 feature = concat of the row's emb + its 3 predecessors
+    # in the SAME episode. Real K=4 trains the probe; predicted K=4 is decoded.
+    KW = 4
+    ep_arr = meta[:, 0]
+    order = np.lexsort((horizon, ep_arr))  # sort by (ep, horizon)
+    def build_k4(E):
+        F = np.zeros((len(E), KW * E.shape[1]), dtype=np.float32)
+        valid = np.zeros(len(E), dtype=bool)
+        i = 0
+        while i < len(order):
+            j = i
+            while j < len(order) and ep_arr[order[j]] == ep_arr[order[i]]:
+                j += 1
+            seq = order[i:j]  # rows of one episode, ordered by horizon
+            for p in range(KW - 1, len(seq)):
+                idx = seq[p]
+                ctx = seq[p - KW + 1:p + 1]
+                F[idx] = np.concatenate([E[c] for c in ctx])
+                valid[idx] = True
+            i = j
+        return F, valid
+
+    realK, validK = build_k4(real_E)
+    predK, _ = build_k4(pred_E)
+    trK = in_train & validK
+    muK = realK[trK].mean(0); sdK = realK[trK].std(0) + 1e-6
+    def zK(x): return (x - muK) / sdK
+    rpK = Ridge(alpha=1.0).fit(zK(realK[trK]), pos_all[trK])
+    rvK = Ridge(alpha=1.0).fit(zK(realK[trK]), vel_all[trK])
+    teK = te & validK
+
+    print(f"\n--- [K=4] decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---")
+    print(f"  [K=4] probe applied to PREDICTED embs (stack 4 consecutive predicted latents):")
+    for p in range(4):
+        m = teK & (part_arr == p)
+        if m.sum() < 50: continue
+        pp = rpK.predict(zK(predK[m])); pv = rvK.predict(zK(predK[m]))
+        line = f"  PRED-K4 {NAMES[p]:10s}"
+        for d in range(pos_all.shape[1]):
+            line += f"  pos{d}ρ={pearsonr(pos_all[m][:, d], pp[:, d])[0]:+.3f}"
+        for d in range(vel_all.shape[1]):
+            line += f"  vel{d}ρ={pearsonr(vel_all[m][:, d], pv[:, d])[0]:+.3f}"
+        print(line)
+
+    print(f"\n--- [K=4] decoded vel ρ from PRED latents vs horizon (test, aggregate) ---")
+    for h in [4, 8, 16, 28]:
+        m = teK & (horizon == h)
+        if m.sum() < 20: continue
+        pv = rvK.predict(zK(predK[m]))
         rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
         print(f"  h={h:3d}  n={m.sum():5d}  " + "  ".join(f"vel{d}ρ={r:+.3f}" for d, r in enumerate(rhos)))
 
