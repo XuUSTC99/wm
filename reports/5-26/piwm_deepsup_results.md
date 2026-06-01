@@ -1,6 +1,7 @@
 # 实验 A：PIWM-style Deep-Supervision Linear Probe
 
 **日期**：2026-05-31
+**测试域**：⚠️ **仅 parabola（抛物线，自由落体 + 重力）一个域**。collision / uniform_motion 尚未做（§8 待办）。所有数字都只针对 parabola。
 **动机**：[rollout_results.md](rollout_results.md) 暴露两个问题——(1) AR rollout 的 latent cosine 随 horizon 衰减（长程漂移），(2) §4 从 rollout latent 解码 pos/vel 偏弱。本实验借鉴 PIWM 思路（arXiv:2412.12870 + deep-supervision arXiv:2504.03861），在 LeWM FT 时加一项 **linear probe 监督 loss**，看能否同时改善这两点。
 **脚本**：训练 [le-wm/train.py](../../le-wm/train.py)（加 `loss.probe`）；评估 [rollout_eval_id1k.py](../../phyworld/scripts/rollout_eval_id1k.py)
 
