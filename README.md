@@ -1,6 +1,6 @@
 # wm — World Model experiments
 
-> **Path note (2026-05)**: this tree was renamed `agent_memory/` → `am/`. All paths are now `/home/qlib/am/wm/...`. A symlink `~/lewm_run -> /home/qlib/am/wm/le-wm` exists for launching training.
+> **Path note (2026-05)**: this tree was renamed `agent_memory/` → `am/`. All paths are now `~/am/wm/...`. A symlink `~/lewm_run -> ~/am/wm/le-wm` exists for launching training.
 
 Three related projects sit side by side here:
 
@@ -11,6 +11,11 @@ Three related projects sit side by side here:
 | [`PIWM/`](./PIWM/) | **Physically Interpretable World Models**: latent↔physics alignment + physics-structured dynamics. Design source for the deep-supervision experiments. | arXiv:2412.12870 / 2503.02143 |
 
 The reason they're together: phyworld's data tests whether a video / world model has actually learned physics. We feed phyworld trajectories into `le-wm` and probe how the JEPA encoder + predictor behave on this benchmark; PIWM supplies ideas for *improving* that behavior.
+
+**Method references for the deep-supervision experiments:**
+- *Physically Interpretable World Models via Weakly Supervised Representation Learning* — arXiv:2412.12870 (latent↔physics alignment; principle 1)
+- *Four Principles for Physically Interpretable World Models* — arXiv:2503.02143 (the four design principles)
+- *Improving World Models using Deep Supervision with Linear Probes* — arXiv:2504.03861 (the linear-probe-in-loss recipe we actually implement: adds a linear probe term to the next-frame-prediction loss → better decodability + reduced rollout drift)
 
 For project-internal docs see [`le-wm/README.md`](./le-wm/README.md) and [`phyworld/README.md`](./phyworld/README.md). This README covers the **bridge between them** + an index of the experiment reports.
 
@@ -36,14 +41,14 @@ All under [`reports/`](./reports/). Read [`reports/5-26/negtive_result_report.md
 A single `uv` venv lives in [`le-wm/.venv/`](./le-wm/) (Python 3.10, `torch==2.9.1+cu128`, `stable-worldmodel[train,env]`, plus `imageio`, `Pillow`, `h5py` already pulled in transitively). All commands below use it.
 
 ```bash
-cd /home/qlib/am/wm/le-wm
+cd ~/am/wm/le-wm
 source .venv/bin/activate
 ```
 
 If the venv ever needs to be rebuilt:
 
 ```bash
-cd /home/qlib/am/wm/le-wm
+cd ~/am/wm/le-wm
 uv venv --python=3.10
 source .venv/bin/activate
 uv pip install swig                       # box2d-py needs the swig binary at build time
@@ -94,7 +99,7 @@ The script:
 Run from the `phyworld/` dir (so default `--src` resolves to `data/uniform_motion_eval.hdf5`):
 
 ```bash
-cd /home/qlib/am/wm/phyworld
+cd ~/am/wm/phyworld
 python scripts/convert_to_lewm.py
 # -> writes ~/.stable_worldmodel/phyworld_uniform_motion.h5  (~100 MB, 2-3 min)
 ```
@@ -129,7 +134,7 @@ Differences vs `pusht.yaml`: `frameskip=1` (was 5) because trajectories are shor
 ### Smoke test — verifies the whole pipeline in ~10 s
 
 ```bash
-cd /home/qlib/am/wm/le-wm
+cd ~/am/wm/le-wm
 source .venv/bin/activate
 
 CUDA_VISIBLE_DEVICES=2 WANDB_MODE=disabled python train.py \
@@ -167,7 +172,7 @@ To enable W&B, edit [`le-wm/config/train/lewm.yaml`](./le-wm/config/train/lewm.y
 
 ## Deep-supervision probe (PIWM-style) — added in `lewm.yaml`
 
-LeWM FT can add a linear probe loss that aligns the projector-space emb with physical state (PIWM principle 1). Off by default → baseline unchanged; toggle for ablation. Config block in [`le-wm/config/train/lewm.yaml`](./le-wm/config/train/lewm.yaml):
+Recipe from *Improving World Models using Deep Supervision with Linear Probes* (arXiv:2504.03861), realizing PIWM principle 1 (arXiv:2412.12870). LeWM FT adds a linear probe loss that aligns the projector-space emb with physical state. Off by default → baseline unchanged; toggle for ablation. Config block in [`le-wm/config/train/lewm.yaml`](./le-wm/config/train/lewm.yaml):
 
 ```yaml
 loss:
@@ -189,18 +194,6 @@ cd ~/lewm_run && CUDA_VISIBLE_DEVICES=0 .venv/bin/python -u train.py \
 ```
 
 Eval / AR-rollout: [`phyworld/scripts/rollout_eval_id1k.py`](./phyworld/scripts/rollout_eval_id1k.py) (`--ckpt`/`--tag` to swap arms; reports latent cos vs horizon/partition + K=1/K=4 decoded pos/vel ρ).
-
----
-
-## GPU selection
-
-The host's 4× A6000s are usually shared. Pick the freest card:
-
-```bash
-nvidia-smi --query-gpu=index,memory.free --format=csv
-```
-
-A le-wm forward+backward at default batch size (128) needs ~15 GB. Set `CUDA_VISIBLE_DEVICES=<idx>` accordingly.
 
 ---
 
