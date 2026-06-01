@@ -42,13 +42,27 @@ def lejepa_forward(self, batch, stage, cfg):
     output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]
 
     # Deep-supervision linear probe loss (PIWM-style, arXiv:2504.03861).
-    # Aligns projector-space emb with physical state (proprio = position) so emb
-    # carries linearly-decodable physics -> rollout-predicted embs decode better
-    # + reduced distribution drift. Toggle via loss.probe.enabled for ablation.
+    # Aligns projector-space emb with physical state so emb carries linearly-
+    # decodable physics -> rollout-predicted embs decode better + reduced drift.
+    # target can be a single column ("proprio") or a list (["proprio","action"])
+    # to supervise position + velocity jointly. Toggle via loss.probe.enabled.
     probe_cfg = cfg.loss.get("probe", None)
     if probe_cfg is not None and probe_cfg.get("enabled", False):
-        target = torch.nan_to_num(batch[probe_cfg.get("target", "proprio")], 0.0)  # (B,T,P) normalized
-        probe_pred = self.model.probe_head(emb)  # (B,T,P)
+        tgt_cols = probe_cfg.get("target", "proprio")
+        tgt_cols = [tgt_cols] if isinstance(tgt_cols, str) else list(tgt_cols)
+        kw = int(probe_cfg.get("frames", 1))
+        if kw <= 1:
+            # single-frame: probe each frame's emb -> its own physical state
+            target = torch.cat([torch.nan_to_num(batch[c], 0.0) for c in tgt_cols], dim=-1)  # (B,T,sumP)
+            probe_pred = self.model.probe_head(emb)  # (B,T,sumP)
+        else:
+            # multi-frame: stack first kw frame embs (window) -> predict last frame's state.
+            # Lets the probe do cross-frame differencing -> velocity becomes decodable,
+            # and relaxes the per-frame position rigidity that hurt vx on OOD.
+            kw = min(kw, emb.size(1))
+            win = emb[:, :kw].flatten(1)  # (B, kw*D)
+            target = torch.cat([torch.nan_to_num(batch[c][:, kw - 1], 0.0) for c in tgt_cols], dim=-1)  # (B,sumP)
+            probe_pred = self.model.probe_head(win)  # (B,sumP)
         output["probe_loss"] = (probe_pred - target).pow(2).mean()
         output["loss"] = output["loss"] + probe_cfg.get("weight", 1.0) * output["probe_loss"]
 
@@ -137,8 +151,13 @@ def run(cfg):
     # Deep-supervision linear probe head (PIWM-style). Built unconditionally for
     # ckpt consistency; only contributes to loss when loss.probe.enabled=true.
     # Linear (not MLP) to match the deep-supervision paper (arXiv:2504.03861).
-    probe_target_dim = cfg.wm.get(f"{cfg.loss.get('probe', {}).get('target', 'proprio')}_dim", embed_dim)
-    world_model.probe_head = torch.nn.Linear(embed_dim, probe_target_dim)
+    # target may be a single column or a list -> output dim = sum of column dims.
+    _probe_cfg = cfg.loss.get("probe", {})
+    _probe_tgt = _probe_cfg.get("target", "proprio")
+    _probe_tgt = [_probe_tgt] if isinstance(_probe_tgt, str) else list(_probe_tgt)
+    probe_target_dim = sum(cfg.wm.get(f"{c}_dim", embed_dim) for c in _probe_tgt)
+    _probe_frames = max(1, int(_probe_cfg.get("frames", 1)))  # multi-frame window for velocity decodability
+    world_model.probe_head = torch.nn.Linear(embed_dim * _probe_frames, probe_target_dim)
 
     init_ckpt = cfg.get("init_from_ckpt")
     if init_ckpt:

@@ -11,7 +11,7 @@ Predictor operates in projector(encoder(x)) space — probe is trained there too
 """
 import argparse, sys, time, h5py, numpy as np, torch
 from pathlib import Path
-sys.path.insert(0, str(Path('/home/qlib/agent_memory/wm/le-wm')))
+sys.path.insert(0, str(Path('/home/qlib/am/wm/le-wm')))
 from sklearn.linear_model import Ridge
 from scipy.stats import pearsonr
 
@@ -20,21 +20,21 @@ DOMAINS = {
         "ckpt": "/home/qlib/.stable_worldmodel/collision_paperinit_id1k/lewm_collision_paperinit_id1k_epoch_20_object.ckpt",
         "train_h5": "/home/qlib/.stable_worldmodel/phyworld_collision_id1k.h5",
         "eval_h5": "/home/qlib/.stable_worldmodel/phyworld_collision_eval.h5",
-        "src_hdf5": "/home/qlib/agent_memory/wm/phyworld/data/collision_eval.hdf5",
+        "src_hdf5": "/home/qlib/am/wm/phyworld/data/collision_eval.hdf5",
         "ncol": 4,
     },
     "uniform_motion": {
         "ckpt": "/home/qlib/.stable_worldmodel/uniform_paperinit_id1k/lewm_uniform_paperinit_id1k_epoch_20_object.ckpt",
         "train_h5": "/home/qlib/.stable_worldmodel/phyworld_uniform_motion_id1k.h5",
         "eval_h5": "/home/qlib/.stable_worldmodel/phyworld_uniform_motion.h5",
-        "src_hdf5": "/home/qlib/agent_memory/wm/phyworld/data/uniform_motion_eval.hdf5",
+        "src_hdf5": "/home/qlib/am/wm/phyworld/data/uniform_motion_eval.hdf5",
         "ncol": 2,
     },
     "parabola": {
         "ckpt": "/home/qlib/.stable_worldmodel/parabola_paperinit_id1k/lewm_parabola_paperinit_id1k_epoch_20_object.ckpt",
         "train_h5": "/home/qlib/.stable_worldmodel/phyworld_parabola_id1k.h5",
         "eval_h5": "/home/qlib/.stable_worldmodel/phyworld_parabola.h5",
-        "src_hdf5": "/home/qlib/agent_memory/wm/phyworld/data/parabola_eval.hdf5",
+        "src_hdf5": "/home/qlib/am/wm/phyworld/data/parabola_eval.hdf5",
         "ncol": 2,
     },
 }

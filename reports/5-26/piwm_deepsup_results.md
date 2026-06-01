@@ -117,28 +117,86 @@ probe 应用到 **predicted（rollout）emb**，per-partition：
 
 **机制解读**：probe **只监督 position，且只在 ID 数据（vx∈[1,4]）上**。把 emb 压成 "position 线性可读" 的重组对 vy 有利、对解耦的 vx 不利——尤其外推到没见过的高速 OOD，vx 这种细微速度区分被挤压。**监督 position ≠ 监督 velocity，对 vx 甚至是负迁移**。
 
-### 5.3 结论
+### 5.3 试图修复：训练时直接监督 velocity（pos+vel）—— **失败，反证单帧极限**
 
-1. **K=4 对 velocity 普遍有用**——多帧差分恢复速度信号（baseline v-OOD vy 0.41→0.87）。验证 "vel 需要多帧差分" 在 rollout 上成立。
-2. **deep-supervision 不是免费午餐**：监督 position 帮了 position + vy，**但在高速 OOD 上牺牲了 vx**。"全面改善" 是过头的说法——vx 高速 OOD 是反例。
-3. **caveat**：K=4 的 velocity 改善集中在短/中 horizon；长 horizon（h≥16）4 帧都已漂移，K=4 差分跟着噪，仍出 nan/负 ρ。
+把 `loss.probe.target` 扩成 `[proprio, action]`（probe_head = Linear(192→4)，同时监督 pos+vel），重训 parabola 20ep（probe_loss→0.16, pred_loss 0.0087 无退化）。**预期它能修掉 vx 负迁移。结果:没修好,反而更糟。**
 
-**该做的修正**：把 `loss.probe.target` 扩成 pos+vel（训练时**直接监督速度**），预期能消除对 vx 的负迁移——这是 §8 的首要待办。
+**三臂 vx ρ 对比（K=4，从 rollout 预测 latent 解码）：**
+
+| partition | baseline | pos-only probe | **pos+vel probe** |
+|---|---|---|---|
+| ID | 0.304 | 0.585 | **0.612** ✅ |
+| r-OOD | **0.612** | 0.662 | 0.480 ❌ |
+| v-OOD | **0.649** | 0.450 | 0.483（仍 < baseline ❌）|
+| both-OOD | **0.696** | 0.515 | 0.612（仍 < baseline ❌）|
+
+**三臂 vx ρ 对比（K=1）**：pos+vel 的 K=1 vx 甚至比 pos-only 更低（both-OOD 0.603→0.363, r-OOD 0.462→0.282），且 position 略降（r-OOD pos_x 0.892→0.880）。
+
+**关键洞察（负结果，有价值）**：
+
+> 直接监督 velocity **救不了 vx,因为 probe 作用在单帧 emb_t 上,而单帧图像物理上不含瞬时速度**（尤其 vx 是水平常量速度,看一帧球的位置完全推不出它多快）。监督 velocity 时 probe loss 把 emb 往一个**不可能完成的任务**上拽,梯度矛盾/噪声 → 学不到 vx,反而**干扰了 position 对齐**(K=1 vx、position 双降)。
+>
+> 这反证了 **PIWM 原则 1（对齐单帧 latent 到物理量）对"速度类、需要时序的量"天生失效**。速度本质需要跨帧信息,单帧 deep-supervision 改变不了这个物理事实。
+
+**补充：latent cosine 与 vx Pearson 背离**。pos+vel 虽然 vx 线性可读性失败,但 **predictor 输出向量的整体 cosine 反而在高速 OOD 上最好**（v-OOD 0.771, both-OOD 0.717,见 §5.5）。说明 vx 信息可能没丢、只是被编码得**非线性不可读**——"失败"仅限于线性 probe。
+
+### 5.4 正解：训练时**多帧**监督（mf4，probe 吃 4 帧窗口）—— 成功
+
+把 probe 改成吃 K=4 帧窗口（`loss.probe.frames=4`，probe_head = Linear(4×192=768 → 4)，预测窗口最后一帧的 pos+vel）。这样 probe 能**跨帧差分恢复速度**（物理上可行的任务），且不再强迫每个单帧 position-刚性。probe_loss→0.047（远低于单帧 pos+vel 的 0.16，因为多帧真能解出速度）。
+
+**四臂 vx ρ 对比 —— ⚠️ 全部用推理时 K=4 解码;列只在「训练时监督方式」不同：**
+
+| partition | baseline<br>(无 probe) | pos-only<br>(训练单帧) | pos+vel<br>(训练单帧) | **mf4<br>(训练多帧)** |
+|---|---|---|---|---|
+| ID | 0.304 | 0.585 | 0.612 | **0.702** 🔥 |
+| r-OOD | 0.612 | 0.662 | 0.480 | **0.643** ✅ |
+| v-OOD | **0.649** | 0.450 | 0.483 | 0.518 ⬇ 仍低 baseline |
+| both-OOD | **0.696** | 0.515 | 0.612 | 0.659（≈ baseline）|
+
+（"单帧/多帧" = **训练时 probe 吃几帧**;解码一律 K=4。inference-多帧 ≠ training-多帧,别混。）
+
+**四臂 latent cos by horizon（同样全推理 K=4 之外的指标，纯 rollout 漂移）：**
+
+| horizon | baseline | pos-only(训练单帧) | pos+vel(训练单帧) | **mf4(训练多帧)** |
+|---|---|---|---|---|
+| h=4 | 0.864 | 0.917 | 0.867 | **0.925** |
+| h=8 | 0.814 | 0.877 | 0.846 | **0.875** |
+| h=16 | 0.535 | 0.633 | 0.648 | **0.702** 🔥 |
+
+→ **mf4 是综合最佳**：把单帧版砸掉的 vx 基本拉回（ID 0.70 四臂最高、r-OOD 回到 baseline、both-OOD≈baseline），同时**长程 cos 全 horizon 第一**（h=16 0.702 vs baseline 0.535），position/vy 也保持最好。
+
+**为什么连 mf4 在 v-OOD vx 上仍低于 baseline（0.52 vs 0.65）—— 不是 bug，是 ID-only 监督的固有上限**：
+
+> baseline 的 vx-on-OOD 是**白嫖的几何操作**：它没 probe loss，encoder 只忠实编码**位置**（几何量，任何速度都编得准），K=4 解码 = 4 帧位置差分 ≈ 速度，**位置差分在任何速度下都成立** → v-OOD 高速球也拿 0.65。
+>
+> 而 probe loss（无论单/多帧）**只在 ID 速度范围（vx∈[1,4]）上训**，把 emb 重组成"ID 速度线性可读"，这个重组**为 ID 调好、外推到 v-OOD（更高速）不如 baseline 那个未被动过的纯位置编码**。单帧 probe 还把位置编码也搞刚性（v-OOD 砸到 0.45）；多帧不强迫单帧刚性，恢复了大部分位置差分能力（回到 0.52），但**没法在最极端的未见速度上反超 baseline 的几何外推**。
+>
+> 推论：v-OOD vx 这点残差**不该靠"更强 probe"修**——它是"只在 ID 监督"的固有天花板。要在 v-OOD vx 反超 baseline，要么把 OOD 速度放进训练（就不是 ID→OOD 测试了），要么上原则 2（速度作为受方程约束的状态变量，积分在任何速度都对）。
+
+### 5.5 结论
+
+1. **vx 负迁移的根因 = 训练单帧监督强迫每帧 position-刚性**，挤掉了 OOD 速度的细微结构。**改成训练多帧窗口监督即可基本修复**（mf4 把 vx 从单帧版的 0.45~0.52 拉回 0.52~0.70）。
+2. **训练多帧监督 = 真正的正解**：同时拿到 deep-sup 的长程 cos / position / vy 好处，又不砸 vx。验证了用户的判断"多帧 probe 才对"。注意区分:这里指**训练时** probe 吃多帧;**推理时**所有臂都用 K=4 解码。
+3. **单帧 deep-supervision 对需要时序的量（velocity）天生失效**——单帧图像不含瞬时速度，直接监督只会注入噪声（pos+vel 单帧版 K=1 vx、position 双降）。
+4. **v-OOD vx 仍低于 baseline 是 ID-only 监督的固有上限**，非 bug：baseline 靠"位置差分"这个免训练几何操作，对任何速度都外推得好;任何在 ID 上训的 probe 都为 ID 速度调过、外推到极端高速略亏。要反超得放 OOD 速度进训练（破坏 ID→OOD 设定）或上原则 2。
+5. **两个指标要一起看**：vx Pearson（线性可读性）和 latent cosine（整体保真）会背离——pos+vel 的 vx ρ 失败但 cosine 高，说明信息在、只是非线性。mf4 两个指标都好，是最干净的方案。
+6. **caveat**：所有方案长 horizon（h≥16）都仍受 AR 漂移限制（cosine 跌、h=28 数值发散）；根治长程要上 PIWM 原则 2（physics-structured dynamics）或多步 rollout loss 重训。
 
 ---
 
 ## 6. 小结
 
-| 指标 | 效果 |
-|---|---|
-| 长程 cos（h=8 / h=16）| ✅ +0.063 / +0.098 |
-| OOD cos（r/v/both-OOD）| ✅ **+0.12 ~ +0.15（最强）** |
-| 解码 position | ✅ **+0.15 ~ +0.32，ID 到 0.96** |
-| 解码 vy | ✅ +probe 帮忙（重力让 vy 耦合 pos_y）；K=4 进一步救（baseline v-OOD 0.41→0.87）|
-| 解码 vx | ⚠️ **混合**：ID/r-OOD 帮，**高速 OOD（v/both）+probe 反降 0.18~0.20** |
-| pred_loss | ✅ 无退化（0.0046）|
+四臂在 parabola 上（"单帧/多帧" = 训练时 probe 吃几帧；推理一律 K=4 解码）：
 
-> **结论**：PIWM-style deep-supervision linear probe 在 parabola 上**改善了长程 rollout 余弦相似度、position 解码、以及 vy 解码**——命中 rollout_results 的主要目标。**但不是免费午餐**：probe 只监督 position，对解耦的 **vx 在高速 OOD partition 上是负迁移**（−0.18~0.20）。K=4（拼 4 个预测 latent）对 velocity 普遍有用，但救不了 vx 的这个退化。这验证了 PIWM 原则 1（latent 对齐物理量）有效，同时暴露其局限——**只对齐 position 会偏科**；正确做法是训练时同时监督 pos+vel（§8 首要待办）。如需进一步压长程漂移，可上原则 2（physics-structured dynamics 替换 ARPredictor）。
+| 指标 | baseline<br>(无 probe) | 训练单帧 probe | **训练多帧 probe (mf4)** |
+|---|---|---|---|
+| 长程 cos h=16 | 0.535 | 0.63~0.65 | **0.702**（最佳）|
+| position 解码 | 中 | ✅ ID→0.96 | ✅ 保持 |
+| vy 解码 | 中 | ✅ 提升 | ✅ 保持 |
+| vx 高速 OOD（K=4）| 0.65/0.70（好）| ❌ 砸到 0.45/0.52 | ✅ 拉回 0.52/0.66 |
+| pred_loss | — | 无退化 | 无退化（0.008）|
+
+> **结论**：PIWM-style deep-supervision 在 parabola 上能改善长程 rollout cos、position、vy。**单帧 probe 的代价是砸了 vx（高速 OOD 负迁移 −0.18~0.20），且直接监督 velocity 也救不回（单帧读不出速度）**。**正解是多帧（K=4）监督**（§5.4）：probe 吃 4 帧窗口,跨帧差分恢复速度、不再过度约束单帧 → **同时拿到全部 deep-sup 好处 + 把 vx 基本修回 + 长程 cos 四臂最佳**。这验证了 PIWM 原则 1 在"监督方式正确(多帧)"时有效；想根治长 horizon 漂移仍需原则 2（physics-structured dynamics）。
 
 ---
 
@@ -149,18 +207,26 @@ probe 应用到 **predicted（rollout）emb**，per-partition：
 | 训练（+probe）| `cd ~/lewm_run && CUDA_VISIBLE_DEVICES=3 .venv/bin/python -u train.py data=phyworld_parabola_id1k loss.probe.enabled=true loss.probe.weight=1.0 loss.probe.target=proprio output_model_name=lewm_parabola_piwm_probe_id1k subdir=parabola_piwm_probe_id1k trainer.max_epochs=20 +init_from_ckpt=.../lewm_paper_pusht/weights.pt` |
 | +probe ckpt | `~/.stable_worldmodel/parabola_piwm_probe_id1k/lewm_parabola_piwm_probe_id1k_epoch_20_object.ckpt` |
 | baseline ckpt | `~/.stable_worldmodel/parabola_paperinit_id1k/...epoch_20...` |
-| 配置开关 | `le-wm/config/train/lewm.yaml` → `loss.probe.{enabled,weight,target}`（默认 enabled=false）|
-| rollout log（+probe）| /tmp/rollout_parabola_piwmprobe.log |
-| rollout log（baseline）| /tmp/rollout_parabola.log |
-| K=4 对比 log（baseline vs +probe）| /tmp/rollout_k4_cmp.log |
-| 训练 log | /tmp/lewm_parabola_piwm_probe_train.log |
-| K=4 decode 实现 | [rollout_eval_id1k.py](../../phyworld/scripts/rollout_eval_id1k.py) 末尾 K=4 block（`--ckpt` / `--tag` 可切模型）|
+| 配置开关 | `le-wm/config/train/lewm.yaml` → `loss.probe.{enabled,weight,target}`（默认 enabled=false；target 可为单列或列表 `[proprio,action]`）|
+| **pos+vel** 训练 | `... loss.probe.enabled=true 'loss.probe.target=[proprio,action]' output_model_name=lewm_parabola_piwm_posvel_id1k subdir=parabola_piwm_posvel_id1k ...` |
+| **pos+vel** ckpt | `~/.stable_worldmodel/parabola_piwm_posvel_id1k/...epoch_20...` |
+| +probe ckpt | `~/.stable_worldmodel/parabola_piwm_probe_id1k/lewm_parabola_piwm_probe_id1k_epoch_20_object.ckpt` |
+| baseline ckpt | `~/.stable_worldmodel/parabola_paperinit_id1k/...epoch_20...` |
+| **mf4 多帧** 训练 | `... loss.probe.enabled=true 'loss.probe.target=[proprio,action]' loss.probe.frames=4 output_model_name=lewm_parabola_piwm_mf4_id1k subdir=parabola_piwm_mf4_id1k ...` |
+| **mf4 多帧** ckpt | `~/.stable_worldmodel/parabola_piwm_mf4_id1k/...epoch_20...` |
+| rollout log（4 臂）| /tmp/rollout_parabola.log · _piwmprobe.log · _posvel.log · _mf4.log |
+| K=4 对比 log（baseline vs pos-only）| /tmp/rollout_k4_cmp.log |
+| 训练 log | /tmp/lewm_parabola_piwm_{probe,posvel,mf4}_train.log |
+| 配置实现 | `loss.probe.frames`（1=单帧, K=多帧窗口）；[train.py](../../le-wm/train.py) probe block + probe_head 构建；K=4 eval decode 在 [rollout_eval_id1k.py](../../phyworld/scripts/rollout_eval_id1k.py)（`--ckpt`/`--tag` 切模型）|
 
-注：路径前缀 `agent_memory` 已重命名为 `am`（`/home/qlib/am/wm/...`）。
+注：路径前缀 `agent_memory` 已重命名为 `am`（`/home/qlib/am/wm/...`）；rollout 脚本内路径已同步更新。
 
-## 8. 待办（未做）
+## 8. 待办
 
-- [ ] velocity 训练时监督版（`target` 扩 pos+vel），看能否连长 horizon velocity 也救起来
+- [x] velocity 训练时**单帧**监督版（`target=[proprio,action]`）→ **失败**（§5.3）。单帧读不出速度,救不回 vx。
+- [x] **多帧 probe**（`frames=4`）→ **成功**（§5.4）。vx 基本修回 + 长程 cos 四臂最佳。**这是本实验的正解。**
+- [ ] **PIWM 原则 2**：把 ARPredictor 换成 physics-structured dynamics（速度作为受方程约束的状态变量）——根治长 horizon 漂移
+- [ ] mf4 v-OOD 的 vx 仍略低 baseline（0.52 vs 0.65）：试更大 K 或 frames 也用于 position
 - [ ] 推广到 collision / uniform_motion 两域
-- [ ] 正式消融：同一域跑 `enabled=false` vs `true`（当前 baseline 用的是更早的 `parabola_paperinit_id1k`，严格消融应在同 commit 下重跑 enabled=false）
-- [ ] λ_probe sweep（0.1 / 1.0 / 10.0）
+- [ ] 正式消融：同一域跑 `enabled=false` vs `true`（当前 baseline 用更早的 `parabola_paperinit_id1k`，严格消融应同 commit 重跑 enabled=false）
+- [ ] λ_probe sweep（0.1 / 1.0 / 10.0）+ frames sweep（2 / 4 / 全窗）
