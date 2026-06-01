@@ -1,15 +1,33 @@
 # wm — World Model experiments
 
-Two related projects sit side by side here:
+> **Path note (2026-05)**: this tree was renamed `agent_memory/` → `am/`. All paths are now `/home/qlib/am/wm/...`. A symlink `~/lewm_run -> /home/qlib/am/wm/le-wm` exists for launching training.
+
+Three related projects sit side by side here:
 
 | Subdir | What it is | Upstream |
 |---|---|---|
 | [`le-wm/`](./le-wm/) | **LeWorldModel**: JEPA-style action-conditioned world model trained from pixels. Includes training, planning, evaluation. | https://github.com/lucas-maes/le-wm |
 | [`phyworld/`](./phyworld/) | **How Far is Video Generation from World Model**: physical-law benchmark with code to generate / evaluate ID & OOD video data (uniform motion, collision, parabola). | https://github.com/PhyWorld/PhyWorld |
+| [`PIWM/`](./PIWM/) | **Physically Interpretable World Models**: latent↔physics alignment + physics-structured dynamics. Design source for the deep-supervision experiments. | arXiv:2412.12870 / 2503.02143 |
 
-The reason they're together: phyworld's data tests whether a video / world model has actually learned physics. We want to feed phyworld trajectories into `le-wm` and see how the JEPA encoder + predictor behave on this benchmark.
+The reason they're together: phyworld's data tests whether a video / world model has actually learned physics. We feed phyworld trajectories into `le-wm` and probe how the JEPA encoder + predictor behave on this benchmark; PIWM supplies ideas for *improving* that behavior.
 
-For project-internal docs see [`le-wm/README.md`](./le-wm/README.md) and [`phyworld/README.md`](./phyworld/README.md). This README only covers the **bridge between them**.
+For project-internal docs see [`le-wm/README.md`](./le-wm/README.md) and [`phyworld/README.md`](./phyworld/README.md). This README covers the **bridge between them** + an index of the experiment reports.
+
+---
+
+## Experiment reports (latest → oldest)
+
+All under [`reports/`](./reports/). Read [`reports/5-26/negtive_result_report.md`](./reports/5-26/negtive_result_report.md) first — it's the current source of truth.
+
+| Report | Topic | Headline finding |
+|---|---|---|
+| [5-26/negtive_result_report.md](./reports/5-26/negtive_result_report.md) | Main report: probe protocol + metric fixes; frozen vs FT across 3 domains | "OOD encoder collapse" was a R²+K=1+ID-only-fit artifact. With MSE+ρ+K=4 MLP, representations are consistent across all partitions. |
+| [5-26/§6.4](./reports/5-26/negtive_result_report.md) | **ID-only FT** (leak-free): LeWM + DiT LoRA on official `*_30K` ID data, probe on full OOD eval | True ID→OOD FT gain ≈ 0 (LeWM) / large net-negative (DiT). Earlier "+0.02 ρ" was partition-memorization, not generalization. |
+| [5-26/rollout_results.md](./reports/5-26/rollout_results.md) | **AR rollout** (uses ARPredictor, not just encoder) | 1-step prediction great (cos 0.98-0.99); multi-step AR drifts (collision fastest). Encoding current state ≠ predicting trajectory. |
+| [5-26/piwm_deepsup_results.md](./reports/5-26/piwm_deepsup_results.md) | **PIWM deep-supervision** linear probe in FT loss (parabola; 4 arms) | Single-frame probe helps position/vy/long-cos but damages vx on high-speed OOD. **Training-time multi-frame probe (`frames=4`) is the fix** — recovers vx + best long-horizon cos. |
+| [5-26/arpredictor_rollout_proposal.md](./reports/5-26/arpredictor_rollout_proposal.md) | Proposal doc behind the rollout experiment | — |
+| [5-19/](./reports/5-19/) , [5-12/](./reports/5-12/) | Earlier DiT / collision / uniform-motion reports (R²-era, partly superseded) | — |
 
 ---
 
@@ -18,14 +36,14 @@ For project-internal docs see [`le-wm/README.md`](./le-wm/README.md) and [`phywo
 A single `uv` venv lives in [`le-wm/.venv/`](./le-wm/) (Python 3.10, `torch==2.9.1+cu128`, `stable-worldmodel[train,env]`, plus `imageio`, `Pillow`, `h5py` already pulled in transitively). All commands below use it.
 
 ```bash
-cd /home/qlib/agent_memory/wm/le-wm
+cd /home/qlib/am/wm/le-wm
 source .venv/bin/activate
 ```
 
 If the venv ever needs to be rebuilt:
 
 ```bash
-cd /home/qlib/agent_memory/wm/le-wm
+cd /home/qlib/am/wm/le-wm
 uv venv --python=3.10
 source .venv/bin/activate
 uv pip install swig                       # box2d-py needs the swig binary at build time
@@ -50,7 +68,10 @@ Datasets live at `$STABLEWM_HOME` (defaults to `~/.stable_worldmodel/`). `stable
 | File | Source | Size | Notes |
 |---|---|---|---|
 | `pusht_expert_train.h5` | LeRobot pusht (HF: `quentinll/lewm-pusht`) | 44 GB | Reference dataset for `le-wm`. 2.3M frames, 18685 episodes, action+proprio+state. |
-| `phyworld_uniform_motion.h5` | Built by [`phyworld/scripts/convert_to_lewm.py`](./phyworld/scripts/convert_to_lewm.py) | 100 MB | 1152 traj × 32 frames = 36k frames. Eval-only set; no real action — synthesised from positions. |
+| `phyworld_{uniform_motion,parabola}.h5`, `phyworld_collision_eval.h5` | converters below | ~100 MB | **Eval sets** (all 4 partitions: ID + r/m-OOD + v-OOD + both-OOD). Used for probing / rollout. |
+| `phyworld_{collision,uniform_motion,parabola}_id1k.h5` | converters, `--limit 1000` on official `*_30K.hdf5` | ~100-160 MB | **ID-only training sets** (1000 traj, 32k frames, 100% ID). For leak-free ID→OOD FT. Built from HF `magicr/phyworld` `id_ood_data/*_30K.hdf5`. |
+
+Converters: [`convert_to_lewm.py`](./phyworld/scripts/convert_to_lewm.py) (uniform/parabola, action=velocity), [`convert_collision_to_lewm.py`](./phyworld/scripts/convert_collision_to_lewm.py) (collision, action=acceleration). **Action semantics differ per domain** — uniform/parabola use velocity, collision uses acceleration; the LeWM `action_encoder` dim must match (2 vs 4).
 
 ---
 
@@ -73,7 +94,7 @@ The script:
 Run from the `phyworld/` dir (so default `--src` resolves to `data/uniform_motion_eval.hdf5`):
 
 ```bash
-cd /home/qlib/agent_memory/wm/phyworld
+cd /home/qlib/am/wm/phyworld
 python scripts/convert_to_lewm.py
 # -> writes ~/.stable_worldmodel/phyworld_uniform_motion.h5  (~100 MB, 2-3 min)
 ```
@@ -108,7 +129,7 @@ Differences vs `pusht.yaml`: `frameskip=1` (was 5) because trajectories are shor
 ### Smoke test — verifies the whole pipeline in ~10 s
 
 ```bash
-cd /home/qlib/agent_memory/wm/le-wm
+cd /home/qlib/am/wm/le-wm
 source .venv/bin/activate
 
 CUDA_VISIBLE_DEVICES=2 WANDB_MODE=disabled python train.py \
@@ -141,6 +162,33 @@ CUDA_VISIBLE_DEVICES=2 python train.py \
 ```
 
 To enable W&B, edit [`le-wm/config/train/lewm.yaml`](./le-wm/config/train/lewm.yaml) and set `wandb.config.entity / project`, then drop `wandb.enabled=False`.
+
+---
+
+## Deep-supervision probe (PIWM-style) — added in `lewm.yaml`
+
+LeWM FT can add a linear probe loss that aligns the projector-space emb with physical state (PIWM principle 1). Off by default → baseline unchanged; toggle for ablation. Config block in [`le-wm/config/train/lewm.yaml`](./le-wm/config/train/lewm.yaml):
+
+```yaml
+loss:
+  probe:
+    enabled: false          # true = +probe arm
+    weight: 1.0
+    target: proprio         # single col, or list e.g. [proprio, action] (pos+vel)
+    frames: 1               # 1 = single-frame probe; K>1 = stack K frame embs (velocity-decodable)
+```
+
+Key result ([reports/5-26/piwm_deepsup_results.md](./reports/5-26/piwm_deepsup_results.md)): **single-frame** probe (`frames=1`) helps position / vy / long-horizon cos but **damages vx on high-speed OOD** (single frame can't encode instantaneous velocity). **Multi-frame** (`frames=4`, `target=[proprio,action]`) is the fix — recovers vx and gives the best long-horizon rollout cosine. Example:
+
+```bash
+cd ~/lewm_run && CUDA_VISIBLE_DEVICES=0 .venv/bin/python -u train.py \
+  data=phyworld_parabola_id1k loss.probe.enabled=true \
+  'loss.probe.target=[proprio,action]' loss.probe.frames=4 \
+  output_model_name=lewm_parabola_piwm_mf4_id1k subdir=parabola_piwm_mf4_id1k \
+  trainer.max_epochs=20 +init_from_ckpt=~/.stable_worldmodel/lewm_paper_pusht/weights.pt
+```
+
+Eval / AR-rollout: [`phyworld/scripts/rollout_eval_id1k.py`](./phyworld/scripts/rollout_eval_id1k.py) (`--ckpt`/`--tag` to swap arms; reports latent cos vs horizon/partition + K=1/K=4 decoded pos/vel ρ).
 
 ---
 
