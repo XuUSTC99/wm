@@ -1,0 +1,13 @@
+dataset:
+  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+  frameskip: 1
+  name: phyworld_collision_id1k
+  keys_to_load:
+    - pixels
+    - action
+    - proprio
+    - state          # velocity (vx1,vy1,vx2,vy2) — probe target for collision (action is accel, not vel)
+  keys_to_cache:
+    - action
+    - proprio
+    - state

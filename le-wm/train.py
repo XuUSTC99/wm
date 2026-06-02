@@ -197,7 +197,11 @@ def run(cfg):
     run_id = cfg.get("subdir") or ""
     run_dir = Path(swm.data.utils.get_cache_dir(), run_id)
 
-    logger = None
+    # logger=False disables Lightning's default CSVLogger, which has a flaky
+    # "dict contains fields not in fieldnames" crash when the logged metric-key
+    # set changes between rows (hit collision FT at epoch-0 val). We don't need
+    # CSV logs here (wandb off), so disable entirely.
+    logger = False
     if cfg.wandb.enabled:
         logger = WandbLogger(**cfg.wandb.config)
         logger.log_hyperparams(OmegaConf.to_container(cfg))
