@@ -62,10 +62,9 @@ loss:
     kwargs:
       knots: 17
       num_proj: 1024
-  # Deep-supervision linear probe (PIWM-style, arXiv:2504.03861). OFF by default
-  # so the baseline is unchanged; flip enabled=true for the +probe ablation arm.
+  # Deep-supervision linear probe (PIWM-style, arXiv:2504.03861).
+  # weight=0 → OFF (baseline, no probe gradient). weight>0 → active. No enabled flag.
   probe:
-    enabled: false
-    weight: 1.0
+    weight: 0.0       # λ_probe; 0 = off. Sweep e.g. 0.1 / 1.0 / 10.0
     target: proprio   # single column or list, e.g. [proprio, action]
-    frames: 1         # 1 = single-frame probe; >1 = stack K frames (velocity decodable)
+    frames: 1         # 1 = single-frame; >1 = stack K frames (velocity decodable); max = num_steps(=4)

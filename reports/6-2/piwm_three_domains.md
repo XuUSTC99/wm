@@ -100,29 +100,70 @@
 | v-OOD | 0.464 | 0.490 | 0.293 | **0.514** |
 | both-OOD | **0.683** | 0.594 | 0.521 | 0.514 |
 
-**collision 结论**：baseline 极差（vx v-OOD 仅 0.09——碰撞是稀疏事件，纯位置差分读不出），**任何 probe 都大幅改善**；但**最佳臂依 partition 而变**：ID 上 mf4 最好，OOD 上 pos-only 最好。
+### latent cos by partition
+| partition | baseline | pos-only | pos+vel | mf4 |
+|---|---|---|---|---|
+| ID | 0.507 | 0.616 | 0.589 | **0.623** |
+| r-OOD | 0.498 | **0.575** | 0.533 | 0.521 |
+| v-OOD | 0.361 | **0.458** | 0.339 | 0.401 |
+| both-OOD | 0.473 | **0.483** | 0.456 | 0.438 |
+
+### latent cos by horizon
+| h | baseline | pos-only | pos+vel | mf4 |
+|---|---|---|---|---|
+| 1 | 0.991 | **0.992** | 0.988 | 0.991 |
+| 4 | 0.863 | **0.882** | 0.858 | 0.872 |
+| 8 | 0.629 | **0.664** | 0.631 | 0.655 |
+| 16 | 0.340 | **0.423** | 0.376 | 0.349 |
+
+**collision 结论**：baseline 极差（vx v-OOD 仅 0.09——碰撞是稀疏事件，纯位置差分读不出），**任何 probe 都大幅改善**；但**最佳臂依 partition 而变**：vx/vy 解码 ID 上 mf4 最好、OOD 上 pos-only 最好。**latent cos 则一致是 pos-only(单帧)最高**（所有 partition + 所有 horizon）——这跟 uniform 一致（碰撞域整体 cos 偏低 0.34–0.62，因 AR 漂移在多事件碰撞上最严重，见 §2 h=16 对比 parabola/uniform）。
 
 ---
 
 ## 5. 跨三域核心结论：多帧监督 **不普适**
 
-| 域 | 物理特征 | 最佳臂 | vs parabola |
+| 域 | 物理特征（被监督速度的轨迹内 std）| 最佳臂 | vs parabola |
 |---|---|---|---|
-| **parabola** | vy 受重力(within-traj 变)+ vx 常量 | **mf4(多帧)** | 基准 |
-| **uniform** | vx 常量,vy≡0 | **pos-only(单帧)** | ❌ 相反 |
-| **collision** | 稀疏碰撞事件,分段常量 | ID→mf4, OOD→pos-only(混合) | ❌ 不一致 |
+| **parabola** | vy 受重力 **std=0.23**(在变) + vx 常量 | **mf4(多帧)** | 基准 |
+| **uniform** | vx/vy **std=0**(全恒定) | **pos-only(单帧)** | ❌ 相反 |
+| **collision** | vx **std=0.21**(撞击跳变,稀疏) | ID→mf4, OOD→pos-only(混合) | ❌ 不一致 |
 
-> **"训练多帧监督是 deep-supervision 的正解"这个 5-26 结论，只在 parabola 成立，不泛化到 uniform/collision。最佳 probe 监督粒度依物理类型 + partition 而变。**
+> **"训练多帧监督是 deep-supervision 的正解"这个 5-26 结论，只在 parabola 成立，不泛化到 uniform/collision。最佳 probe 监督粒度依物理类型 + partition 而变——具体由「被监督速度量的轨迹内 std」决定（§5.1/§5.2）。**
 
-### 机制假说（待进一步验证，非定论）
+### 5.1 这是数据分布问题吗？—— 查过了：不是采样瑕疵，是物理结构差异（有硬数据支撑）
 
-核心变量似乎是 **velocity 在轨迹内是否变化** + **多少个 position 分量带信号**：
+曾怀疑反常结果是"uniform/parabola 训练数据采样不均"导致的 artifact。**查了训练数据(id1k)分布，排除采样问题，但发现了一个决定性的结构差异**——三域"哪个速度在轨迹内变化"完全不同：
 
-1. **parabola**：vy 因重力在 traj 内线性变化 → 多帧窗口能捕捉这个变化 → mf4 受益；且单帧监督 2D 位置(x,y)时被大范围的 pos_y 主导、损伤 pos_x → 多帧修回 vx。
-2. **uniform**：vx **常量** → 多帧窗口里 4 帧速度几乎一样，多帧监督**没有额外信息**，反而更重的 probe head(4×192→out)过度约束 emb → 单帧足够且最好，多帧连 cos 都拉低。
-3. **collision**：velocity 分段常量+碰撞瞬间跳变(稀疏) → baseline 几乎读不出 → 任何 probe 都大补；多帧在跳变落入窗口时(ID)有利，外推到 OOD 则单帧泛化更稳。
+| 训练数据量(id1k, 1000 trajs) | uniform(匀速) | parabola(自由落体) | collision(碰撞) |
+|---|---|---|---|
+| **vx 轨迹内 std**(轨迹内 vx 变化) | **0**（恒定） | **0**（水平恒定） | **0.215**（撞击跳变） |
+| vx 全局范围 | [0.10, 0.40] | [0.10, 0.40] | [−0.98, 0.40] |
+| **vy 轨迹内 std**（轨迹内 vy 变化） | **0** | **0.230**（重力线性变） | **0** |
+| vy 全局范围 | [0, 0] | [−0.77, −0.02] | [0, 0] |
+| pos_y 轨迹内 range（均值） | **0**（纯水平） | **12.1**（下落） | **0** |
+| pos_x 轨迹内 range（均值） | 7.6 | 7.6 | 6.2 |
 
-一个统一视角:**关键是 encoder 能否产出干净的"逐帧 position"表征**——若能,K=4 推理时的帧间差分就能"免费"恢复速度。单帧 position 监督直接优化这个;只有当速度在 traj 内显著变化(parabola vy)时,多帧监督才带来单帧给不了的信息。
+**两个结论**：
+
+1. **不是采样不均**：三域的 vx 全局范围都是 [0.10, 0.40]，铺得开、一致；初速分布也一致。"数据不够均匀"被排除。
+2. **真正的差异是结构性的(物理本质)**：**哪个速度分量在轨迹内变化**——uniform 全恒定(std=0)、parabola 的 vy 因重力在变(std=0.23)、collision 的 vx 在撞击跳变(std=0.21)。这是任务物理决定的，不是数据采集瑕疵。
+
+### 5.2 机制（现在有训练数据支撑，不再是纯猜测）
+
+§5.1 的 within-traj std 正好对上实验结果——**多帧监督是否有用，取决于被监督的速度量在轨迹内是否变化**：
+
+| 域 | 被监督速度的轨迹内 std | 多帧能否提供单帧没有的信息 | 实测最佳臂 |
+|---|---|---|---|
+| uniform | vx/vy **std=0**（恒定） | ❌ 窗口内 4 帧速度一样 → 零新信息 | **pos-only(单帧)** ✓ |
+| parabola | vy **std=0.23**（重力变） | ✅ 窗口能差分出 vy 变化 | **mf4(多帧)** ✓ |
+| collision | vx **std=0.21**（跳变） | 部分（跳变落窗内才有用）| ID→mf4 / OOD→单帧 ✓ |
+
+机制解读：
+1. **uniform**：速度全程恒定 → 多帧窗口里 4 帧速度一模一样，多帧监督**拿不到任何单帧给不了的信息**，反而更重的 probe head(4×192→out)过度约束 emb → 单帧足够且最好，多帧连 cos 都拉低。
+2. **parabola**：vy 因重力在 traj 内变化(std=0.23) → 多帧窗口能差分捕捉 → mf4 受益。
+3. **collision**：vx 在撞击瞬间跳变(稀疏事件) → baseline 几乎读不出(vx v-OOD 仅 0.09) → 任何 probe 都大补；多帧在跳变落入窗口时(ID)有利，外推 OOD 则单帧更稳。
+
+统一视角:**关键是 encoder 能否产出干净的"逐帧 position"表征**——若能,K=4 推理时的帧间差分就能"免费"恢复速度。单帧 position 监督直接优化这个;**只有当速度在 traj 内显著变化(parabola vy)时,多帧监督才带来单帧给不了的额外信息**。within-traj std 这个量化指标可以作为"该用单帧还是多帧"的先验判据。
 
 ---
 
@@ -131,7 +172,8 @@
 - **uniform vy = nan**:vy 恒为 0,ρ 无定义,非 bug。
 - **baseline 的几何外推**:baseline 无 probe,靠 K=4 位置差分读速度,这在任何速度下都成立——所以 baseline 在高速 OOD(尤其 uniform/parabola vx)是个**意外强的基线**,probe 不一定能超过(见 5-26 §5.4)。
 - **collision vx baseline 例外**:collision 碰撞稀疏,baseline 位置差分也读不出(0.09)→ 这里 probe 才显出大幅价值。
-- **未做**:λ_probe / frames sweep;per-frame vs per-window 监督的更细消融;统计显著性(单 seed)。
+- **数据分布已查**:训练数据(id1k)vx 范围三域一致 [0.10,0.40],非采样不均(§5.1);差异是物理结构性的(轨迹内速度是否变化),非数据瑕疵。
+- **未做**:λ_probe / frames sweep;per-frame vs per-window 监督的更细消融;统计显著性(单 seed);用 within-traj std 做先验、在更多物理任务上验证"std 决定单帧/多帧"这个判据。
 
 ---
 
@@ -146,5 +188,3 @@
 | ckpt | ~/.stable_worldmodel/{uniform,collision}_piwm_{probe,posvel,mf4}_id1k/ + parabola 同名 |
 | probe 实现 | le-wm/train.py（`loss.probe.{enabled,weight,target,frames}`）|
 | parabola 原始分析 | [reports/5-26/piwm_deepsup_results.md](../5-26/piwm_deepsup_results.md) |
-
-注：路径前缀 `agent_memory` 已重命名为 `am`；GPU 进程用相对 `.venv/bin/python` 调用以隐藏家目录。

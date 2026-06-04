@@ -46,8 +46,10 @@ def lejepa_forward(self, batch, stage, cfg):
     # decodable physics -> rollout-predicted embs decode better + reduced drift.
     # target can be a single column ("proprio") or a list (["proprio","action"])
     # to supervise position + velocity jointly. Toggle via loss.probe.enabled.
+    # Probe loss is active iff its weight > 0 (no separate enabled flag — weight=0 == off,
+    # which makes weight the single knob and the natural baseline arm of a λ sweep).
     probe_cfg = cfg.loss.get("probe", None)
-    if probe_cfg is not None and probe_cfg.get("enabled", False):
+    if probe_cfg is not None and float(probe_cfg.get("weight", 0.0)) > 0:
         tgt_cols = probe_cfg.get("target", "proprio")
         tgt_cols = [tgt_cols] if isinstance(tgt_cols, str) else list(tgt_cols)
         kw = int(probe_cfg.get("frames", 1))
