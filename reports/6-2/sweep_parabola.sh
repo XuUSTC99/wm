@@ -4,7 +4,7 @@
 # Usage: sweep_parabola.sh "0 1"   (space-separated GPU ids to round-robin over)
 set -u
 GPUS=(${1:-0})
-ROOT=/home/qlib/am/wm; LEWM=$ROOT/le-wm; LOG=$ROOT/reports/6-2/logs; SWM=/home/qlib/.stable_worldmodel
+ROOT=/home/likun-share/junjxu/wm; LEWM=$ROOT/le-wm; LOG=$ROOT/reports/6-2/logs; SWM=$HOME/.stable_worldmodel
 INIT=$SWM/lewm_paper_pusht/weights.pt
 mkdir -p "$LOG"; SW=$LOG/sweep.log
 echo "=== SWEEP START $(date) on GPUs ${GPUS[*]} ===" > "$SW"
