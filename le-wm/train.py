@@ -1,4 +1,5 @@
 import os
+import re
 from functools import partial
 from pathlib import Path
 
@@ -13,6 +14,32 @@ from omegaconf import OmegaConf, open_dict
 from jepa import JEPA
 from module import ARPredictor, Embedder, MLP, SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
+
+
+def _remap_old_vit_keys(sd):
+    """Remap old HuggingFace ViT param names -> the new transformers ViT naming
+    used by the current model. Older LeWM checkpoints (e.g. lewm_paper_pusht/
+    weights.pt) were saved with `encoder.encoder.layer.N.attention.attention.*`
+    style names; newer transformers refactored these to
+    `encoder.layers.N.attention.{q,k,v,o}_proj` etc. Without this remap,
+    load_state_dict(strict=False) silently drops all 192 transformer-body
+    weights and the encoder is left at random init. Pass-through for keys that
+    already use the new naming (idempotent)."""
+    sub = [
+        (r"\.attention\.attention\.query\.", ".attention.q_proj."),
+        (r"\.attention\.attention\.key\.", ".attention.k_proj."),
+        (r"\.attention\.attention\.value\.", ".attention.v_proj."),
+        (r"\.attention\.output\.dense\.", ".attention.o_proj."),
+        (r"\.intermediate\.dense\.", ".mlp.fc1."),
+        (r"\.output\.dense\.", ".mlp.fc2."),
+    ]
+    out = {}
+    for k, v in sd.items():
+        nk = re.sub(r"^encoder\.encoder\.layer\.(\d+)\.", r"encoder.layers.\1.", k)
+        for pat, rep in sub:
+            nk = re.sub(pat, rep, nk)
+        out[nk] = v
+    return out
 
 
 def lejepa_forward(self, batch, stage, cfg):
@@ -166,6 +193,7 @@ def run(cfg):
         ck = torch.load(init_ckpt, map_location="cpu", weights_only=False)
         if isinstance(ck, dict) and "state_dict" in ck:
             ck = ck["state_dict"]
+        ck = _remap_old_vit_keys(ck)
         prefixes = tuple(cfg.get("init_load_prefixes", ["encoder.", "projector.", "pred_proj."]))
         filtered = {k: v for k, v in ck.items() if k.startswith(prefixes)}
         missing, unexpected = world_model.load_state_dict(filtered, strict=False)
@@ -174,6 +202,26 @@ def run(cfg):
         print(f"[init_from_ckpt] prefixes={prefixes} loaded={loaded} unexpected={len(unexpected)} missing={len(missing)}", flush=True)
         if unexpected[:3]:
             print(f"[init_from_ckpt] first unexpected: {unexpected[:3]}", flush=True)
+        # Guard against the silent naming-drift bug: a pusht ViT ckpt has 198
+        # encoder.* params; if almost none load the encoder is left random-init.
+        n_enc = sum(1 for k in filtered if k.startswith("encoder."))
+        n_enc_loaded = n_enc - sum(1 for k in unexpected if k.startswith("encoder."))
+        if n_enc and n_enc_loaded < 0.5 * n_enc:
+            raise RuntimeError(
+                f"[init_from_ckpt] only {n_enc_loaded}/{n_enc} encoder weights loaded "
+                f"from {init_ckpt} — key naming mismatch, encoder would be random-init. "
+                f"Update _remap_old_vit_keys()."
+            )
+
+    # Optional: freeze the encoder (keep pusht weights fixed) and train only the
+    # predictor / projector / probe. Isolates "does finetuning the encoder help?"
+    if cfg.get("freeze_encoder", False):
+        n_frozen = 0
+        for p in world_model.encoder.parameters():
+            p.requires_grad_(False)
+            n_frozen += 1
+        world_model.encoder.eval()
+        print(f"[freeze_encoder] froze {n_frozen} encoder param tensors (encoder kept at init)", flush=True)
 
     optimizers = {
         'model_opt': {
@@ -227,11 +275,12 @@ def run(cfg):
         enable_checkpointing=cfg.get("enable_lightning_ckpt", True),
     )
 
+    _resume_ckpt = run_dir / f"{cfg.output_model_name}_weights.ckpt"
     manager = spt.Manager(
         trainer=trainer,
         module=world_model,
         data=data_module,
-        ckpt_path=run_dir / f"{cfg.output_model_name}_weights.ckpt",
+        ckpt_path=_resume_ckpt if _resume_ckpt.is_file() else None,
     )
 
     manager()

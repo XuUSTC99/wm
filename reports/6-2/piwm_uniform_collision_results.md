@@ -20,6 +20,8 @@
 
 ### vy 解码 ρ（K=4）
 
+> **全 nan 是预期，非 bug**：uniform_motion 是单球**纯水平匀速直线运动**，竖直速度 vy **恒等于 0**（实测 mean=0, std=0, range=[0,0]）。Pearson ρ 的分母是目标的标准差，vy 零方差 → 除零 → nan。即"没有 vy 可解码"，不是模型解不出来。本域只看 vx。（对比 parabola 有重力，vy std≈0.23，可正常解码。）
+
 | partition | baseline | pos-only(训练单帧) | pos+vel(训练单帧) | mf4(训练多帧) |
 |---|---|---|---|---|
 | ID | +nan | +nan | +nan | +nan |

@@ -1,8 +1,16 @@
 #!/bin/bash
 set -u
-ROOT=/home/qlib/am/wm; LOG=$ROOT/reports/6-2/logs; SWM=/home/qlib/.stable_worldmodel
+ROOT=/home/likun-share/junjxu/wm
+DATA_ROOT=/data1/likun-share/junjxu
+LOG=$DATA_ROOT/runs/6-2_logs
+export STABLEWM_HOME=$DATA_ROOT/.stable_worldmodel
+export HF_HOME=$DATA_ROOT/.cache_huggingface
+SWM=$STABLEWM_HOME
 PY=le-wm/.venv/bin/python
-ev () { ( cd "$ROOT" && CUDA_VISIBLE_DEVICES=$1 $PY phyworld/scripts/rollout_eval_id1k.py \
+mkdir -p "$LOG"
+ev () { ( cd "$ROOT" && CUDA_VISIBLE_DEVICES=$1 \
+   STABLEWM_HOME=$STABLEWM_HOME HF_HOME=$HF_HOME \
+   $PY phyworld/scripts/rollout_eval_id1k.py \
    --domain parabola --ckpt "$2" --tag "$3" --max-trajs 500 ) > "$LOG/rollout_parabola_$3.log" 2>&1
    echo "[$(date +%H:%M:%S)] parabola_$3 done (exit $?)" >> "$LOG/parabola_evals.log"; }
 echo "=== PARABOLA EVALS START $(date) ===" > "$LOG/parabola_evals.log"

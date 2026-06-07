@@ -5,24 +5,24 @@
 # GPU 0 = uniform_motion, GPU 3 = collision (run in parallel).
 # Fully detached: survives the launching shell / Claude Code being closed.
 set -u
-ROOT=/home/qlib/am/wm
+ROOT=/home/likun-share/junjxu/wm
 LEWM=$ROOT/le-wm
-LOG=$ROOT/reports/6-2/logs
-SWM=/home/qlib/.stable_worldmodel
+DATA_ROOT=/data1/likun-share/junjxu
+LOG=$DATA_ROOT/runs/6-2_logs                                 # logs on /data1
+export STABLEWM_HOME=$DATA_ROOT/.stable_worldmodel           # ckpts + datasets on /data1
+export HF_HOME=$DATA_ROOT/.cache_huggingface                 # HF cache on /data1
+SWM=$STABLEWM_HOME
 INIT=$SWM/lewm_paper_pusht/weights.pt
 mkdir -p "$LOG"
-# Path masking: invoke the venv python via its RELATIVE path after `cd` (not the
-# absolute path, not `activate` — which resolves to the PATH-shadowing qlib_env,
-# not `exec -a` — which breaks python's prefix detection). The process cmdline
-# then shows `.venv/bin/python -u train.py ...`, hiding /home/qlib on this shared host.
 
 train_arm () {  # gpu domain datacfg name probe_args...
   local gpu=$1 datacfg=$3 name=$4; shift 4; local pargs="$@"
   echo "[train $(date +%H:%M:%S)] $name on GPU$gpu" >> "$LOG/orchestrator.log"
   ( cd "$LEWM" && CUDA_VISIBLE_DEVICES=$gpu WANDB_MODE=disabled HYDRA_FULL_ERROR=1 \
+    STABLEWM_HOME=$STABLEWM_HOME HF_HOME=$HF_HOME \
     .venv/bin/python -u train.py data=$datacfg output_model_name=$name subdir=$name \
       wandb.enabled=False trainer.max_epochs=20 \
-      loss.probe.enabled=true loss.probe.weight=1.0 $pargs \
+      loss.probe.weight=1.0 $pargs \
       +init_from_ckpt=$INIT ) > "$LOG/train_${name}.log" 2>&1
   echo "[train done $(date +%H:%M:%S)] $name (exit $?)" >> "$LOG/orchestrator.log"
 }
@@ -31,6 +31,7 @@ eval_arm () {  # gpu domain ckpt tag outname
   local gpu=$1 dom=$2 ckpt=$3 tag=$4 out=$5
   echo "[eval  $(date +%H:%M:%S)] $out" >> "$LOG/orchestrator.log"
   ( cd "$ROOT" && CUDA_VISIBLE_DEVICES=$gpu \
+      STABLEWM_HOME=$STABLEWM_HOME HF_HOME=$HF_HOME \
       le-wm/.venv/bin/python phyworld/scripts/rollout_eval_id1k.py \
       --domain $dom --ckpt "$ckpt" --tag "$tag" --max-trajs 500 ) \
       > "$LOG/rollout_${out}.log" 2>&1
@@ -62,5 +63,5 @@ wait
 echo "=== ALL TRAIN+EVAL DONE $(date) ===" >> "$LOG/orchestrator.log"
 
 # --- summarize logs -> markdown report ---
-( cd "$ROOT" && le-wm/.venv/bin/python reports/6-2/summarize.py ) >> "$LOG/orchestrator.log" 2>&1
+( cd "$ROOT" && STABLEWM_HOME=$STABLEWM_HOME le-wm/.venv/bin/python reports/6-2/summarize.py ) >> "$LOG/orchestrator.log" 2>&1
 echo "=== SUMMARY WRITTEN $(date) ===" >> "$LOG/orchestrator.log"

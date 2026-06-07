@@ -9,32 +9,38 @@ Tests the FORWARD DYNAMICS (encoder + ARPredictor), not just state encoding:
 Action normalization MUST match FT (mean/std from the ID-only id1k training h5).
 Predictor operates in projector(encoder(x)) space — probe is trained there too.
 """
-import argparse, sys, time, h5py, numpy as np, torch
+import argparse, os, sys, time, h5py, numpy as np, torch
 from pathlib import Path
-sys.path.insert(0, str(Path('/home/qlib/am/wm/le-wm')))
+
+# Resolve project root: this file is at <ROOT>/phyworld/scripts/rollout_eval_id1k.py
+_ROOT = Path(__file__).resolve().parents[2]
+_SWM = Path(os.environ.get('STABLEWM_HOME', str(Path.home() / '.stable_worldmodel')))
+# Datasets in new stable_worldmodel layout live under <SWM>/datasets/<name>.h5
+_DS = _SWM / 'datasets'
+sys.path.insert(0, str(_ROOT / 'le-wm'))
 from sklearn.linear_model import Ridge
 from scipy.stats import pearsonr
 
 DOMAINS = {
     "collision": {
-        "ckpt": "/home/qlib/.stable_worldmodel/collision_paperinit_id1k/lewm_collision_paperinit_id1k_epoch_20_object.ckpt",
-        "train_h5": "/home/qlib/.stable_worldmodel/phyworld_collision_id1k.h5",
-        "eval_h5": "/home/qlib/.stable_worldmodel/phyworld_collision_eval.h5",
-        "src_hdf5": "/home/qlib/am/wm/phyworld/data/collision_eval.hdf5",
+        "ckpt": str(_SWM / "collision_paperinit_id1k/lewm_collision_paperinit_id1k_epoch_20_object.ckpt"),
+        "train_h5": str(_DS / "phyworld_collision_id1k.h5"),
+        "eval_h5": str(_DS / "phyworld_collision_eval.h5"),
+        "src_hdf5": str(_ROOT / "phyworld/data/collision_eval.hdf5"),
         "ncol": 4,
     },
     "uniform_motion": {
-        "ckpt": "/home/qlib/.stable_worldmodel/uniform_paperinit_id1k/lewm_uniform_paperinit_id1k_epoch_20_object.ckpt",
-        "train_h5": "/home/qlib/.stable_worldmodel/phyworld_uniform_motion_id1k.h5",
-        "eval_h5": "/home/qlib/.stable_worldmodel/phyworld_uniform_motion.h5",
-        "src_hdf5": "/home/qlib/am/wm/phyworld/data/uniform_motion_eval.hdf5",
+        "ckpt": str(_SWM / "uniform_paperinit_id1k/lewm_uniform_paperinit_id1k_epoch_20_object.ckpt"),
+        "train_h5": str(_DS / "phyworld_uniform_motion_id1k.h5"),
+        "eval_h5": str(_DS / "phyworld_uniform_motion.h5"),
+        "src_hdf5": str(_ROOT / "phyworld/data/uniform_motion_eval.hdf5"),
         "ncol": 2,
     },
     "parabola": {
-        "ckpt": "/home/qlib/.stable_worldmodel/parabola_paperinit_id1k/lewm_parabola_paperinit_id1k_epoch_20_object.ckpt",
-        "train_h5": "/home/qlib/.stable_worldmodel/phyworld_parabola_id1k.h5",
-        "eval_h5": "/home/qlib/.stable_worldmodel/phyworld_parabola.h5",
-        "src_hdf5": "/home/qlib/am/wm/phyworld/data/parabola_eval.hdf5",
+        "ckpt": str(_SWM / "parabola_paperinit_id1k/lewm_parabola_paperinit_id1k_epoch_20_object.ckpt"),
+        "train_h5": str(_DS / "phyworld_parabola_id1k.h5"),
+        "eval_h5": str(_DS / "phyworld_parabola.h5"),
+        "src_hdf5": str(_ROOT / "phyworld/data/parabola_eval.hdf5"),
         "ncol": 2,
     },
 }

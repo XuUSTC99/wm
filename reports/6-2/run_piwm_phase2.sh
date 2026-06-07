@@ -4,10 +4,13 @@
 # (0 + 2), abandoning the shared/slow GPU3. Preserves arm-1 progress; no kill of
 # in-flight arm-1. Fully detached.
 set -u
-ROOT=/home/qlib/am/wm
+ROOT=/home/likun-share/junjxu/wm
 LEWM=$ROOT/le-wm
-LOG=$ROOT/reports/6-2/logs
-SWM=/home/qlib/.stable_worldmodel
+DATA_ROOT=/data1/likun-share/junjxu
+LOG=$DATA_ROOT/runs/6-2_logs
+export STABLEWM_HOME=$DATA_ROOT/.stable_worldmodel
+export HF_HOME=$DATA_ROOT/.cache_huggingface
+SWM=$STABLEWM_HOME
 INIT=$SWM/lewm_paper_pusht/weights.pt
 mkdir -p "$LOG"
 P2=$LOG/phase2.log
@@ -36,15 +39,18 @@ train_arm () {  # gpu datacfg name probe_args...
   local gpu=$1 datacfg=$2 name=$3; shift 3; local pargs="$@"
   echo "[train $(date +%H:%M:%S)] $name on GPU$gpu" >> "$P2"
   ( cd "$LEWM" && CUDA_VISIBLE_DEVICES=$gpu WANDB_MODE=disabled HYDRA_FULL_ERROR=1 \
+    STABLEWM_HOME=$STABLEWM_HOME HF_HOME=$HF_HOME \
     .venv/bin/python -u train.py data=$datacfg output_model_name=$name subdir=$name \
       wandb.enabled=False trainer.max_epochs=20 \
-      loss.probe.enabled=true loss.probe.weight=1.0 $pargs \
+      loss.probe.weight=1.0 $pargs \
       +init_from_ckpt=$INIT ) > "$LOG/train_${name}.log" 2>&1
   echo "[train done $(date +%H:%M:%S)] $name (exit $?)" >> "$P2"
 }
 eval_arm () {  # gpu domain ckpt tag out
   local gpu=$1 dom=$2 ckpt=$3 tag=$4 out=$5
-  ( cd "$ROOT" && CUDA_VISIBLE_DEVICES=$gpu .venv/bin/python phyworld/scripts/rollout_eval_id1k.py \
+  ( cd "$ROOT" && CUDA_VISIBLE_DEVICES=$gpu \
+      STABLEWM_HOME=$STABLEWM_HOME HF_HOME=$HF_HOME \
+      le-wm/.venv/bin/python phyworld/scripts/rollout_eval_id1k.py \
       --domain $dom --ckpt "$ckpt" --tag "$tag" --max-trajs 500 ) > "$LOG/rollout_${out}.log" 2>&1
   echo "[eval done $(date +%H:%M:%S)] $out" >> "$P2"
 }
@@ -69,5 +75,5 @@ echo "[$(date +%H:%M:%S)] all 4 arms trained" >> "$P2"
 wait
 echo "[$(date +%H:%M:%S)] all evals done" >> "$P2"
 
-( cd "$ROOT" && le-wm/.venv/bin/python reports/6-2/summarize.py ) >> "$P2" 2>&1
+( cd "$ROOT" && STABLEWM_HOME=$STABLEWM_HOME le-wm/.venv/bin/python reports/6-2/summarize.py ) >> "$P2" 2>&1
 echo "=== PHASE2 DONE $(date) ===" >> "$P2"
