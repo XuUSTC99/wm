@@ -17,6 +17,24 @@
 - ✅ 用作"为什么 sweep 报告里的 K=4 ρ 涨不能直接信" 的论据
 - ❌ **不可引用本报告的数值结论**（intrinsic dim = 1.49 之类的具体数字，必须用修好 init 后重跑得到的版本替换）
 
+### 相关报告状态总览
+
+| 报告 | 数据来源 | 状态 | 数值可信？ |
+|---|---|---|---|
+| [`reports/5-26/negtive_result_report.md`](../5-26/negtive_result_report.md) | qlib 原始 | ✅ **有效**（主报告，含 pusht-frozen zero-shot ρ=0.9 baseline）| ✅ 可引用 |
+| [`reports/5-26/piwm_deepsup_results.md`](../5-26/piwm_deepsup_results.md) | qlib 原始 | ✅ **有效**（5-26 deep-sup 分析）| ✅ 可引用 |
+| [`reports/5-26/rollout_results.md`](../5-26/rollout_results.md) | qlib 原始 | ✅ **有效**（AR rollout 漂移分析）| ✅ 可引用 |
+| [`reports/6-2/piwm_three_domains.md`](../6-2/piwm_three_domains.md) | qlib 原始 | ✅ **有效**（三域 deep-sup 对比 + within-traj std 假说）| ✅ 可引用 |
+| [`reports/6-2/piwm_uniform_collision_results.md`](../6-2/piwm_uniform_collision_results.md) | qlib 原始 | ✅ **有效**（uniform + collision 数据表）| ✅ 可引用 |
+| [`reports/6-2/piwm_three_domains_new.md`](../6-2/piwm_three_domains_new.md) | **A500 重跑** | ❌ **无效**（broken init bug）| ❌ 不可引用数值 |
+| [`reports/6-2/sweep_three_domains_results.md`](../6-2/sweep_three_domains_results.md) | **A500 重跑** | ❌ **无效**（broken init bug + 报告顶部已加 ⚠️ 标注）| ❌ 不可引用数值 |
+| **本报告** `reports/6-24/diagnostic_report.md` | A500 重跑（同上）| ⚠️ **方法有效、数值无效** | 方法可引用，数值待重跑 |
+
+**判定规则**：
+- 路径含 `qlib` 起源、或 5-26 创建的报告 → **有效**（pusht 预训练权重在 qlib 端命名自洽）
+- 6-2 之后在 A500 上跑的训练 → **无效**（transformers 新版改了 ViT attention 命名，`init_from_ckpt` 静默丢 192/216 ViT 权重）
+- 修复方案：[`le-wm/train.py`](../../le-wm/train.py) 已加 `_remap_old_vit_keys()` + 加载守卫，重跑后会写 `[init_from_ckpt] loaded=216 unexpected=0`；任何 `loaded < 200` 都是 broken init，整个 sweep 作废
+
 ---
 
 ## 0. TL;DR — 四个独立诊断都指向同一结论
@@ -36,31 +54,84 @@
 
 ### 1.1 方法
 
-LeWM 总损失：
+LeWM 训练时优化的总损失是三项的加权和：
+
 ```
-total_loss = pred_loss + 0.09 × sigreg_loss + λ_probe × probe_loss
+total_loss = pred_loss              ← world model 的核心目标：预测下一帧 latent
+           + 0.09 × sigreg_loss     ← 防止 latent 坍缩（系数固定 0.09）
+           + λ × probe_loss         ← deep-supervision 目标：让 latent 解码出物理量
 ```
 
-每项对梯度的贡献 ≈ 系数 × 该 loss 的 magnitude。比较：
-- `c_pred = pred_loss`
-- `c_probe = λ × probe_loss`
-- 如果 `c_probe >> c_pred`，则 encoder/predictor 实际只在被 probe 拉着走。
+参数更新时，梯度下降把三项的梯度相加：
 
-### 1.2 数据（final epoch validate loss，f=2）
+```
+∂total_loss/∂θ = ∂pred_loss/∂θ + 0.09·∂sigreg_loss/∂θ + λ·∂probe_loss/∂θ
+                       A                   B                    C
+```
 
-| 域 | w | pred_loss | probe_loss | **c_probe / c_pred** |
-|---|---|---|---|---|
-| parabola | 0.1 | 0.0115 | 0.154 | 1.3× |
-| | 1.0 | 0.0141 | 0.118 | 8.3× |
-| | 10.0 | 0.0181 | 0.080 | **44×** |
-| | 30.0 | 0.0183 | 0.071 | **116×** |
-| | 50.0 | 0.0181 | 0.068 | **187×** |
-| uniform | 50.0 | 0.0159 | 0.101 | **317×** |
-| collision | 50.0 | 0.0249 | 0.036 | **73×** |
+**A、B、C 是三股拉力，谁大谁就主导参数更新方向。** 严格说要比较梯度范数，但对 MSE 形式的 loss，"加权后的 loss 值" 是梯度大小的合理代理。所以我们看两项**加权后的 loss 值**之比：
+
+```
+probe 项的有效大小   =  λ × probe_loss
+pred  项的有效大小   =  pred_loss
+比例                =  (λ × probe_loss) / pred_loss
+```
+
+**如果这个比例 ≫ 1，说明 probe 项在总 loss 里占绝大多数，optimizer 几乎只在最小化 probe，没在最小化 pred。**
+
+### 1.2 数据（final epoch validate loss，parabola f=2）
+
+**原始数据来源**：
+
+- **文件位置**：`/data1/likun-share/junjxu/runs/sweep_three_domains_logs/train_parabola_sw_w<W>_f2_id1k.log`
+  （w=30 / 50 在另一个目录：`.../sweep_three_domains_extend_logs/`）
+- **抓取字段**：每个 train log 最后一次出现的
+  - `validate/pred_loss_epoch`
+  - `validate/probe_loss_epoch`
+  - `validate/sigreg_loss_epoch`
+- **抓取脚本**：[`reports/6-2/extract_sweep_results.py`](../6-2/extract_sweep_results.py) 同款 ANSI-strip + 正则 `r"\|\s+{key}\s+\|\s+([+\-]?\d+\.\d+...)"`，取 `findall(...)[-1]`（log 里每个字段被 validate 多次写入，最后一次即 epoch 20 终值）
+
+例（w=0.1 那行）：
+```
+train log: train_parabola_sw_w0p1_f2_id1k.log
+  最后一次 validate/pred_loss_epoch    → 0.0115
+  最后一次 validate/probe_loss_epoch   → 0.15426
+  最后一次 validate/sigreg_loss_epoch  → 2.1526
+```
+
+其余列由下式算出：
+
+```
+λ × probe_loss            = λ × probe_loss
+0.09 × sigreg_loss        = 0.09 × sigreg_loss
+total_loss                = pred_loss + 0.09·sigreg_loss + λ·probe_loss
+probe 在 total 中占比      = (λ·probe_loss) / total_loss
+(λ·probe) / pred 比例     = (λ·probe_loss) / pred_loss
+```
+
+| w | pred_loss | probe_loss | sigreg_loss | λ·probe | 0.09·sigreg | total_loss | probe 占 total | (λ·probe)/pred |
+|---|---|---|---|---|---|---|---|---|
+| 0.1 | 0.0115 | 0.154 | 2.15 | 0.015 | 0.194 | 0.221 | 7.0% | 1.3× |
+| 1.0 | 0.0141 | 0.118 | 2.85 | 0.118 | 0.257 | 0.389 | 30.3% | 8.3× |
+| 10.0 | 0.0181 | 0.080 | 5.41 | 0.80 | 0.487 | 1.306 | 61.3% | **44×** |
+| 30.0 | 0.0183 | 0.071 | 8.40 | 2.13 | 0.756 | 2.902 | 73.3% | **116×** |
+| 50.0 | 0.0181 | 0.068 | 10.18 | **3.38** | 0.917 | 4.319 | **78.4%** | **187×** |
+
+注意：在低 λ 区（w=0.1 / 1.0），实际是 **sigreg 项**主导 total loss（0.19/0.26），不是 probe；而 w≥10 后 probe 才正式接管 optimizer。
+
+跨域看 w=50：
+
+| 域 (w=50, f=2) | pred_loss | probe_loss | sigreg_loss | λ·probe | 0.09·sigreg | (λ·probe)/pred |
+|---|---|---|---|---|---|---|
+| parabola | 0.0181 | 0.068 | 10.18 | 3.38 | 0.917 | 187× |
+| uniform | 0.0159 | 0.101 | (未抓) | 5.05 | — | **317×** |
+| collision | 0.0249 | 0.036 | (未抓) | 1.82 | — | 73× |
 
 ### 1.3 解读
 
-w=50 时 probe gradient 比 pred gradient 大 **2 个数量级**——所谓"训练 world model"的目标几乎被完全淹没。这本身就是 red flag。
+w=50 时 `λ × probe_loss` 是 `pred_loss` 的 **2 个数量级**以上——total loss 几乎完全等于 probe loss，optimizer 把所有"梯度预算"花在让 latent 解码出物理量上，没在管 "predictor 能否预测下一帧"。
+
+直白类比：老师把作业按 `语文 + 50 × 数学` 算总分，你当前还能从语文扣 0.02 分、从数学扣 0.07 分 × 50 = 3.4 分——你肯定先攻数学。w=50 的 LeWM 就在干这件事：完全去拟合 probe，扔掉 pred。
 
 ---
 

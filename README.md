@@ -1,5 +1,7 @@
 # wm — World Model experiments
 
+> 中文版：[`README.zh.md`](./README.zh.md)
+>
 > **Path note (2026-05)**: this tree was renamed `agent_memory/` → `am/`. All paths are now `~/am/wm/...`. A symlink `~/lewm_run -> ~/am/wm/le-wm` exists for launching training.
 
 Three related projects sit side by side here:
@@ -23,16 +25,34 @@ For project-internal docs see [`le-wm/README.md`](./le-wm/README.md) and [`phywo
 
 ## Experiment reports (latest → oldest)
 
-All under [`reports/`](./reports/). Read [`reports/5-26/negtive_result_report.md`](./reports/5-26/negtive_result_report.md) first — it's the current source of truth.
+All under [`reports/`](./reports/). New readers should start with three reports:
 
-| Report | Topic | Headline finding |
-|---|---|---|
-| [5-26/negtive_result_report.md](./reports/5-26/negtive_result_report.md) | Main report: probe protocol + metric fixes; frozen vs FT across 3 domains | "OOD encoder collapse" was a R²+K=1+ID-only-fit artifact. With MSE+ρ+K=4 MLP, representations are consistent across all partitions. |
-| [5-26/§6.4](./reports/5-26/negtive_result_report.md) | **ID-only FT** (leak-free): LeWM + DiT LoRA on official `*_30K` ID data, probe on full OOD eval | True ID→OOD FT gain ≈ 0 (LeWM) / large net-negative (DiT). Earlier "+0.02 ρ" was partition-memorization, not generalization. |
-| [5-26/rollout_results.md](./reports/5-26/rollout_results.md) | **AR rollout** (uses ARPredictor, not just encoder) | 1-step prediction great (cos 0.98-0.99); multi-step AR drifts (collision fastest). Encoding current state ≠ predicting trajectory. |
-| [5-26/piwm_deepsup_results.md](./reports/5-26/piwm_deepsup_results.md) | **PIWM deep-supervision** linear probe in FT loss (parabola; 4 arms) | Single-frame probe helps position/vy/long-cos but damages vx on high-speed OOD. **Training-time multi-frame probe (`frames=4`) is the fix** — recovers vx + best long-horizon cos. |
-| [5-26/arpredictor_rollout_proposal.md](./reports/5-26/arpredictor_rollout_proposal.md) | Proposal doc behind the rollout experiment | — |
-| [5-19/](./reports/5-19/) , [5-12/](./reports/5-12/) | Earlier DiT / collision / uniform-motion reports (R²-era, partly superseded) | — |
+1. **Source of truth (qlib origin)**: [`reports/5-26/negtive_result_report.md`](./reports/5-26/negtive_result_report.md) — the main empirical findings.
+2. **Latest fixed-init re-run**: [`reports/6-2/piwm_three_domains_A800.md`](./reports/6-2/piwm_three_domains_A800.md) — 2026-06-08 A800 rerun with init bug fixed.
+3. **Methodology / red-flags**: [`reports/6-24/diagnostic_report.md`](./reports/6-24/diagnostic_report.md) — why K=4 ρ / latent cos can mislead, and how to diagnose deep-sup correctly.
+
+> ⚠️ **A500 init-bug warning** (2026-06-07). All A500-trained ckpts between 2026-06-05 and 2026-06-07 had `init_from_ckpt` silently drop 192 of 216 ViT-body weights due to a transformers naming drift (`encoder.encoder.layer.N.attention.attention.{q,k,v}` → `encoder.layers.N.attention.{q,k,v}_proj`). Affected reports are marked "❌ broken init" below; do NOT cite their numbers. Fix is in [`le-wm/train.py`](./le-wm/train.py) (`_remap_old_vit_keys()` + load guard). Any future train must show `[init_from_ckpt] loaded=216 unexpected=0` in its log.
+
+### Report index (status-tagged)
+
+| Report | Date | Topic | Status |
+|---|---|---|---|
+| [6-24/diagnostic_report.md](./reports/6-24/diagnostic_report.md) | 2026-06-24 | **Diagnostics manual**: probe-loss duality of K=4 ρ; pred_loss as ground truth; intrinsic dim collapse; encoder/target swap | ⚠️ method valid, numbers from broken-init ckpts (re-run pending) |
+| [6-2/piwm_three_domains_A800.md](./reports/6-2/piwm_three_domains_A800.md) | 2026-06-08 | **Fixed-init re-run** of 3 domains × 4 arms (baseline / pos-only / pos+vel / mf4); supersedes the broken-init sweep | ✅ valid (loaded=216) |
+| [6-2/sweep_three_domains_results.md](./reports/6-2/sweep_three_domains_results.md) | 2026-06-06 | 45-config λ×frames sweep across 3 domains (broken-init) | ❌ broken init; kept as a debugging log only |
+| [6-2/piwm_three_domains.md](./reports/6-2/piwm_three_domains.md) | 2026-06-02 | qlib-original 3-domain deep-sup comparison; within-traj-std hypothesis for single-vs-multi-frame probe | ✅ valid (qlib origin) |
+| [6-2/piwm_uniform_collision_results.md](./reports/6-2/piwm_uniform_collision_results.md) | 2026-06-02 | qlib-original uniform + collision data tables | ✅ valid (qlib origin) |
+| [6-2/idea-stage/IDEA_REPORT.md](./reports/6-2/idea-stage/IDEA_REPORT.md) | 2026-06-01 | Idea discovery — proposals for next-step research (PhysConsist-Rollout, etc.) | ✅ planning doc |
+| [5-26/negtive_result_report.md](./reports/5-26/negtive_result_report.md) | 2026-05-26 | **Main report**: probe protocol/metric fixes; pusht-only zero-shot already ρ≈0.9; ID-only FT gain ≈ 0 | ✅ valid (qlib origin) |
+| [5-26/piwm_deepsup_results.md](./reports/5-26/piwm_deepsup_results.md) | 2026-05-26 | PIWM deep-sup linear-probe in FT loss; single-frame harms vx-OOD, `frames=4` recovers | ✅ valid (qlib origin) |
+| [5-26/rollout_results.md](./reports/5-26/rollout_results.md) | 2026-05-26 | AR rollout (ARPredictor): 1-step great, multi-step drifts; collision drifts fastest | ✅ valid (qlib origin) |
+| [5-26/arpredictor_rollout_proposal.md](./reports/5-26/arpredictor_rollout_proposal.md) | 2026-05-26 | Proposal doc for the rollout experiment | ✅ valid (qlib origin) |
+| [5-19/FINAL_REPORT.md](./reports/5-19/FINAL_REPORT.md) | 2026-05-19 | Can LeWM learn Newtonian laws? Full phyworld experiment | ⚠️ partly superseded (R²-era metric) |
+| [5-19/DIT_REPORT.md](./reports/5-19/DIT_REPORT.md) | 2026-05-19 | DiT-XL-2 on phyworld collision (zero-shot + LoRA + LeWM pusht-only) | ⚠️ partly superseded |
+| [5-19/finetune_analyze.md](./reports/5-19/finetune_analyze.md) | 2026-05-19 | Why SSL FT on collision makes the probe worse | ⚠️ partly superseded |
+| [5-12/COLLISION_REPORT.md](./reports/5-12/COLLISION_REPORT.md) | 2026-05-12 | LeWM on phyworld collision — early report | ⚠️ R²-era, superseded by 5-26 |
+| [5-12/UNIFORM_MOTION_REPORT.md](./reports/5-12/UNIFORM_MOTION_REPORT.md) | 2026-05-12 | LeWM on phyworld uniform motion — early report | ⚠️ R²-era, superseded by 5-26 |
+| [5-12/SLIDES.md](./reports/5-12/SLIDES.md) | 2026-05-12 | Slide deck of early findings | — |
 
 ---
 
