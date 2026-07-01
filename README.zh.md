@@ -46,6 +46,7 @@
 
 | 报告 | 日期 | 主题 | 状态 |
 |---|---|---|---|
+| [6-2/decoder_viz/README.md](./reports/6-2/decoder_viz/README.md) | 2026-06-26 | **Embedding→图像 解码**：在冻结编码器上训练像素 decoder，直接"看" latent 编码了什么；微调提升 ID 可解码性，但 **OOD 重建反而掉 ~5 dB** | ✅ 有效（pusht loaded=198/198） |
 | [6-24/diagnostic_report.md](./reports/6-24/diagnostic_report.md) | 2026-06-24 | **诊断手册**：K=4 ρ 是 probe-loss 对偶 / pred_loss 是 ground truth / intrinsic dim 塌方 / encoder swap 测耦合 | ⚠️ 方法论可信，数值来自 broken-init ckpt（待重跑） |
 | [6-2/piwm_three_domains_A800.md](./reports/6-2/piwm_three_domains_A800.md) | 2026-06-08 | **修复版重跑**：3 域 × 4 臂（baseline / pos-only / pos+vel / mf4），替代之前的 broken-init sweep | ✅ 有效（loaded=216） |
 | [6-2/sweep_three_domains_results.md](./reports/6-2/sweep_three_domains_results.md) | 2026-06-06 | 45-config λ × frames sweep 三域 sweep（broken-init）| ❌ broken init；仅作踩坑记录 |
@@ -243,6 +244,53 @@ Eval / AR-rollout：[`phyworld/scripts/rollout_eval_id1k.py`](./phyworld/scripts
 - **K=4 ρ 是 probe loss 的对偶**：probe loss 越小，ρ 必然越大——这是数学必然，不是 world model 变好
 - **latent cos** 同 ckpt 的 encoder 编码两端（real 和 pred），是循环逻辑：encoder 塌方时两端都被压扁到同一低维流形，cos 必然高
 - **真正可信的主指标是 `validate/pred_loss_epoch`**（next-state prediction loss）。选 ckpt / 选 (w, f) / 报告论文 main table 都用它。其他指标只作为次要诊断
+
+---
+
+## Embedding → 图像 解码（可解释性）⭐
+
+探针 ρ 只能说明 latent **线性可解码**成物理量，但它是个抽象数字、容易误导（见 [6-24 诊断](./reports/6-24/diagnostic_report.md)）。最直接的办法是把 **latent 解码回图像**看一眼：球还原到正确位置，就说明 latent 真编码了位置。这就是「Plan A」实验——LeWM 论文附录 D 提到过这种 decoder 但**没开源**，所以这里从头训。
+
+```
+真实帧 ──[冻结编码器]──> latent(192维 CLS) ──[decoder]──> 重建帧
+```
+
+代码在 [`le-wm/decode_viz/`](./le-wm/decode_viz/)（`decoder.py` / `train_decoder.py` / `eval_decoder_ood.py`）。因为编码器冻结，先一次性预计算所有 embedding，只训那个小上采样 decoder（约 10 分钟 / 单卡）。完整文档 + 全部图片见 [`reports/6-2/decoder_viz/README.md`](./reports/6-2/decoder_viz/README.md)。
+
+**重建有效** — 在 `uniform_motion` 上用**未微调的 pusht 编码器**，仅凭 192 维 CLS latent 就能把球还原到正确位置/大小（val PSNR **34.85 dB**）。上排=真实帧，下排=仅凭 latent 解出的重建：
+
+![uniform 重建，未微调 pusht 编码器](./reports/6-2/decoder_viz/images/uniform_pusht_final.png)
+
+→ 证明**预训练（未微调）编码器本身就已编码了球的位置**，不需要在 PhyWorld 上微调——和[主报告](./reports/5-26/negtive_result_report.md)里"pusht-only zero-shot ρ≈0.9"是同一件事的视觉版。
+
+### 微调 vs 未微调，重点看 OOD —— 反直觉发现 ⭐
+
+同一份数据，两个编码器各训一个 decoder（都用 CLS token、同配置），在 OOD eval 集上按分区测重建 PSNR：
+
+| 分区 | 未微调 pusht | 微调 paperinit | 差值 |
+|---|---|---|---|
+| **ID** | 33.84 dB | 34.17 dB | +0.3（持平）|
+| **r/m-OOD**（未见大小）| **25.34 dB** | **19.89 dB** | **−5.4 ↓↓** |
+| **v-OOD**（未见速度）| 34.95 dB | 35.32 dB | +0.4（持平）|
+| **both-OOD** | **25.86 dB** | **21.11 dB** | **−4.8 ↓↓** |
+
+微调让 latent 在 **ID 上更易解码**（自己的 val 到 40.2 dB vs 34.9），**但在位置 OOD 上明显更差**（掉 ~5 dB）。看图就知道原因：微调版**位置还原得了，但把 OOD 的异常球大小"拉回"到 ID 常见大小**——微调把表征过拟合到了 ID 分布，丢掉了 OOD 才有的外观特征（球大小 = `r/m` 参数）。`v-OOD` 两边都不掉是个干净的 sanity check：单帧外观只取决于位置、与速度无关。
+
+both-OOD：未微调（大小保留）vs 微调（大小被拉回 ID）：
+
+![both-OOD，未微调](./reports/6-2/decoder_viz/images/ood_pusht_bothOOD.png)
+![both-OOD，微调](./reports/6-2/decoder_viz/images/ood_finetuned_bothOOD.png)
+
+**结论**：用"ID 上 latent 更易解码"来判断微调有效是**危险的**——可能只是表征过拟合到 ID、牺牲了 OOD 保信息能力。像素解码把这件事看得一清二楚，比探针 ρ 更可信。和 [6-24 诊断](./reports/6-24/diagnostic_report.md)是同一个 message，现在是张图。
+
+```bash
+# 在冻结编码器上训 decoder（默认 ckpt = 未微调 pusht weights.pt）
+le-wm/.venv/bin/python le-wm/decode_viz/train_decoder.py --domain uniform_motion \
+  --epochs 40 --out /data1/likun-share/junjxu/runs/decoder_viz/uniform_pusht
+# 按分区评估它的 OOD 重建
+le-wm/.venv/bin/python le-wm/decode_viz/eval_decoder_ood.py --domain uniform_motion \
+  --ckpt <编码器ckpt> --decoder <decoder_best.pt> --emb-source cls --tag <名字> --out <目录>
+```
 
 ---
 

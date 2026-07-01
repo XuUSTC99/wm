@@ -37,6 +37,7 @@ All under [`reports/`](./reports/). New readers should start with three reports:
 
 | Report | Date | Topic | Status |
 |---|---|---|---|
+| [6-2/decoder_viz/README.md](./reports/6-2/decoder_viz/README.md) | 2026-06-26 | **Embedding→image decoding**: train a pixel decoder on a frozen encoder to *see* what the latent encodes; finetuning helps ID decodability but **hurts OOD reconstruction by ~5 dB** | ✅ valid (pusht loaded=198/198) |
 | [6-24/diagnostic_report.md](./reports/6-24/diagnostic_report.md) | 2026-06-24 | **Diagnostics manual**: probe-loss duality of K=4 ρ; pred_loss as ground truth; intrinsic dim collapse; encoder/target swap | ⚠️ method valid, numbers from broken-init ckpts (re-run pending) |
 | [6-2/piwm_three_domains_A800.md](./reports/6-2/piwm_three_domains_A800.md) | 2026-06-08 | **Fixed-init re-run** of 3 domains × 4 arms (baseline / pos-only / pos+vel / mf4); supersedes the broken-init sweep | ✅ valid (loaded=216) |
 | [6-2/sweep_three_domains_results.md](./reports/6-2/sweep_three_domains_results.md) | 2026-06-06 | 45-config λ×frames sweep across 3 domains (broken-init) | ❌ broken init; kept as a debugging log only |
@@ -214,6 +215,53 @@ cd ~/lewm_run && CUDA_VISIBLE_DEVICES=0 .venv/bin/python -u train.py \
 ```
 
 Eval / AR-rollout: [`phyworld/scripts/rollout_eval_id1k.py`](./phyworld/scripts/rollout_eval_id1k.py) (`--ckpt`/`--tag` to swap arms; reports latent cos vs horizon/partition + K=1/K=4 decoded pos/vel ρ).
+
+---
+
+## Embedding → image decoding (interpretability)
+
+Probe ρ tells you the latent is *linearly decodable* into physics, but it's an abstract number that can mislead (see [6-24 diagnostics](./reports/6-24/diagnostic_report.md)). The most direct check is to **decode the latent back into a picture** and look: if the ball reappears in the right place, the latent really encodes position. This is the "Plan A" experiment — the LeWM paper's App. D mentions such a decoder but **never open-sourced it**, so it's trained from scratch here.
+
+```
+real frame ──[frozen encoder]──> latent (192-d CLS) ──[decoder]──> reconstructed frame
+```
+
+Code in [`le-wm/decode_viz/`](./le-wm/decode_viz/) (`decoder.py` / `train_decoder.py` / `eval_decoder_ood.py`). Because the encoder is frozen, all embeddings are precomputed once and only the small upsampling decoder is trained (~10 min, single GPU). Full writeup + all images: [`reports/6-2/decoder_viz/README.md`](./reports/6-2/decoder_viz/README.md).
+
+**Reconstruction works** — on `uniform_motion` with the **un-finetuned pusht encoder**, the 192-d CLS latent reconstructs the ball at the correct position/size (val PSNR **34.85 dB**). Top row = ground truth, bottom row = decoder output from the latent alone:
+
+![uniform reconstruction, un-finetuned pusht encoder](./reports/6-2/decoder_viz/images/uniform_pusht_final.png)
+
+→ confirms **the pretrained (un-finetuned) encoder already encodes ball position**, no PhyWorld finetuning needed — a visual echo of "pusht-only zero-shot is already ρ≈0.9" from the [main report](./reports/5-26/negtive_result_report.md).
+
+### Finetuned vs un-finetuned, on OOD — a counter-intuitive finding ⭐
+
+Same data, two encoders (each gets its own decoder, CLS token, identical config), evaluated on the OOD eval set per partition:
+
+| partition | un-finetuned pusht | finetuned paperinit | Δ |
+|---|---|---|---|
+| **ID** | 33.84 dB | 34.17 dB | +0.3 (tie) |
+| **r/m-OOD** (unseen size) | **25.34 dB** | **19.89 dB** | **−5.4 ↓↓** |
+| **v-OOD** (unseen speed) | 34.95 dB | 35.32 dB | +0.4 (tie) |
+| **both-OOD** | **25.86 dB** | **21.11 dB** | **−4.8 ↓↓** |
+
+Finetuning makes the latent **more decodable on ID** (its own val hits 40.2 dB vs 34.9) but **clearly worse on position-OOD** (−5 dB). The grids show why: the finetuned decoder still gets position right but **snaps OOD ball sizes back toward the ID-typical size** — finetuning overfit the representation to the ID distribution and discarded the OOD-only appearance feature (ball size = the `r/m` parameter). `v-OOD` doesn't drop on either side, a clean sanity check: a single frame's appearance depends on position, not speed.
+
+both-OOD, un-finetuned (sizes preserved) vs finetuned (sizes collapse toward ID):
+
+![both-OOD, un-finetuned](./reports/6-2/decoder_viz/images/ood_pusht_bothOOD.png)
+![both-OOD, finetuned](./reports/6-2/decoder_viz/images/ood_finetuned_bothOOD.png)
+
+**Takeaway**: judging finetuning by "ID latent is more decodable" is dangerous — it can just mean the representation overfit to ID at the cost of OOD information. Pixel decoding makes this visible, and is more trustworthy than probe ρ. Same message as the [6-24 diagnostics](./reports/6-24/diagnostic_report.md), now as a picture.
+
+```bash
+# train a decoder on a frozen encoder (default ckpt = un-finetuned pusht weights.pt)
+le-wm/.venv/bin/python le-wm/decode_viz/train_decoder.py --domain uniform_motion \
+  --epochs 40 --out /data1/likun-share/junjxu/runs/decoder_viz/uniform_pusht
+# eval its OOD reconstruction per partition
+le-wm/.venv/bin/python le-wm/decode_viz/eval_decoder_ood.py --domain uniform_motion \
+  --ckpt <encoder> --decoder <decoder_best.pt> --emb-source cls --tag <name> --out <dir>
+```
 
 ---
 

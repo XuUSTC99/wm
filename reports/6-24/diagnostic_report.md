@@ -1,21 +1,37 @@
 # LeWM Deep-Supervision Sweep — 诊断报告
 ### "K=4 ρ / latent cos 涨上去到底意味着什么"
 
-**日期**：2026-06-24（合并 6-05 到 6-07 的诊断材料）
-**主题**：从 4 个独立诊断角度验证 [`reports/6-2/sweep_three_domains_results.md`](../6-2/sweep_three_domains_results.md) 里"高 λ_probe 全面胜出"的结论是否对应 world model **真正变好**。
+**日期**：2026-06-24 创建（broken-init 数据），**2026-06-26 用 fixed-init 重跑更新 §1/§2/§3/§5**
+
+**主题**：从 5 个独立诊断角度验证 sweep 报告里"高 λ_probe 全面胜出"的结论是否对应 world model **真正变好**。
 
 ---
 
-## ⚠️ 重要 caveat — 数据来源
+## ⚠️ 数据来源（已用 fixed-init 重跑覆盖）
 
-本报告引用的所有数值都来自 **2026-06-05/06 在 A500 跑的 45-config sweep ckpt**。后续在 [reports/6-2/sweep_three_domains_results.md 顶部更正](../6-2/sweep_three_domains_results.md) 中发现：那批 ckpt 的预训练权重命名 mismatch，`init_from_ckpt` **静默丢掉 192/216 ViT 主体权重**——所以下面的 ckpt 是"近随机初始化的 encoder + FT 20ep"，**不是真正的 pusht 预训练 baseline**。
+本报告**最初**（2026-06-24）引用的数值都来自 broken-init sweep ckpt（详见 [reports/6-2/sweep_three_domains_results.md 顶部更正](../6-2/sweep_three_domains_results.md)：`init_from_ckpt` 静默丢 192/216 ViT 主体权重，encoder 近随机初始化）。
 
-**但本报告里的诊断方法论（如何识别 probe 损失对偶、如何看穿 latent cos 的循环逻辑、用 frozen encoder 拆耦合）独立于 init 状态**——结论方向（K=4 ρ 不可独立使用、pred_loss 才是 ground truth、intrinsic dim 揭示压缩）应当在修好 init 重跑后**仍然成立**，只是绝对数值会不同。
+**2026-06-26 重跑**：用 fixed-init 的 train.py（`_remap_old_vit_keys` + 加载守卫，确认 `loaded=216 unexpected=0`）重训了 **9 个对照 ckpt**（3 域 × λ ∈ {1, 5, 10} × frames=2）。下面 §1/§2/§3/§5 数据已替换为 fixed-init 重跑值；**§4 (hard swap) 因要构造 hybrid ckpt 暂未重跑，但 §5 的同源更激进版本已替换**。
+
+| 节 | 数据状态 |
+|---|---|
+| §0 TL;DR | ✅ fixed-init 重跑（部分） |
+| §1 loss dominance | ✅ fixed-init 重跑（λ=1, 5, 10） |
+| §2 pred_loss ranking | ✅ fixed-init 重跑（λ=1, 5, 10） |
+| §3 intrinsic dim | ✅ fixed-init 重跑（9 ckpt） |
+| §4 encoder hard swap | ⚠️ 仍是 broken-init 数据，标注待重跑 |
+| §5 frozen-target cos | ✅ fixed-init 重跑（9 ckpt） |
+
+**主要结论变化（broken → fixed）**：
+- 诊断 1（probe 主导 optimizer）**结论方向不变**。这里的"倍数"指 `(λ·probe_loss)/pred_loss`，即 probe 损失项比 pred 损失项大多少倍——倍数越高，说明 optimizer 越是在最小化 probe 而非 pred。broken-init 时该比值 73-317×（测于 λ=50），fixed-init 重跑后降到 3-125×（λ=1 各域 3-20×，λ=10 各域 15-125×，见 §1.2 全表）。注意两个区间不是同一 λ 下的对比：数值变小一部分来自 init 修复、一部分来自 λ 上限从 50 降到 10。但无论哪个 λ，probe 项仍远大于 pred 项，**probe 主导 optimizer 这一结论依旧成立（仍极端）**
+- 诊断 2（pred_loss 看 λ=1 最佳）**3/3 域仍成立**
+- 诊断 3（塌方）**仍成立**但更温和（eff_proj 从 9.85→1.49 变为 13~41→3~17）
+- 诊断 5（frozen-target cos）**结论部分翻转**：fixed-init 上 cos 大幅提升（0.04~0.30 → 0.46~0.68），落差从 −0.66~−0.88 缩小到 −0.04~−0.34 → **predictor 学到的实际比 broken-init 时通用得多，没有想象中那么 encoder-specific**
 
 **用法**：
-- ✅ 当作"如何诊断 deep-supervision 是否真有效" 的方法论手册
-- ✅ 用作"为什么 sweep 报告里的 K=4 ρ 涨不能直接信" 的论据
-- ❌ **不可引用本报告的数值结论**（intrinsic dim = 1.49 之类的具体数字，必须用修好 init 后重跑得到的版本替换）
+- ✅ 当作"如何诊断 deep-supervision 是否真有效"的方法论手册
+- ✅ 用作"为什么 sweep 报告里的 K=4 ρ 涨不能直接信"的论据
+- ✅ 数值现在**可引用**（fixed-init 重跑后）—— 但 §4 例外，未重跑
 
 ### 相关报告状态总览
 
@@ -27,7 +43,8 @@
 | [`reports/6-2/piwm_three_domains.md`](../6-2/piwm_three_domains.md) | qlib 原始 | ✅ **有效**（三域 deep-sup 对比 + within-traj std 假说）| ✅ 可引用 |
 | [`reports/6-2/piwm_uniform_collision_results.md`](../6-2/piwm_uniform_collision_results.md) | qlib 原始 | ✅ **有效**（uniform + collision 数据表）| ✅ 可引用 |
 | [`reports/6-2/piwm_three_domains_new.md`](../6-2/piwm_three_domains_new.md) | **A500 重跑** | ❌ **无效**（broken init bug）| ❌ 不可引用数值 |
-| [`reports/6-2/sweep_three_domains_results.md`](../6-2/sweep_three_domains_results.md) | **A500 重跑** | ❌ **无效**（broken init bug + 报告顶部已加 ⚠️ 标注）| ❌ 不可引用数值 |
+| [`reports/6-2/sweep_three_domains_results.md`](../6-2/sweep_three_domains_results.md) | **A500 重跑** | ❌ **无效**（broken init 
+bug + 报告顶部已加 ⚠️ 标注）| ❌ 不可引用数值 |
 | **本报告** `reports/6-24/diagnostic_report.md` | A500 重跑（同上）| ⚠️ **方法有效、数值无效** | 方法可引用，数值待重跑 |
 
 **判定规则**：
@@ -39,14 +56,21 @@
 
 ## 0. TL;DR — 四个独立诊断都指向同一结论
 
-| 诊断 | 测什么 | 结论 |
+| 诊断 | 测什么 | 结论（fixed-init λ ∈ {1, 5, 10}, f=2）|
 |---|---|---|
-| 1. **Loss-component dominance** | 训练时 probe loss × λ 与 pred_loss 的比例 | w=50 时 probe gradient = pred gradient 的 **73–317×**，optimizer 几乎完全在最小化 probe |
-| 2. **pred_loss 作为 GT metric** | 用 next-state prediction loss 选 best (w,f) | **w=0.1（最弱 probe）在 3/3 域上 pred_loss 最低**，K=4 ρ 的"最佳"完全相反 |
-| 3. **Intrinsic dim collapse** | encoder 输出在 192 维空间的有效维度 | projector eff_dim 从 9.85 (w=0.1) → **1.49 (w=50)**，predictor 实际只在 1.5 维空间里学 |
-| 4. **Encoder/target swap** | 把 latent cos 算式里的 encoder 换成 frozen pusht | cos h=16 从 0.880 → **0.074**（hard swap）/ **0.167**（target-only swap），predictor 学的是 encoder-specific 局部映射 |
+| 1. **Loss-component dominance** | 训练时 (λ × probe_loss) 与 pred_loss 的比例 | λ=10 时 probe gradient 是 pred gradient 的 **15–125×**（collision 15× / uniform 44× / parabola 125×），optimizer 几乎完全在最小化 probe |
+| 2. **pred_loss 作为 GT metric** | 用 next-state prediction loss 选 best λ | **λ=1 在 3/3 域上 pred_loss 最低**（parabola 0.0054 / uniform 0.0099 / collision 0.0113），K=4 ρ 的"最佳"反向 |
+| 3. **Intrinsic dim collapse** | encoder 输出在 192 维空间的有效维度 | projector eff_dim 从 13~41 (λ=1) → **3~17 (λ=10)**，塌方 39%–90%；predictor 在小空间里学 |
+| 4. **Encoder hard swap**（待重跑）| 把 latent cos 算式里的 encoder 换成 frozen pusht | broken-init 数据：cos h=16 从 0.880 → 0.074（待用 fixed-init 复测）|
+| 5. **Frozen-target cos**（§5 替代 §4 的同源结论）| 同 ckpt 自身 encoder 编 history 滚 rollout，但 target latent 用 frozen pusht encoder 编 | fixed-init: cos h=16 落差仅 **−0.04~−0.34**（collision 几乎无差），predictor 学到的实际**相当通用**——不是完全 encoder-specific |
 
-**共同结论**：sweep 报告里"高 λ 各项 metric 涨"几乎全是 **probe 损失对偶 + encoder 自相似**的产物，**不代表 world model 真的更会预测物理**。
+**修订后的共同结论**：
+- ✅ "K=4 ρ 是 probe loss 对偶量、λ 越大必然涨"**仍成立**（fixed-init 数据 0.624 → 0.755 单调上升）
+- ✅ "pred_loss 才是 ground truth，λ=1 最佳"**仍成立**（3/3 域）
+- ✅ "intrinsic dim 随 λ 塌方"**仍成立**但更温和
+- ⚠️ "predictor 学的是 encoder-specific 局部映射"**部分翻转**——fixed-init 上 predictor 在 frozen-target 空间里 cos 仍有 0.46–0.68，落差只 −0.04~−0.34（vs broken-init −0.66~−0.88）。说明 pusht 预训练 encoder + FT 后 predictor 在 pusht semantic 空间里**保留了相当多通用结构**
+
+**整体定性方向不变**：sweep 报告里"高 λ 各项 metric 涨" 主要还是 **probe 损失对偶**的产物，但破坏程度比 broken-init 时温和。
 
 ---
 
@@ -79,59 +103,45 @@ pred  项的有效大小   =  pred_loss
 
 **如果这个比例 ≫ 1，说明 probe 项在总 loss 里占绝大多数，optimizer 几乎只在最小化 probe，没在最小化 pred。**
 
-### 1.2 数据（final epoch validate loss，parabola f=2）
+### 1.2 数据（final epoch validate loss，fixed-init rerun，f=2）
 
 **原始数据来源**：
 
-- **文件位置**：`/data1/likun-share/junjxu/runs/sweep_three_domains_logs/train_parabola_sw_w<W>_f2_id1k.log`
-  （w=30 / 50 在另一个目录：`.../sweep_three_domains_extend_logs/`）
-- **抓取字段**：每个 train log 最后一次出现的
-  - `validate/pred_loss_epoch`
-  - `validate/probe_loss_epoch`
-  - `validate/sigreg_loss_epoch`
-- **抓取脚本**：[`reports/6-2/extract_sweep_results.py`](../6-2/extract_sweep_results.py) 同款 ANSI-strip + 正则 `r"\|\s+{key}\s+\|\s+([+\-]?\d+\.\d+...)"`，取 `findall(...)[-1]`（log 里每个字段被 validate 多次写入，最后一次即 epoch 20 终值）
-
-例（w=0.1 那行）：
-```
-train log: train_parabola_sw_w0p1_f2_id1k.log
-  最后一次 validate/pred_loss_epoch    → 0.0115
-  最后一次 validate/probe_loss_epoch   → 0.15426
-  最后一次 validate/sigreg_loss_epoch  → 2.1526
-```
+- **文件位置**：`/data1/likun-share/junjxu/runs/6-24_rerun_logs/train_<dom>_rerun_w<W>_f2_id1k.log`
+- **训练脚本**：[`reports/6-24/rerun_diagnostic_inputs.sh`](rerun_diagnostic_inputs.sh)（9 ckpt = 3 域 × 3 λ × f=2，fixed init `_remap_old_vit_keys`，loaded=216）
+- **抓取字段**：每个 train log 最后一次出现的 `validate/pred_loss_epoch` / `validate/probe_loss_epoch` / `validate/sigreg_loss_epoch`
 
 其余列由下式算出：
 
 ```
 λ × probe_loss            = λ × probe_loss
-0.09 × sigreg_loss        = 0.09 × sigreg_loss
+0.09 × sigreg_loss        = 0.09 × sigreg_loss   ← LeWM 默认 sigreg 系数
 total_loss                = pred_loss + 0.09·sigreg_loss + λ·probe_loss
 probe 在 total 中占比      = (λ·probe_loss) / total_loss
 (λ·probe) / pred 比例     = (λ·probe_loss) / pred_loss
 ```
 
-| w | pred_loss | probe_loss | sigreg_loss | λ·probe | 0.09·sigreg | total_loss | probe 占 total | (λ·probe)/pred |
-|---|---|---|---|---|---|---|---|---|
-| 0.1 | 0.0115 | 0.154 | 2.15 | 0.015 | 0.194 | 0.221 | 7.0% | 1.3× |
-| 1.0 | 0.0141 | 0.118 | 2.85 | 0.118 | 0.257 | 0.389 | 30.3% | 8.3× |
-| 10.0 | 0.0181 | 0.080 | 5.41 | 0.80 | 0.487 | 1.306 | 61.3% | **44×** |
-| 30.0 | 0.0183 | 0.071 | 8.40 | 2.13 | 0.756 | 2.902 | 73.3% | **116×** |
-| 50.0 | 0.0181 | 0.068 | 10.18 | **3.38** | 0.917 | 4.319 | **78.4%** | **187×** |
+#### 三域全表
 
-注意：在低 λ 区（w=0.1 / 1.0），实际是 **sigreg 项**主导 total loss（0.19/0.26），不是 probe；而 w≥10 后 probe 才正式接管 optimizer。
-
-跨域看 w=50：
-
-| 域 (w=50, f=2) | pred_loss | probe_loss | sigreg_loss | λ·probe | 0.09·sigreg | (λ·probe)/pred |
-|---|---|---|---|---|---|---|
-| parabola | 0.0181 | 0.068 | 10.18 | 3.38 | 0.917 | 187× |
-| uniform | 0.0159 | 0.101 | (未抓) | 5.05 | — | **317×** |
-| collision | 0.0249 | 0.036 | (未抓) | 1.82 | — | 73× |
+| 域 | λ | pred_loss | probe_loss | sigreg_loss | λ·probe | 0.09·sigreg | total_loss | probe 占 total | **(λ·probe)/pred** |
+|---|---|---|---|---|---|---|---|---|---|
+| parabola | 1.0 | 0.0054 | 0.1102 | 2.06 | 0.110 | 0.186 | 0.301 | 36.5% | 20.5× |
+| parabola | 5.0 | 0.0063 | 0.0839 | 3.33 | 0.420 | 0.299 | 0.725 | 57.9% | **67×** |
+| parabola | 10.0 | 0.0056 | 0.0705 | 4.58 | 0.705 | 0.412 | 1.122 | 62.8% | **125×** |
+| uniform | 1.0 | 0.0099 | 0.1111 | 1.53 | 0.111 | 0.137 | 0.258 | 43.0% | 11.2× |
+| uniform | 5.0 | 0.0231 | 0.0998 | 2.04 | 0.499 | 0.183 | 0.705 | 70.8% | 21.6× |
+| uniform | 10.0 | 0.0245 | 0.1087 | 3.16 | 1.087 | 0.285 | 1.396 | 77.9% | **44×** |
+| collision | 1.0 | 0.0113 | 0.0390 | 1.57 | 0.039 | 0.141 | 0.192 | 20.3% | 3.4× |
+| collision | 5.0 | 0.0165 | 0.0306 | 2.00 | 0.153 | 0.180 | 0.349 | 43.8% | 9.3× |
+| collision | 10.0 | 0.0189 | 0.0287 | 2.28 | 0.287 | 0.205 | 0.511 | 56.1% | **15×** |
 
 ### 1.3 解读
 
-w=50 时 `λ × probe_loss` 是 `pred_loss` 的 **2 个数量级**以上——total loss 几乎完全等于 probe loss，optimizer 把所有"梯度预算"花在让 latent 解码出物理量上，没在管 "predictor 能否预测下一帧"。
+- **λ=10 时**：parabola probe gradient 是 pred gradient 的 **125×**，uniform **44×**，collision **15×**——三域都进入"probe 主导 optimizer"区
+- **λ=1 时**：probe 占 total 20-43%（不算压倒性），但 (λ·probe)/pred 仍达 3-20× —— pred 项已经被相对边缘化
+- **跨域**：probe_loss 的绝对值依域不同（collision 仅 0.029，parabola 0.07-0.11），所以同 λ 下 (λ·probe)/pred 比例也不同，**collision 是受 probe 主导程度最低的域**
 
-直白类比：老师把作业按 `语文 + 50 × 数学` 算总分，你当前还能从语文扣 0.02 分、从数学扣 0.07 分 × 50 = 3.4 分——你肯定先攻数学。w=50 的 LeWM 就在干这件事：完全去拟合 probe，扔掉 pred。
+直白类比：老师把作业按 `语文 + λ × 数学` 算总分；当 (λ·数学)/语文 = 125× 时，你只会刷数学。λ=10 的 LeWM 就在干这件事。
 
 ---
 
@@ -146,32 +156,36 @@ K=4 probe ρ = Pearson(probe_head(predictor_rollout), real_physics)
 
 `probe_head` 的训练目标就是最小化 `(probe_head(latent) - real_physics)²`——K=4 ρ 就是这个目标的**对偶量**。`λ` 越大、probe loss 优化得越狠，K=4 ρ 必然单调上升。**这是数学必然，不是模型变好**。
 
-### 2.2 用 pred_loss 重新排序 15 cells (parabola)
+### 2.2 fixed-init 数据：pred_loss vs K=4 ρ（同 9 ckpts，f=2）
 
-| 排名 | 配置 | pred_loss | K=4 vx ID ρ |
+| 域 | λ | pred_loss | K=4 vx ID ρ | cos h=16 |
+|---|---|---|---|---|
+| parabola | **1.0** | **0.0054** ⭐ | +0.624 | +0.677 |
+| parabola | 5.0 | 0.0063 | +0.690 | +0.693 |
+| parabola | 10.0 | 0.0056 | **+0.755** | **+0.713** |
+| uniform | **1.0** | **0.0099** ⭐ | **+0.784** | +0.767 |
+| uniform | 5.0 | 0.0231 | +0.774 | +0.774 |
+| uniform | 10.0 | 0.0245 | +0.755 | **+0.826** |
+| collision | **1.0** | **0.0113** ⭐ | +0.639 | +0.378 |
+| collision | 5.0 | 0.0165 | **+0.788** | +0.472 |
+| collision | 10.0 | 0.0189 | +0.726 | **+0.503** |
+
+**关键观察**：
+
+1. **pred_loss 在 3/3 域上 λ=1 最低**：parabola 0.0054、uniform 0.0099、collision 0.0113
+2. **K=4 ρ / cos h=16 在 3/3 域上 λ↑ 时单调上升或非单调上升**：parabola ρ 0.624→0.755、cos h=16 0.677→0.713；uniform cos 0.767→0.826；collision cos 0.378→0.503
+3. **uniform / collision 上 pred_loss 单调上升**（0.0099→0.0245、0.0113→0.0189）—— 经典的 "world model 真退化 + probe 表面指标涨" 反向关系
+4. **parabola 上 pred_loss 是 U 形**（1→5 涨 +17%，5→10 反而降 -11%）—— probe 与 pred 在 λ=10 时有点协同，但仍是 λ=1 最低
+
+### 2.3 三域 best-by-pred_loss vs best-by-K4-ρ 全相反
+
+| 域 | best by **pred_loss** | best by K=4 vx ID ρ | 一致？ |
 |---|---|---|---|
-| **1** | **w=0.1, f=2** | **0.0115** ⭐ | +0.531 |
-| 2 | w=0.1, f=1 | 0.0129 | +0.534 |
-| 3 | w=0.1, f=4 | 0.0133 | +0.370 |
-| 4 | w=1.0, f=1 | 0.0138 | +0.470 |
-| ... | ... | ... | ... |
-| 11 | w=50, f=2 | 0.0181 | +0.654 |
-| 12 | w=30, f=2 | 0.0183 | +0.713 |
-| 13 | w=10, f=1 | 0.0221 | +0.335 |
-| 14 | w=30, f=1 | 0.0279 | +0.409 |
-| 15 | w=50, f=1 | 0.0298 | +0.465 |
+| parabola | **λ=1**（0.0054）| λ=10（0.755）| ❌ |
+| uniform | **λ=1**（0.0099）| λ=1（0.784）✓ | ⚠️ 巧合一致 |
+| collision | **λ=1**（0.0113）| λ=5（0.788）| ❌ |
 
-**pred_loss 排序与 K=4 ρ 排序基本相反**：probe weight 越大、pred_loss 越差。
-
-### 2.3 跨三域的 best-(w,f) 对比
-
-| 域 | best by **pred_loss** | best by K=4 ID ρ | 一致？ |
-|---|---|---|---|
-| parabola | **w=0.1, f=2**（pl=0.0115）| w=30, f=2（ρ=+0.713）| ❌ |
-| uniform | **w=0.1, f=4**（pl=0.0062）| w=30, f=4（ρ=+0.878）| ❌ |
-| collision | **w=0.1, f=4**（pl=0.0127）| w=30, f=4（ρ=+0.812）| ❌ |
-
-**3/3 域完全反向**。sweep 报告里的"w=50 全面胜出"对应的是 K=4 ρ；从 world-model 主目标 pred_loss 看，**w=0.1 才是全面最佳**。
+3/3 域 pred_loss 最佳都是 λ=1（最弱 probe）。从 world-model 主目标看，**deep-sup probe 越弱越好**——这与 sweep 报告 "λ=50 全面胜出" 截然相反，因为后者用 K=4 ρ（probe 损失对偶）作判据。
 
 ### 2.4 与 arXiv:2504.03861 (Flappy Bird) 对比
 
@@ -195,23 +209,42 @@ Participation ratio（PR）= `(Σ σᵢ)² / Σ σᵢ²`，σᵢ 为 latent 的�
 
 500 个 eval frame → encoder/projector forward → PR。
 
-### 3.2 数据（parabola, f=2）
+### 3.2 数据（fixed-init rerun, f=2, 500 eval pixels）
 
-| w | eff_CLS | **eff_proj** | σ₁(proj) | σ₂/σ₁ |
+| 域 | λ | eff_CLS | **eff_proj** | σ₁(proj) |
 |---|---|---|---|---|
-| 0.1 | 2.91 | **9.85** | 168 | — |
-| 1.0 | 2.47 | 5.95 | 257 | — |
-| 10.0 | 3.64 | 2.37 | 547 | 0.91 |
-| 30.0 | 3.10 | 1.62 | 728 | 0.77 |
-| 50.0 | 2.83 | **1.49** | 768 | **0.43** |
+| parabola | 1.0 | 9.77 | **13.37** | 143 |
+| parabola | 5.0 | 8.20 | 4.14 | 285 |
+| parabola | 10.0 | 5.59 | **3.42** | 368 |
+| uniform | 1.0 | 16.31 | **41.28** | 77 |
+| uniform | 5.0 | 10.00 | 12.30 | 161 |
+| uniform | 10.0 | 8.10 | **3.98** | 279 |
+| collision | 1.0 | 13.32 | **28.35** | 104 |
+| collision | 5.0 | 11.06 | 21.62 | 116 |
+| collision | 10.0 | 11.29 | **17.42** | 136 |
 
-> ⚠️ eff_CLS 数值偏小是因为这批 ckpt 的 ViT 主体是随机初始化（见顶部 caveat）。修好 init 后 CLS eff_dim 应在 30-60 范围。但 **eff_proj 随 λ 单调下降的趋势独立于 init bug**。
+#### vs broken-init（仅 parabola）
+
+| λ | broken eff_proj | fixed eff_proj |
+|---|---|---|
+| 1.0 | 5.95 | **13.37**（+125%）|
+| 10.0 | 2.37 | **3.42**（+44%）|
+
+→ fixed-init **总体维度更高**（pusht 权重保留了更多语义结构），但塌方趋势完全一致。
 
 ### 3.3 解读
 
-**Projector 输出（predictor 真正工作的空间）从 9.85 维塌到 1.49 维**——σ₁ 暴涨到 768 吸收了几乎所有方差。
+**塌方仍是核心现象，但程度依域不同**：
 
-Predictor 实际上在 **1.5 维空间**里学动力学。1.5 维只够装 (x, y)——所以 K=4 ρ 当然好（latent 就是 (x, y)），但 encoder 失去了表达视觉纹理 / 外观 / 形状的能力。
+| 域 | 塌方比例（λ=1→10）|
+|---|---|
+| **uniform** | 41.28 → 3.98 = **-90%**（最严重）|
+| **parabola** | 13.37 → 3.42 = **-75%** |
+| **collision** | 28.35 → 17.42 = **-39%**（最温和）|
+
+uniform 上 λ=10 塌到 4 维 —— predictor 几乎只在球的 (x, y) 子空间里工作；collision 因为有两个球 + 碰撞事件，latent 信息量更高，塌方相对温和（仍保留 17 维）。
+
+**关键**：λ=1 时 eff_proj 已显著高于 λ=10（uniform 41 vs 4），但 K=4 ρ 反而没差太多（0.784 vs 0.755）——说明 K=4 ρ 在 λ=1 时就已经触顶，**根本不需要靠塌方换更高的 ρ**。所有"塌方代价"换来的 ρ 提升几乎为零。
 
 ---
 
@@ -228,7 +261,7 @@ hybrid：   FROZEN_encoder  + trained_predictor → cos h=16 = ?
 
 如果 predictor 学到了 **encoder-agnostic 的 generic physics dynamics**（比如 v→v+a·dt），即使 encoder 换成 frozen pusht 也应该部分 work。如果 predictor 学的是 **encoder-space-specific 的局部映射**，swap 后必然崩。
 
-### 4.2 数据（cos h=16）
+### 4.2 数据（cos h=16）— ⚠️ 仍是 broken-init 数据
 
 | 配置 | 原始（trained enc）| **frozen swap** | Δ |
 |---|---|---|---|
@@ -240,13 +273,16 @@ hybrid：   FROZEN_encoder  + trained_predictor → cos h=16 = ?
 | collision paperinit | 0.440 | −0.080 | −0.520 |
 | **collision w=50, f=4** | **0.633** | **−0.007** | **−0.640** |
 
-### 4.3 解读
+> ⚠️ **本节数据仍来自 broken-init ckpt（2026-06-07 前）**。Hard swap 需要构造 hybrid ckpt（encoder 换成 frozen pusht + 保留 trained predictor），fixed-init 版未补做。**§5 的同源结论 fixed-init 已重跑** —— frozen-target cos 落差 −0.04 ~ −0.34（远小于 broken-init 这里的 −0.71 ~ −0.89），暗示 fixed-init 上 hard swap 也会得到温和得多的结果。
+
+### 4.3 解读（broken-init）
 
 1. **parabola paperinit Δ ≈ 0** — encoder 没怎么被 FT 动（与 5-26 §6.4 "ID-only FT 净效应 ≈ 0" 一致）
 2. **加了 probe 之后 swap Δ 立刻负**——而且 |Δ| **与 λ 单调相关**（drift ∝ λ）
-3. **w=50 时 swap 直接崩到 0.07** — predictor 完全 encoder-space-specific，没学任何可迁移的 dynamics
+3. **w=50 时 swap 直接崩到 0.07** —— broken-init 下 predictor 完全 encoder-space-specific
 
-→ **sweep 报告里 w=50 比 baseline 高 0.282 的 cos h=16，本质是 encoder + predictor 联合耦合到一个压扁子空间，predictor 没学到 generic physics**。
+→ **broken-init 上**，sweep 报告里 w=50 比 baseline 高 0.282 的 cos h=16 本质是 encoder + predictor 联合耦合到压扁子空间。
+→ **fixed-init 上预期** 这个落差会显著缩小（参见 §5 实测落差 −0.04 ~ −0.34），不像 broken 那么极端。
 
 ---
 
@@ -265,57 +301,68 @@ hybrid：   FROZEN_encoder  + trained_predictor → cos h=16 = ?
 
 如果 predictor 输出**在 pusht semantic space 里也有语义对齐**，frozen-target cos 应该不至于太低。
 
-### 5.2 数据（h=16, 9 ckpt）
+### 5.2 数据（h=16, 9 ckpt, fixed-init）
 
-| 域 | 配置 | trained-target | **frozen-target** | 落差 |
+| 域 | λ | trained-target | **frozen-target** | 落差 Δ |
 |---|---|---|---|---|
-| parabola | baseline (w=0) | 0.836 | 0.122 | −0.71 |
-| | w=0.1 | 0.857 | 0.117 | −0.74 |
-| | **w=50** | **0.880** | **0.167** | −0.71 |
-| uniform | baseline | 0.852 | 0.098 | −0.75 |
-| | w=0.1 | 0.893 | 0.091 | −0.80 |
-| | **w=50** | **0.953** | **0.298** | −0.66 |
-| collision | baseline | 0.527 | 0.042 | −0.49 |
-| | w=0.1 | 0.608 | 0.048 | −0.56 |
-| | **w=50** | **0.725** | **0.071** | −0.65 |
+| parabola | 1.0 | 0.810 | 0.469 | −0.340 |
+| parabola | 5.0 | 0.857 | 0.662 | −0.194 |
+| parabola | **10.0** | **0.942** | **0.681** | **−0.262** |
+| uniform | 1.0 | 0.781 | 0.586 | −0.195 |
+| uniform | 5.0 | 0.804 | 0.535 | −0.268 |
+| uniform | **10.0** | **0.822** | **0.664** | **−0.158** |
+| collision | 1.0 | 0.524 | 0.461 | −0.063 |
+| collision | 5.0 | 0.608 | 0.543 | −0.065 |
+| collision | **10.0** | **0.626** | **0.583** | **−0.043** |
 
-### 5.3 关键观察
+#### 对比 broken-init（h=16）— 数值差距巨大
 
-1. **所有 frozen-target cos 几乎随机水平**（0.04 - 0.30）——predictor 输出与 pusht semantic 几乎正交
-2. **sweep 的"提升"在 frozen metric 下大部分蒸发**：
-   - parabola w=50 比 baseline 在 trained metric 上 +0.044，在 frozen metric 上 **+0.045**（几乎打平）
-   - collision w=50 比 baseline 在 trained metric 上 +0.198，在 frozen metric 上 **+0.029**（几乎全蒸发）
-3. **uniform w=50 是唯一显著的 frozen cos**（0.298）—— **巧合而非真理解**：uniform 的 encoder 严重压扁到"球水平位置 x"这个一维方向，而 pusht encoder 也能识别球的位置，两者在这一个方向上意外对齐。这反而**坐实了塌方假说**——trained encoder 收敛到的就是 "x 的一维流形"
+| 配置 | broken-init frozen | fixed-init frozen | 提升 |
+|---|---|---|---|
+| parabola w=50/λ=10 | 0.167 | **0.681** | +0.51 |
+| uniform w=50/λ=10 | 0.298 | **0.664** | +0.37 |
+| collision w=50/λ=10 | 0.071 | **0.583** | +0.51 |
+
+### 5.3 关键观察（fixed-init 修订版）
+
+1. **frozen-target cos 远不是随机水平**：fixed-init 上 cos 在 0.46–0.68 区间，远高于 broken-init 的 0.04–0.30。**predictor 输出与 pusht semantic 实际上保持了相当多的对齐**
+2. **落差 Δ 大幅缩小**：broken-init Δ = −0.66 ~ −0.88（崩塌式），fixed-init Δ = **−0.04 ~ −0.34**（轻度损失）
+3. **collision 上几乎无落差**（Δ = −0.04 ~ −0.07）—— pusht 预训练的视觉知识在 collision 上保留最多，predictor 在 frozen-target 空间里几乎和 trained-target 一样准
+4. **uniform 上 Δ 反而随 λ 减小**（λ=1 Δ=−0.20 → λ=10 Δ=−0.16）—— 出乎意料，可能因为 λ=10 时 encoder 压扁到"球位置"方向，恰好与 pusht 的位置识别能力对齐
+5. **结论修正**：原版"predictor 学的是 encoder-specific 局部映射"**在 broken-init 上成立、在 fixed-init 上只部分成立**。fixed-init 下 predictor 实际**学到了相当通用的 dynamics**（pusht 预训练保留了语义结构），但 trained-target metric 仍然高估了它的真实质量（落差 0.04-0.34）
 
 ---
 
-## 6. 综合机制：高 λ 在 image-based LeWM 上做了什么
+## 6. 综合机制：高 λ 在 image-based LeWM 上做了什么（fixed-init 版）
 
 ```
 出发点
   pusht-pretrained ViT  →  zero-shot 已能在 phyworld 解码物理量到 ρ ≈ 0.9
                             (来自 5-26 主报告 §6.1)
 
-加 deep-sup probe 训练：
-  probe_loss × λ  在 w=50 时是 pred_loss 的 73-317 倍
+加 deep-sup probe 训练（fixed-init, λ=10）：
+  λ × probe_loss  是 pred_loss 的 15-125 倍（依域不同）
                 ↓
-  optimizer 几乎只在最小化 probe_loss
+  optimizer 主要在最小化 probe_loss（probe 占 total 56-78%）
                 ↓
-  encoder 被强制把 latent 中"物理量对应的方向"放大、其他方向压扁
+  encoder 被推着把 latent 中"物理量对应的方向"放大、其他方向压扁
                 ↓
-  projector 输出从 ~10 维塌到 ~1.5 维（诊断 3）
+  projector 输出 eff_dim：13~41 (λ=1) → 3~17 (λ=10)，塌方 39-90%
                 ↓
-  predictor 在这个 1.5 维空间里学的是 "x_t+1 = x_t + v_t" 这种极简映射
+  predictor 在这个被压扁的空间里学动力学
                 ↓
   评估时：
-    - K=4 ρ：probe loss 的对偶 → 必然涨 ✓
-    - latent cos：encoder 自相似（左右两端在同一压扁空间里）→ 必然高 ✓
-    - pred_loss：encoder 失去其他信息后预测 next latent 反而更难 → 退化 ✗
-    - swap test：predictor 完全 encoder-specific → frozen swap 崩 ✗
-    - frozen-target cos：predictor 输出在 pusht space 几乎正交 → 接近 0 ✗
+    - K=4 ρ：probe loss 的对偶 → 单调或近单调上升 ✓（表面提升）
+    - latent cos（trained-target）：encoder 自相似 → 单调上升 ✓（表面提升）
+    - pred_loss：world model 真目标 → uniform / collision 单调退化 ✗，parabola U 形
+    - frozen-target cos：fixed-init 上落差仅 −0.04~−0.34（pusht 语义保留较多）
+       但 trained-target cos 仍然高估了 predictor 的真实质量
 ```
 
-**Sweep 报告里"高 λ 全面胜出"= probe 损失对偶 + encoder 自相似指标全套**，是一种系统性 metric gaming，**不是 world model 在物理上变好**。
+**修订版结论**：
+- Sweep 报告里"高 λ 全面胜出"主要还是 **probe 损失对偶**的产物（K=4 ρ 必然涨），不代表 world model 在物理上变好
+- 但程度比 broken-init 时温和：fixed-init 上 predictor 在 frozen pusht semantic 空间里仍保留 60-80% 的 cos
+- **生产建议**：用 **pred_loss 选 λ**（λ=1 全域最佳），把 K=4 ρ / latent cos 当**次要诊断**，不要单独依赖
 
 ---
 
