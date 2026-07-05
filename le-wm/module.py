@@ -283,3 +283,61 @@ class ARPredictor(nn.Module):
         x = self.dropout(x)
         x = self.transformer(x, c)
         return x
+
+
+class SecondOrderDynamics(nn.Module):
+    """Structured 2nd-order integrator for the physical latent slot (PIWM-style).
+
+    Replaces the black-box predictor *on the position slot only* with a fixed
+    kinematic form, so long-horizon rollout keeps physical inertia instead of
+    drifting. The form is fixed; only the acceleration correction is learnable:
+
+        v_t         = z_pos_t - z_pos_{t-1}       (finite-difference velocity)
+        a_t         = accel(z_pos_t, v_t)         (learnable, zero-init -> a_0 = 0)
+        z_pos_{t+1} = z_pos_t + v_t + a_t
+
+    Zero-init on the last layer means training starts as *exact* constant-velocity
+    motion (z_pos_{t+1} = 2 z_pos_t - z_pos_{t-1}), the correct prior for
+    uniform_motion; the accel MLP only bends it where the data demands (collision).
+    """
+
+    def __init__(self, pos_dim, act_dim=0, hidden=64, use_action=False, learnable_accel=True):
+        super().__init__()
+        self.pos_dim = pos_dim
+        self.use_action = bool(use_action) and act_dim > 0
+        self.learnable_accel = bool(learnable_accel)
+        # learnable_accel=False -> pure constant-velocity extrapolation (a == 0).
+        # This is the exact prior for zero-acceleration motion (uniform_motion) and
+        # generalizes to any velocity (v-OOD) since it never fits ID-specific residuals.
+        if self.learnable_accel:
+            in_dim = pos_dim * 2 + (act_dim if self.use_action else 0)
+            self.accel = nn.Sequential(
+                nn.Linear(in_dim, hidden),
+                nn.SiLU(),
+                nn.Linear(hidden, pos_dim),
+            )
+            nn.init.zeros_(self.accel[-1].weight)
+            nn.init.zeros_(self.accel[-1].bias)
+        else:
+            self.accel = None
+        self.last_accel_sq = None  # cached mean-square accel for optional regularization
+
+    def forward(self, pos, action=None):
+        """pos: (B, T, pos_dim) input position slots -> next-position slots (B, T, pos_dim).
+
+        Teacher-forced: output[:, i] predicts frame i+1 from frames i-1 and i.
+        The first frame has no predecessor, so its velocity is set to 0 (pad).
+        action: (B, T, act_dim) raw action, only consumed if use_action=True.
+        """
+        pos_prev = torch.cat([pos[:, :1], pos[:, :-1]], dim=1)  # shift right, pad first
+        v = pos - pos_prev                                      # (B, T, P), v[:, 0] = 0
+        if self.accel is None:
+            return pos + v                                      # pure constant velocity
+        feats = [pos, v]
+        if self.use_action:
+            if action is None:
+                raise ValueError("SecondOrderDynamics.use_action=True but no action passed to predict()")
+            feats.append(action)
+        a = self.accel(torch.cat(feats, dim=-1))
+        self.last_accel_sq = a.pow(2).mean()
+        return pos + v + a

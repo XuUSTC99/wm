@@ -1,0 +1,16 @@
+# Physion Collide dynamics — range-A training (2026-07-05).
+# Decisions (recorded per user request):
+#  - frameskip=3: Physion is 30fps; num_steps=4 window -> 12 frames = 0.4s span,
+#    enough to cover a collision. Matches lewm's short-horizon training regime.
+#  - keys_to_load has NO proprio/state: Physion MP4s carry no object positions.
+#  - action is placeholder zero-mean noise (see convert_physion_to_lewm.py) ->
+#    lewm trains as a V-JEPA-style pure-video JEPA (sigreg + next-emb pred).
+dataset:
+  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+  frameskip: 3
+  name: physion_collide_dyn
+  keys_to_load:
+    - pixels
+    - action
+  keys_to_cache:
+    - action

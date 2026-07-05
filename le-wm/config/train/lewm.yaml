@@ -21,7 +21,7 @@ trainer:
   gradient_clip_val: 1.0
 
 loader:
-  batch_size: 128
+  batch_size: 64      # 64 fits the 11-frame free-rollout sequences (num_preds=8) on 80GB
   num_workers: ${num_workers}
   persistent_workers: True
   prefetch_factor: 3
@@ -42,11 +42,22 @@ wandb:
     resume: allow
     log_model: False
 
+tensorboard:
+  enabled: True
+  name: tb            # logs -> <run_dir>/tb/  (run_dir = cache_dir/subdir)
+  save_dir: null      # null -> run_dir (same folder as ckpt & config.yaml)
+
 wm:
   type: lewm
   history_size: 3
-  num_preds: 1
+  num_preds: 8          # free-rollout horizon (num_steps = num_preds + history_size = 11)
   embed_dim: 192
+  # DEFAULT free-rollout: autoregressive multi-step training, no teacher forcing.
+  # Verified 2026-07-05 to be the dominant lever for long-horizon+OOD across
+  # uniform/collision/parabola (both-OOD nMSE halved+). See reports/6-24/
+  # piwm_dynamics_conclusion.md. For a teacher-forced baseline set free_rollout=false
+  # AND num_preds=1 (the TF loss path requires num_preds=1).
+  free_rollout: true
 
 predictor:
   depth: 6
@@ -56,7 +67,23 @@ predictor:
   dropout: 0.1
   emb_dropout: 0.0
 
+# Structured 2nd-order dynamics on the physical slot (PIWM-style).
+# enabled=false -> pure black-box predictor (baseline). When true, the position
+# slot evolves by z_pos_{t+1} = z_pos_t + v_t + learnable_accel; use together
+# with loss.structured.weight>0 so the slot actually carries position.
+dynamics:
+  enabled: false
+  pos_dim: null           # null/auto -> read from loss.structured.target dim (uniform=2, collision=4)
+  hidden: 64              # acceleration-correction MLP width
+  learnable_accel: true   # false -> pure constant-velocity (a==0); best prior for uniform, no OOD overfit
+  accel_reg: 0.0          # lambda * ||accel||^2 penalty; >0 pulls learnable accel toward constant-velocity
+  use_action: false # feed raw action into the accel MLP. CAUTION: in phyworld the
+                    # "action" column may hold a physical quantity (uniform: velocity);
+                    # only enable when action is a genuine control signal + its dim
+                    # matches between train and rollout.
+
 loss:
+  pos_weight: 1.0     # >1 up-weights the structured physical slot in pred_loss (makes it load-bearing)
   sigreg:
     weight: 0.09
     kwargs:
@@ -68,3 +95,27 @@ loss:
     weight: 0.0       # λ_probe; 0 = off. Sweep e.g. 0.1 / 1.0 / 10.0
     target: proprio   # single column or list, e.g. [proprio, action]
     frames: 1         # 1 = single-frame; >1 = stack K frames (velocity decodable); max = num_steps(=4)
+  # Structured latent slots: directly force fixed latent dimensions to be
+  # physical quantities. Unlike probe loss, this has no readout head:
+  # emb[..., start_dim:start_dim+target_dim] itself must match target.
+  structured:
+    weight: 0.0       # λ_struct; 0 = off. Try 0.1 / 1.0 first.
+    target: proprio   # single column or list; default fixes first dims to position
+    start_dim: 0      # physical slot begins at emb[..., 0]
+  # Dynamics-consistency (NEW, 2026-07-05): constrain the PREDICTED slot velocity
+  # to match true proprio velocity over the rollout horizon — constrains evolution,
+  # not just state, to target long-horizon drift. Soft physics-eq constraint (no
+  # fixed accel form). Needs structured.weight>0 + wm.free_rollout=true.
+  consistency:
+    weight: 0.0        # λ_cons; 0 = off. Try 0.1 / 1.0.
+    target: proprio
+    start_dim: 0
+    accel_weight: 0.0  # >0 adds 2nd-order (acceleration) consistency
+
+# Appearance-invariance augmentation (NEW): per-trial brightness/contrast jitter on
+# pixels during training -> encoder invariant to appearance. Attacks r/m-OOD (appearance
+# shift biases position encoding) AND shrinks synthetic->real (Physion) domain gap.
+aug:
+  appearance: 0.0    # brightness/contrast jitter std; try 0.2 / 0.3 / 0.5. 0 = off.
+  scale: 0.0         # per-trial center-zoom jitter (geometric, targets radius/size OOD).
+                     # pure-video only — auto-skipped when structured/consistency loss is on.

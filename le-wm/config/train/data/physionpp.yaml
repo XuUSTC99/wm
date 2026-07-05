@@ -1,0 +1,18 @@
+# Physion++ readout — train lewm ON real physics data (2026-07-06).
+# proprio/state = target object 3D position/velocity (extracted from pkl);
+# action = placeholder noise (passive data); scene_idx = OOD label (property scene).
+# frameskip=1 here because the converter already downsampled (its --frameskip 4).
+# Enables structured/consistency (real proprio) + free-rollout on real Physion++.
+dataset:
+  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+  frameskip: 1
+  name: physionpp_readout
+  keys_to_load:
+    - pixels
+    - action
+    - proprio
+    - state
+  keys_to_cache:
+    - action
+    - proprio
+    - state

@@ -8,11 +8,11 @@ import lightning as pl
 import stable_pretraining as spt
 import stable_worldmodel as swm
 import torch
-from lightning.pytorch.loggers import WandbLogger
+from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
 from omegaconf import OmegaConf, open_dict
 
 from jepa import JEPA
-from module import ARPredictor, Embedder, MLP, SIGReg
+from module import ARPredictor, Embedder, MLP, SIGReg, SecondOrderDynamics
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
 
 
@@ -52,6 +52,43 @@ def lejepa_forward(self, batch, stage, cfg):
     # Replace NaN values with 0 (occurs at sequence boundaries)
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
 
+    # Appearance-invariance augmentation (NEW 2026-07-05): per-trial (not per-frame,
+    # to keep temporal consistency) brightness/contrast jitter on normalized pixels
+    # during training. Forces the encoder to be invariant to appearance -> attacks
+    # the r/m-OOD softspot (radius/mass change -> appearance change -> biased position
+    # encoding) AND shrinks the synthetic->real domain gap (phyworld-trained reps
+    # currently transfer to Physion *worse than random*; appearance is the gap).
+    # Off by default (aug.appearance=0).
+    aug_cfg = cfg.get("aug", None)
+    if stage == "fit" and aug_cfg is not None and float(aug_cfg.get("appearance", 0.0)) > 0:
+        s = float(aug_cfg["appearance"])
+        px = batch["pixels"].float()  # (B, T, C, H, W), imagenet-normalized
+        bsz = px.size(0)
+        bright = torch.randn(bsz, 1, 1, 1, 1, device=px.device) * s              # per-trial shift
+        contrast = (1.0 + torch.randn(bsz, 1, 1, 1, 1, device=px.device) * s).clamp(0.5, 1.5)
+        batch["pixels"] = px * contrast + bright
+
+    # Scale-invariance augmentation (NEW 2026-07-06): per-trial random center-zoom on
+    # pixels, temporally consistent. Attacks the r/m-OOD softspot DIRECTLY -- radius
+    # change is a ball SIZE change, which photometric jitter can't simulate. SAFE only
+    # for pure-video training (no proprio target): a geometric transform desyncs proprio
+    # labels, so we skip it when structured/consistency losses are active. Off by default.
+    _scale_s = float(aug_cfg.get("scale", 0.0)) if aug_cfg is not None else 0.0
+    _struct_on = (float((cfg.loss.get("structured", {}) or {}).get("weight", 0.0)) > 0
+                  or float((cfg.loss.get("consistency", {}) or {}).get("weight", 0.0)) > 0)
+    if stage == "fit" and _scale_s > 0 and not _struct_on:
+        px = batch["pixels"].float()
+        B, T, C, H, W = px.shape
+        sc = 1.0 + (torch.rand(B, device=px.device) * 2 - 1) * _scale_s   # per-trial scale in [1-s,1+s]
+        theta = torch.zeros(B, 2, 3, device=px.device, dtype=px.dtype)
+        theta[:, 0, 0] = 1.0 / sc                                          # grid uses inverse scale
+        theta[:, 1, 1] = 1.0 / sc
+        theta = theta.repeat_interleave(T, dim=0)                          # (B*T,2,3)
+        x = px.reshape(B * T, C, H, W)
+        grid = torch.nn.functional.affine_grid(theta, x.shape, align_corners=False)
+        x = torch.nn.functional.grid_sample(x, grid, align_corners=False, padding_mode="border")
+        batch["pixels"] = x.reshape(B, T, C, H, W)
+
     output = self.model.encode(batch)
 
     emb = output["emb"]  # (B, T, D)
@@ -59,14 +96,107 @@ def lejepa_forward(self, batch, stage, cfg):
 
     ctx_emb = emb[:, :ctx_len]
     ctx_act = act_emb[:, : ctx_len]
+    ctx_action = batch["action"][:, :ctx_len]  # raw action for structured dynamics (ignored if off)
 
-    tgt_emb = emb[:, n_preds:] # label
-    pred_emb = self.model.predict(ctx_emb, ctx_act) # pred
+    if cfg.wm.get("free_rollout", False):
+        # Free-rollout (no teacher forcing): unroll the predictor autoregressively over
+        # the num_preds horizon, feeding each prediction back as the next input. Trains the
+        # recursive dynamics to not compound errors (PIWM §4.1) -> directly targets the
+        # long-horizon drift that 1-step teacher forcing masks. Needs num_preds>1.
+        emb_hist = ctx_emb.clone()
+        preds = []
+        for k in range(ctx_len, emb.size(1)):
+            e_in = emb_hist[:, -ctx_len:]
+            a_in = act_emb[:, k - ctx_len:k]
+            a_raw = batch["action"][:, k - ctx_len:k]
+            p = self.model.predict(e_in, a_in, action=a_raw)[:, -1:]  # (B,1,D)
+            preds.append(p)
+            emb_hist = torch.cat([emb_hist, p], dim=1)
+        pred_emb = torch.cat(preds, dim=1)   # (B, H, D), H = T - ctx_len
+        tgt_emb = emb[:, ctx_len:]           # (B, H, D)
+    else:
+        tgt_emb = emb[:, n_preds:] # label
+        pred_emb = self.model.predict(ctx_emb, ctx_act, action=ctx_action) # pred
 
-    # LeWM loss
-    output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
+    # LeWM loss. Optional pos_weight up-weights the physical slot dims in the
+    # prediction loss -> forces the predictor/encoder to make the position slot
+    # load-bearing (linear in true position), so the physics-governed slot carries
+    # the prediction instead of the diluted 190-D black-box channel.
+    _sq = (pred_emb - tgt_emb).pow(2)  # (B, H, D)
+    _pw = float(cfg.loss.get("pos_weight", 1.0))
+    _scfg = cfg.loss.get("structured", None)
+    if _pw != 1.0 and _scfg is not None and float(_scfg.get("weight", 0.0)) > 0:
+        _tc = _scfg.get("target", "proprio")
+        _tc = [_tc] if isinstance(_tc, str) else list(_tc)
+        _sd = int(_scfg.get("start_dim", 0))
+        _pd = sum(int(batch[c].shape[-1]) for c in _tc)
+        _w = torch.ones(_sq.size(-1), device=_sq.device)
+        _w[_sd:_sd + _pd] = _pw
+        output["pred_loss"] = (_sq * _w).mean()
+    else:
+        output["pred_loss"] = _sq.mean()
     output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
     output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]
+
+    # Structured latent slot loss (PIWM-style intrinsic physical slots).
+    # This is stronger than probe loss: fixed embedding dimensions themselves
+    # are supervised to equal physical quantities, with no readout head.
+    structured_cfg = cfg.loss.get("structured", None)
+    if structured_cfg is not None and float(structured_cfg.get("weight", 0.0)) > 0:
+        tgt_cols = structured_cfg.get("target", "proprio")
+        tgt_cols = [tgt_cols] if isinstance(tgt_cols, str) else list(tgt_cols)
+        target = torch.cat([torch.nan_to_num(batch[c], 0.0) for c in tgt_cols], dim=-1)  # (B,T,P)
+        start_dim = int(structured_cfg.get("start_dim", 0))
+        end_dim = start_dim + target.size(-1)
+        if start_dim < 0 or end_dim > emb.size(-1):
+            raise ValueError(
+                f"structured latent slot [{start_dim}:{end_dim}] does not fit emb dim {emb.size(-1)}"
+            )
+        slot = emb[..., start_dim:end_dim]
+        output["structured_loss"] = (slot - target).pow(2).mean()
+        output["loss"] = output["loss"] + structured_cfg.get("weight", 1.0) * output["structured_loss"]
+
+    # Dynamics-consistency loss (NEW): constrain how the physical slot EVOLVES,
+    # not just its value. The PREDICTED rollout slot's velocity (finite-diff
+    # displacement) must match the true proprio velocity over the horizon. Unlike
+    # structured/probe (which pin "what the state IS"), this constrains "how the
+    # state CHANGES" -> directly targets long-horizon drift. Soft version of a
+    # physics-equation constraint (no fixed accel form -> avoids the smooth-accel
+    # head failing on collision impulses). accel_weight>0 adds 2nd-order
+    # (acceleration) consistency. Designed for free_rollout; needs the physical
+    # slot to be meaningful (use with structured.weight>0).
+    consistency_cfg = cfg.loss.get("consistency", None)
+    if consistency_cfg is not None and float(consistency_cfg.get("weight", 0.0)) > 0:
+        c_cols = consistency_cfg.get("target", "proprio")
+        c_cols = [c_cols] if isinstance(c_cols, str) else list(c_cols)
+        c_sd = int(consistency_cfg.get("start_dim", 0))
+        proprio_full = torch.cat([torch.nan_to_num(batch[c], 0.0) for c in c_cols], dim=-1)  # (B,T,P)
+        c_ed = c_sd + proprio_full.size(-1)
+        h_start = ctx_len if cfg.wm.get("free_rollout", False) else n_preds
+        true_pos = proprio_full[:, h_start:]         # (B, H, P) aligned to pred horizon
+        pred_slot = pred_emb[..., c_sd:c_ed]         # (B, H, P)
+        H = min(pred_slot.size(1), true_pos.size(1))
+        pred_slot, true_pos = pred_slot[:, :H], true_pos[:, :H]
+        pred_vel = pred_slot[:, 1:] - pred_slot[:, :-1]
+        true_vel = true_pos[:, 1:] - true_pos[:, :-1]
+        cons = (pred_vel - true_vel).pow(2).mean()
+        aw = float(consistency_cfg.get("accel_weight", 0.0))
+        if aw > 0 and H >= 3:
+            pred_acc = pred_vel[:, 1:] - pred_vel[:, :-1]
+            true_acc = true_vel[:, 1:] - true_vel[:, :-1]
+            cons = cons + aw * (pred_acc - true_acc).pow(2).mean()
+        output["consistency_loss"] = cons
+        output["loss"] = output["loss"] + float(consistency_cfg["weight"]) * output["consistency_loss"]
+
+    # Accel regularization (keeps the learnable acceleration near 0). uniform_motion's
+    # true acceleration is 0; a free accel MLP overfits ID-specific residuals and wrecks
+    # v-OOD / long-horizon. Penalizing ||accel||^2 pulls it back toward constant-velocity.
+    _dyn_cfg_f = cfg.get("dynamics", None)
+    if (_dyn_cfg_f is not None and float(_dyn_cfg_f.get("accel_reg", 0.0)) > 0
+            and getattr(self.model, "dynamics", None) is not None
+            and getattr(self.model.dynamics, "last_accel_sq", None) is not None):
+        output["accel_reg_loss"] = self.model.dynamics.last_accel_sq
+        output["loss"] = output["loss"] + float(_dyn_cfg_f.get("accel_reg")) * output["accel_reg_loss"]
 
     # Deep-supervision linear probe loss (PIWM-style, arXiv:2504.03861).
     # Aligns projector-space emb with physical state so emb carries linearly-
@@ -188,6 +318,31 @@ def run(cfg):
     _probe_frames = max(1, int(_probe_cfg.get("frames", 1)))  # multi-frame window for velocity decodability
     world_model.probe_head = torch.nn.Linear(embed_dim * _probe_frames, probe_target_dim)
 
+    # Optional structured 2nd-order dynamics on the physical slot (PIWM-style).
+    # Off by default; when enabled, the position slot evolves by a fixed kinematic
+    # rule instead of the black-box predictor. See module.SecondOrderDynamics.
+    _dyn_cfg = cfg.get("dynamics", None)
+    if _dyn_cfg is not None and bool(_dyn_cfg.get("enabled", False)):
+        # pos_dim: auto from the structured target columns (so the physical slot
+        # width tracks the data -> uniform=2, collision=4 with zero code change).
+        # Override by setting dynamics.pos_dim to an int in the config.
+        _pd = _dyn_cfg.get("pos_dim", None)
+        if _pd is None or _pd == "auto":
+            _struct_tgt = cfg.loss.get("structured", {}).get("target", "proprio")
+            _struct_tgt = [_struct_tgt] if isinstance(_struct_tgt, str) else list(_struct_tgt)
+            _pd = sum(int(cfg.wm.get(f"{c}_dim")) for c in _struct_tgt)
+        _use_action = bool(_dyn_cfg.get("use_action", False))
+        _learn_accel = bool(_dyn_cfg.get("learnable_accel", True))
+        world_model.dynamics = SecondOrderDynamics(
+            pos_dim=int(_pd),
+            act_dim=effective_act_dim if _use_action else 0,
+            hidden=int(_dyn_cfg.get("hidden", 64)),
+            use_action=_use_action,
+            learnable_accel=_learn_accel,
+        )
+        print(f"[dynamics] SecondOrderDynamics enabled: pos_dim={_pd} use_action={_use_action} "
+              f"act_dim={effective_act_dim if _use_action else 0} learnable_accel={_learn_accel}", flush=True)
+
     init_ckpt = cfg.get("init_from_ckpt")
     if init_ckpt:
         ck = torch.load(init_ckpt, map_location="cpu", weights_only=False)
@@ -247,14 +402,28 @@ def run(cfg):
     run_id = cfg.get("subdir") or ""
     run_dir = Path(swm.data.utils.get_cache_dir(), run_id)
 
-    # logger=False disables Lightning's default CSVLogger, which has a flaky
-    # "dict contains fields not in fieldnames" crash when the logged metric-key
-    # set changes between rows (hit collision FT at epoch-0 val). We don't need
-    # CSV logs here (wandb off), so disable entirely.
-    logger = False
+    # Collect loggers; wandb (cloud) and tensorboard (local) can coexist.
+    # An empty list -> logger=False, which disables Lightning's default CSVLogger
+    # (flaky "dict contains fields not in fieldnames" crash when the logged
+    # metric-key set changes between rows, e.g. hit collision FT at epoch-0 val).
+    loggers = []
     if cfg.wandb.enabled:
-        logger = WandbLogger(**cfg.wandb.config)
-        logger.log_hyperparams(OmegaConf.to_container(cfg))
+        wandb_logger = WandbLogger(**cfg.wandb.config)
+        wandb_logger.log_hyperparams(OmegaConf.to_container(cfg))
+        loggers.append(wandb_logger)
+    tb_cfg = cfg.get("tensorboard", None)
+    if tb_cfg is not None and tb_cfg.get("enabled", False):
+        # Local, offline board. Logs -> <save_dir or run_dir>/<name>/.
+        # No log_hyperparams: TB hparams only takes flat scalars and chokes on
+        # the nested OmegaConf config; scalar metrics (losses) log automatically.
+        loggers.append(
+            TensorBoardLogger(
+                save_dir=str(tb_cfg.get("save_dir", None) or run_dir),
+                name=tb_cfg.get("name", "tb"),
+                version="",
+            )
+        )
+    logger = loggers or False
 
     run_dir.mkdir(parents=True, exist_ok=True)
     with open(run_dir / "config.yaml", "w") as f:

@@ -25,6 +25,10 @@ class JEPA(nn.Module):
         self.action_encoder = action_encoder
         self.projector = projector or nn.Identity()
         self.pred_proj = pred_proj or nn.Identity()
+        # Optional structured 2nd-order integrator for the physical slot.
+        # Attached post-construction in train.py when dynamics.enabled=true;
+        # None -> pure black-box prediction (baseline behavior).
+        self.dynamics = None
 
     def encode(self, info):
         """Encode observations and actions into embeddings.
@@ -44,14 +48,22 @@ class JEPA(nn.Module):
 
         return info
 
-    def predict(self, emb, act_emb):
+    def predict(self, emb, act_emb, action=None):
         """Predict next state embedding
         emb: (B, T, D)
         act_emb: (B, T, A_emb)
+        action: (B, T, act_dim) raw action; only used by the structured dynamics head.
         """
         preds = self.predictor(emb, act_emb)
         preds = self.pred_proj(rearrange(preds, "b t d -> (b t) d"))
         preds = rearrange(preds, "(b t) d -> b t d", b=emb.size(0))
+        # Structured physics governs the position slot; black-box keeps the rest.
+        # getattr guard: old ckpts pickled before `dynamics` existed have no such attr.
+        dyn = getattr(self, "dynamics", None)
+        if dyn is not None:
+            P = dyn.pos_dim
+            pos_next = dyn(emb[..., :P], action)
+            preds = torch.cat([pos_next, preds[..., P:]], dim=-1)
         return preds
 
     ####################
@@ -90,7 +102,7 @@ class JEPA(nn.Module):
             act_emb = self.action_encoder(act)
             emb_trunc = emb[:, -HS:]  # (BS, HS, D)
             act_trunc = act_emb[:, -HS:]  # (BS, HS, A_emb)
-            pred_emb = self.predict(emb_trunc, act_trunc)[:, -1:]  # (BS, 1, D)
+            pred_emb = self.predict(emb_trunc, act_trunc, action=act[:, -HS:])[:, -1:]  # (BS, 1, D)
             emb = torch.cat([emb, pred_emb], dim=1)  # (BS, T+1, D)
 
             next_act = act_future[:, t : t + 1, :]  # (BS, 1, action_dim)
@@ -100,7 +112,7 @@ class JEPA(nn.Module):
         act_emb = self.action_encoder(act)  # (BS, T, A_emb)
         emb_trunc = emb[:, -HS:]  # (BS, HS, D)
         act_trunc = act_emb[:, -HS:]  # (BS, HS, A_emb)
-        pred_emb = self.predict(emb_trunc, act_trunc)[:, -1:]  # (BS, 1, D)
+        pred_emb = self.predict(emb_trunc, act_trunc, action=act[:, -HS:])[:, -1:]  # (BS, 1, D)
         emb = torch.cat([emb, pred_emb], dim=1)
 
         # unflatten batch and sample dimensions
