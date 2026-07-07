@@ -52,6 +52,28 @@ def lejepa_forward(self, batch, stage, cfg):
     # Replace NaN values with 0 (occurs at sequence boundaries)
     batch["action"] = torch.nan_to_num(batch["action"], 0.0)
 
+    aug_cfg = cfg.get("aug", None)
+
+    # Temporal (velocity) augmentation (NEW 2026-07-06): randomly stride the loaded
+    # frame sequence to simulate different speeds -> attacks the v-OOD softspot (unseen
+    # velocities) that photometric/scale aug can't touch. Requires the data to load
+    # EXTRA frames: set data.dataset.num_steps = (history+num_preds) * aug.temporal.
+    # Pure-video safe: strides ALL temporal keys (pixels/action/proprio/state) together.
+    # Applied first, before appearance/scale, so those act on the strided frames.
+    _temporal = int(aug_cfg.get("temporal", 1)) if aug_cfg is not None else 1
+    if stage == "fit" and _temporal > 1:
+        base_T = ctx_len + n_preds
+        T_loaded = batch["pixels"].size(1)
+        max_s = min(_temporal, T_loaded // base_T)
+        if max_s >= 2:
+            s = int(torch.randint(1, max_s + 1, (1,)).item())           # per-batch stride
+            span = (base_T - 1) * s + 1
+            off = int(torch.randint(0, T_loaded - span + 1, (1,)).item())
+            idx = off + torch.arange(base_T, device=batch["pixels"].device) * s
+            for k in list(batch.keys()):
+                if torch.is_tensor(batch[k]) and batch[k].dim() >= 2 and batch[k].size(1) == T_loaded:
+                    batch[k] = batch[k].index_select(1, idx)
+
     # Appearance-invariance augmentation (NEW 2026-07-05): per-trial (not per-frame,
     # to keep temporal consistency) brightness/contrast jitter on normalized pixels
     # during training. Forces the encoder to be invariant to appearance -> attacks
@@ -333,15 +355,18 @@ def run(cfg):
             _pd = sum(int(cfg.wm.get(f"{c}_dim")) for c in _struct_tgt)
         _use_action = bool(_dyn_cfg.get("use_action", False))
         _learn_accel = bool(_dyn_cfg.get("learnable_accel", True))
+        _accel_form = str(_dyn_cfg.get("accel_form", "mlp"))
         world_model.dynamics = SecondOrderDynamics(
             pos_dim=int(_pd),
             act_dim=effective_act_dim if _use_action else 0,
             hidden=int(_dyn_cfg.get("hidden", 64)),
             use_action=_use_action,
             learnable_accel=_learn_accel,
+            accel_form=_accel_form,
         )
         print(f"[dynamics] SecondOrderDynamics enabled: pos_dim={_pd} use_action={_use_action} "
-              f"act_dim={effective_act_dim if _use_action else 0} learnable_accel={_learn_accel}", flush=True)
+              f"act_dim={effective_act_dim if _use_action else 0} learnable_accel={_learn_accel} "
+              f"accel_form={_accel_form}", flush=True)
 
     init_ckpt = cfg.get("init_from_ckpt")
     if init_ckpt:

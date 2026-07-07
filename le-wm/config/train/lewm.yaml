@@ -76,6 +76,7 @@ dynamics:
   pos_dim: null           # null/auto -> read from loss.structured.target dim (uniform=2, collision=4)
   hidden: 64              # acceleration-correction MLP width
   learnable_accel: true   # false -> pure constant-velocity (a==0); best prior for uniform, no OOD overfit
+  accel_form: mlp         # STRICT PIWM: "const" = a=g (learnable gravity, projectile/uniform). "mlp" = free net (non-PIWM baseline).
   accel_reg: 0.0          # lambda * ||accel||^2 penalty; >0 pulls learnable accel toward constant-velocity
   use_action: false # feed raw action into the accel MLP. CAUTION: in phyworld the
                     # "action" column may hold a physical quantity (uniform: velocity);
@@ -118,4 +119,5 @@ loss:
 aug:
   appearance: 0.0    # brightness/contrast jitter std; try 0.2 / 0.3 / 0.5. 0 = off.
   scale: 0.0         # per-trial center-zoom jitter (geometric, targets radius/size OOD).
+  temporal: 1        # frame-stride factor for velocity aug (2=random stride 1-2). needs data num_steps*=temporal. 1=off.
                      # pure-video only — auto-skipped when structured/consistency loss is on.

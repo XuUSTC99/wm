@@ -6,7 +6,8 @@
 #
 # Usage: ./run_physionpp.sh <GPU> <NAME> <structured_w> <consistency_w> <pos_weight> [extra]
 set -u
-GPU=${1:-0}; NAME=${2:-pp}; SW=${3:-0.0}; CW=${4:-0.0}; PW=${5:-1.0}; EXTRA=${6:-}
+GPU=${1:-0}; NAME=${2:-pp}; SW=${3:-0.0}; CW=${4:-0.0}; PW=${5:-1.0}
+AUG_APP=${6:-0.0}; AUG_SCALE=${7:-0.0}; NP=${8:-8}   # apply lewm-session's aug conclusion
 ROOT=/home/likun-share/junjxu/wm; LEWM=$ROOT/le-wm
 export STABLEWM_HOME=/data1/likun-share/junjxu/.stable_worldmodel
 export HF_HOME=/data1/likun-share/junjxu/.cache_huggingface
@@ -19,8 +20,9 @@ CUDA_VISIBLE_DEVICES=$GPU WANDB_MODE=disabled HYDRA_FULL_ERROR=1 \
   PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
   .venv/bin/python -u train.py data=physionpp \
   wandb.enabled=false tensorboard.enabled=false \
-  wm.free_rollout=true wm.num_preds=8 \
-  loss.structured.weight=$SW loss.consistency.weight=$CW loss.pos_weight=$PW $EXTRA \
+  wm.free_rollout=true wm.num_preds=$NP \
+  loss.structured.weight=$SW loss.consistency.weight=$CW loss.pos_weight=$PW \
+  aug.appearance=$AUG_APP aug.scale=$AUG_SCALE \
   output_model_name=$NAME subdir=$NAME trainer.max_epochs=20 \
   +init_from_ckpt=$INIT > "$LOG/train_${NAME}.log" 2>&1
 EC=$?

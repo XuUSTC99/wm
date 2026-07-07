@@ -301,15 +301,25 @@ class SecondOrderDynamics(nn.Module):
     uniform_motion; the accel MLP only bends it where the data demands (collision).
     """
 
-    def __init__(self, pos_dim, act_dim=0, hidden=64, use_action=False, learnable_accel=True):
+    def __init__(self, pos_dim, act_dim=0, hidden=64, use_action=False, learnable_accel=True, accel_form="mlp"):
         super().__init__()
         self.pos_dim = pos_dim
         self.use_action = bool(use_action) and act_dim > 0
         self.learnable_accel = bool(learnable_accel)
-        # learnable_accel=False -> pure constant-velocity extrapolation (a == 0).
-        # This is the exact prior for zero-acceleration motion (uniform_motion) and
-        # generalizes to any velocity (v-OOD) since it never fits ID-specific residuals.
-        if self.learnable_accel:
+        # accel_form controls HOW the acceleration term is parameterized:
+        #   "none"  -> a == 0 (pure constant velocity; == old learnable_accel=False)
+        #   "const" -> a = g   STRICT PIWM: the known physics equation for projectile /
+        #              uniform motion is constant acceleration; the ONLY learnable
+        #              physical parameter is g (g->0 for uniform, g->gravity for
+        #              parabola). Fixed form + learnable phys param -> can't overfit.
+        #   "mlp"   -> a = MLP(pos,v[,action])  our original free net (overfits; kept
+        #              only as the non-PIWM comparison baseline).
+        # All zero-init -> training starts at exact constant velocity.
+        self.accel_form = "none" if not self.learnable_accel else accel_form
+        self.accel = None
+        if self.accel_form == "const":
+            self.accel_g = nn.Parameter(torch.zeros(pos_dim))
+        elif self.accel_form == "mlp":
             in_dim = pos_dim * 2 + (act_dim if self.use_action else 0)
             self.accel = nn.Sequential(
                 nn.Linear(in_dim, hidden),
@@ -318,8 +328,6 @@ class SecondOrderDynamics(nn.Module):
             )
             nn.init.zeros_(self.accel[-1].weight)
             nn.init.zeros_(self.accel[-1].bias)
-        else:
-            self.accel = None
         self.last_accel_sq = None  # cached mean-square accel for optional regularization
 
     def forward(self, pos, action=None):
@@ -331,9 +339,14 @@ class SecondOrderDynamics(nn.Module):
         """
         pos_prev = torch.cat([pos[:, :1], pos[:, :-1]], dim=1)  # shift right, pad first
         v = pos - pos_prev                                      # (B, T, P), v[:, 0] = 0
-        if self.accel is None:
+        # getattr guard: ckpts pickled before accel_form existed have self.accel (mlp) or None.
+        form = getattr(self, "accel_form", "mlp" if self.accel is not None else "none")
+        if form == "none":
             return pos + v                                      # pure constant velocity
-        feats = [pos, v]
+        if form == "const":                                     # STRICT PIWM: a = g (const accel)
+            self.last_accel_sq = self.accel_g.pow(2).mean()
+            return pos + v + self.accel_g.view(1, 1, -1)        # broadcasts over (B, T, P)
+        feats = [pos, v]                                        # "mlp" (non-PIWM baseline)
         if self.use_action:
             if action is None:
                 raise ValueError("SecondOrderDynamics.use_action=True but no action passed to predict()")

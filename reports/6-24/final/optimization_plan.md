@@ -122,7 +122,7 @@
 
 种子复现方向一致（0.294 vs 0.316，都远好于 np8）。**collision 提升由 latent 证据支撑，稳。**
 
-**⚠️ collision 的 pixel 指标不可信**：np20 pixel 12-15dB 且跨 horizon 几乎不掉、both-OOD(15.3) > ID(12.8) 反常；**静态 decoder 重建（REAL latent）也只有 16-22dB 且同样 ID<OOD** → 是 collision decoder 欠训 + 分区标注异常，**不是模型问题**。collision 用 pixel 尺前需先修 decoder/eval。（uniform 的 pixel 尺正常可信。）
+**⚠️ collision 的 pixel 指标 decoder-limited、不可用（已定案）**：直接对比 np8 vs np20 pixel **几乎一样**（长程都 ~13-14dB、both-OOD 14.9 vs 15.3），而 latent 上 np20 明显更好（both 0.294 vs 0.393）→ pixel 抹平了 latent 差异。根因：**静态 decoder（REAL latent）也只有 17-23dB 且 ID<OOD 反常** → collision decoder 渲染能力本身就弱，**不是模型问题**。**collision 只能用 latent 尺；用 pixel 前须先修/重训 decoder。**（uniform pixel 正常可信。）np20 提升由 latent 证据支撑，成立。
 
 ### 3.7 collision 最终配方与后续
 - **最优**：`free-rollout + num_preds≈18-20 + 纯 FR`，both-OOD 0.393→0.29（−25%）、长程 h28 cos 0.58→0.70。

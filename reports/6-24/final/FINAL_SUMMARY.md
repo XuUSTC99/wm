@@ -9,18 +9,48 @@
 > - [diagnostic_report.md](../diagnostic_report.md) — deep-supervision 方法论诊断
 > - [piwm_dynamics_conclusion.md](../piwm_dynamics_conclusion.md) — 二阶动力学 + PIWM 对照 + free-rollout 发现
 > - [kinematics_exploration.md](../kinematics_exploration.md) — 怎么让运动学真正帮到 OOD/长程
+> - [final/general_augmentation.md](general_augmentation.md) — **通用增广（phyworld+physion 通吃的最强 OOD 方法）**
 
 ---
 
-## 0. TL;DR（五条核心结论）
+## 0. TL;DR（六条核心结论）
 
-1. **真正的主升力是 free-rollout 训练（去掉 teacher forcing）**，不是任何物理结构化手段。三域（uniform/collision/parabola）一致大幅提升，both-OOD nMSE 砍半以上。**已设为默认。**
+0. **⭐ 数据增广 = 最强通用 OOD 杠杆**（2026-07-06，见 [general_augmentation.md](general_augmentation.md)）：**外观增广全域治 r/m-OOD 软肋（nMSE 腰斩）+ both-OOD 大降**（uniform −48%、parabola −63%、collision −24%），**超过所有物理结构方法且纯视频（physion 也能用）**。
+   - **collision 上最好的配方是"尺度增广 + 长 rollout(num_preds=20)"一起用**，both-OOD 从基线 0.393 降到约 0.21（−45%），三个随机种子跑出来都一样，不是碰运气。
+   - **注意：这些方法不能想当然地全叠加，组合起来有时反直觉。** 比如外观增广和长 rollout 各自单独用都有效，但一起用反而更差（互相打架）；而尺度增广单独用是有害的，可一旦配上长 rollout 就成了全场最好（互补）。所以要挑对搭配，不是把所有有用的堆一起。
+1. **真正的主升力是 free-rollout 训练（去掉 teacher forcing，LeWM原文采用teacher forcing 训练）**，不是任何物理结构化手段。三域（uniform/collision/parabola）一致大幅提升，both-OOD nMSE 砍半以上。**已设为默认。**
 2. **训练 rollout 长度 num_preds 要按动力学复杂度调**（2026-07-05 新增，见 [optimization_plan §3](optimization_plan.md)）：**collision 甜点≈20**，both-OOD 0.393→**0.294（−25%）**、长程 h28 cos 0.58→**0.70**、ID 3 倍；但 **uniform/parabola 保持 8**（调大反而有害）。冲量/多步域吃长 rollout，简单域不吃。**这是 collision 上首个大提升。**
-3. **运动学方程本身不带来提升**——直接挂 2 维 slot + smooth accel MLP，三域净贡献≈0 甚至变差；collision 完全不吃运动学。
-4. **但配齐条件后运动学能帮**：`free-rollout + 承重编码(pos_weight) + 光滑动力学域 + pixel 尺` 四条同时满足时净超纯 FR（uniform pixel 长程 **+1.25dB**、parabola both-OOD **0.313→0.262**）。
+3. **运动学方程本身不带来提升**——直接挂 2 维 slot + smooth accel MLP，三域净贡献≈0 甚至变差；collision 完全不吃运动学。**2026-07-07 补充：严格照 PIWM 做（固定物理形式 `a=g` + 只学一个重力参数，parabola 上这就是正确物理）也一样没用——both-OOD 比基线还差（parabola 0.313→0.372、uniform 0.131→0.206），甚至比会过拟合的自由 MLP 更差**。根因：PIWM 的物理红利来自它整套 extrinsic 架构（独立低维物理 latent + 分阶段训练 + decoder 强制依赖物理态），不是单靠方程；嫁接到"共享黑盒切 2 维 slot"的 JEPA 上，2 维被 190 维黑盒淹没、还和黑盒预测器打架 → 越弄越差。**物理/动力学这条线彻底否掉（无论自由 MLP 还是严格 PIWM）；要吃红利须整换 extrinsic 架构，且大概率仍超不过增广。**
+4. **运动学唯一出现过正收益的情形是 marginal 的、且已被增广彻底超越**：只有四条同时满足才行——① free-rollout 打底 + ② pos_weight 加重位置 loss + ③ 只在光滑动力学域（uniform/parabola）+ ④ 用 pixel PSNR 量（latent 聚合会稀释）。满足时比纯 free-rollout 好一点点（uniform 像素长程 +1.25dB、parabola both-OOD 0.313→0.262）。**但增广轻松做到 parabola 0.115（远超 0.262），所以这条实践上无用，只有"物理表示可解释性"的价值。**
 5. **方法论教训**：latent cos / K=4 ρ 涨 ≠ world model 变好；主指标要用 **pred_loss / pixel**，别信被稀释或被 probe 主导的代理指标。consistency loss 实测未见收益。
 
-**当前各域最优配方**：uniform/parabola = `free-rollout(np8) + 承重 + 运动学`；**collision = `free-rollout + num_preds≈20 + 纯 FR`**。
+**当前各域最优配方（both-OOD nMSE，↓）**：
+- **uniform** = `free-rollout(np8) + 外观增广0.5` → **0.068**（基线 0.131）
+- **parabola** = `free-rollout(np8) + 外观增广0.5` → **0.115**（基线 0.313）
+- **collision** = `free-rollout + num_preds20 + 尺度增广0.5` → **~0.17**（基线 0.393，三种子确认）
+- **跨数据集通用（含 physion）** = `free-rollout + 外观增广`（纯视频、无需 proprio）
+
+---
+
+## 0b. 试过啥、成没成（一张表看全）
+
+| 手段 | 效果 | 用不用 |
+|---|---|---|
+| **free-rollout 训练**（去 teacher forcing） | 主升力，三域 both-OOD 砍半+ | ✅ **已默认** |
+| **num_preds 按域调**（复杂域调大） | collision 甜点≈20，both-OOD −25% | ✅ 用（collision） |
+| **外观增广**（亮度/对比度，强度0.5） | 全域治 r/m-OOD 软肋、both-OOD 大降、跨数据集通用 | ✅ **用（通用）** |
+| **尺度增广**（中心缩放，强度0.5） | 配 num_preds20 是 collision 最优 | ✅ 用（collision） |
+| 时序增广（帧-stride，想治 v-OOD） | 证伪：只是泛泛 helper，没治好 v-OOD | ❌ 没成 |
+| 承重编码 pos_weight | 让运动学在 pixel 尺出现**边际**正收益 | 🔸 边际、已被增广超越 |
+| 运动学（自由 MLP accel） | 过拟合，三域净贡献≈0 甚至变差 | ❌ 否 |
+| **运动学（严格 PIWM，固定物理+学重力）** | 也没用，比基线和自由 MLP 都差（架构不对） | ❌ 否 |
+| consistency loss（form-free 速度约束） | 实测无收益 | ❌ 没成 |
+| 固定编码 structpos（emb 前 2 维=位置） | 短程/ID pixel 好，长程/both-OOD 反而差 | 🔸 部分 |
+| probe（额外 head 读物理量） | 状态可读、速度可解码，但没解决长程漂移 | 🔸 部分 |
+| freeze_encoder | pusht→phyworld 迁移下有害 | ❌ 别用 |
+| slot 放大（位置→位置+速度） | 诊断清楚（我们非承重、PIWM 是独立完整状态 latent），但增广已封顶、ROI 低 | 🔒 搁置 |
+
+**核心剩余软肋**：collision **v-OOD ~0.39**，appearance/scale/temporal 三种增广都压不下（纯视频难模拟未见速度）。
 
 ---
 
@@ -30,23 +60,30 @@
 |---|---|---|
 | ① probe | probe head 读出物理量 | 保长程一致 + 速度可解码，但没解决长程漂移 |
 | ② 固定编码 structpos | 强制 `emb[:,0:2]=位置` | 短程/ID 变好，长程不变、both-OOD 退化 |
-| ③ 二阶动力学 | 位置 slot 走 `z+v+accel` | latent 上无提升甚至变差（accel MLP 过拟合） |
+| ③ 二阶动力学（自由 MLP / 严格 PIWM） | 位置 slot 走 `z+v+accel` | **均否**：自由 MLP 过拟合、严格 PIWM 更差（架构不对，非方程问题） |
 | ④ **free-rollout** | 训练时喂自己的预测（无 teacher forcing） | **三域全部大幅提升 ← 主升力** |
-| ⑤ 承重编码 pos_weight | pred_loss 里加重物理 slot | 让运动学在光滑域净超纯 FR（pixel 尺） |
-| ⑥ consistency loss | 约束预测速度=真实速度（form-free） | 冲 collision 缺口（用户在验证中） |
+| ⑤ 承重编码 pos_weight | pred_loss 里加重物理 slot | 让运动学在 pixel 尺出现边际正收益（已被增广超越） |
+| ⑥ consistency loss | 约束预测速度=真实速度（form-free） | 实测无收益 |
+| ⑦ **num_preds 按域调** | 复杂域训更长 rollout | collision 甜点≈20，首个大提升 |
+| ⑧ **数据增广** ⭐ | 外观/尺度/时序 像素扰动 | **性能天花板**：外观通用、尺度治 collision、时序没成 |
 
 ---
 
 ## 2. probe vs 固定编码（阶段 ①②，源：structured_loss / probe_vs_structpos）
 
-| 维度 | baseline | probe | 固定编码 structpos |
-|---|:--:|:--:|:--:|
-| 状态可读/速度可解码 | 差 | **强** | 中 |
-| 短程 pixel (h≤4) | 中 | 中 | **最强** |
-| 长程 (h≥16) | 基准 | **最稳** | **最差** |
-| both-OOD | 基准 | 略好 | **退化** |
+数值均取自 [structured_loss_report.md](../structured_loss_report.md) 同一 run 三臂同测（uniform）。
 
-**结论**：两者都只约束"状态是什么"、没约束"状态怎么变"，所以都没解决长程漂移。这直接引出阶段③④。
+| 维度（指标） | baseline | probe | structpos | 谁赢 |
+|---|:--:|:--:|:--:|---|
+| 速度可解码 ρ（ID，↑） | 0.50 | **0.70** | 0.60 | probe（structpos 居中） |
+| 短程 pixel PSNR（h=1，dB↑） | 26.49 | 26.90 | **28.17** | structpos（+1.68 vs base） |
+| ID pixel PSNR（dB↑） | 24.37 | 24.71 | **25.73** | structpos（+1.36 vs base） |
+| 长程 pixel PSNR（h=28，dB↑） | **20.64** | 19.93 | 19.49 | **baseline**（两者都倒挂） |
+| both-OOD latent nMSE（↓） | **0.295** | 0.341 | 0.407 | **baseline**（两者都变差） |
+
+> ⚠️ **别被 latent cos 骗**：latent cos 尺上 probe 长程"最稳"（h28 0.882 vs base 0.843）、both-OOD 也微高，但换到可信的 **pixel / nMSE 尺，probe 和 structpos 在长程/both-OOD 双双跌破 baseline**。这正是 §5 那条方法论教训（latent cos 涨 ≠ world model 变好）的活例。
+
+**结论**：probe 赢在"状态可读"、structpos 赢在"短程/ID pixel"，但**两者都只约束"状态是什么"、没约束"状态怎么变"，长程与 both-OOD 上都没超过 baseline，没解决长程漂移**。这直接引出阶段③④。
 
 ---
 
@@ -109,25 +146,30 @@ free-rollout 三域全部大幅提升；长程 cos 普遍 +0.3 以上。**这是
 
 ## 6. 代码沉淀（le-wm，均已入库，默认不影响 baseline）
 
-| 开关 | 作用 |
-|---|---|
-| `wm.free_rollout` (默认 **true**) | 自回归多步训练，无 teacher forcing ← 主升力 |
-| `loss.pos_weight` | 加重物理 slot 使其承重 |
-| `loss.structured.weight` | 固定编码：`emb[:,:P]=proprio` |
-| `dynamics.enabled / learnable_accel / accel_reg` | 二阶动力学头（pos_dim 自动适配域：uniform=2/collision=4） |
-| `loss.consistency.weight / accel_weight` | form-free 速度/加速度一致性（冲 collision） |
-| `freeze_encoder` | 冻结编码器（实测在 pusht→phyworld 迁移下**有害**，别用） |
+| 开关 | 作用 | 评价 |
+|---|---|---|
+| `wm.free_rollout` (默认 **true**) | 自回归多步训练，无 teacher forcing | ✅ 主升力 |
+| `wm.num_preds` | 训练 rollout 步数（复杂域调大，collision≈20） | ✅ 按域调 |
+| `aug.appearance` | 亮度/对比度增广（强度 0.5） | ✅ 通用最强 |
+| `aug.scale` | 中心缩放增广（grid_sample，纯视频安全） | ✅ collision |
+| `aug.temporal` | 帧-stride 速度增广（需 num_steps×temporal） | ❌ 没成 |
+| `loss.pos_weight` | 加重物理 slot 使其承重 | 🔸 边际 |
+| `loss.structured.weight` | 固定编码：`emb[:,:P]=proprio` | 🔸 部分 |
+| `dynamics.enabled / learnable_accel / accel_form / accel_reg` | 二阶动力学头（`accel_form`: mlp=自由 / const=严格 PIWM `a=g`；pos_dim 自动适配域） | ❌ 均否 |
+| `loss.consistency.weight / accel_weight` | form-free 速度/加速度一致性 | ❌ 无收益 |
+| `freeze_encoder` | 冻结编码器 | ❌ 有害，别用 |
 
-脚本：[run_structdyn.sh](../run_structdyn.sh)（参数化 GPU/NAME/DATA/DOM + env SW/DYN）、[run_pixel.sh](../run_pixel.sh)（decoder→pixel rollout）。产物：`/data1/likun-share/junjxu/runs/structdyn_eval/`。
+脚本：[run_structdyn.sh](../run_structdyn.sh)（参数化 GPU/NAME/DATA/DOM + env SW/DYN）、[run_pixel.sh](../run_pixel.sh)（decoder→pixel rollout，已支持 collision/parabola 域）。产物：`/data1/likun-share/junjxu/runs/structdyn_eval/`。
 
 ---
 
 ## 7. 待续
 
-1. **consistency loss** 冲 collision（用户 A/B 验证中）——form-free 是否优于 accel-MLP。
-2. **PIWM extrinsic 化**：要让运动学全面吃红利，需低维物理态做承重主 latent + 固定形式动力学 + 编码对外观鲁棒（量化/增广），而非黑盒 JEPA 挂 slot。
-3. **pixel 作为默认评测尺**：latent 聚合会稀释物理增益。
+1. **攻 collision v-OOD**（唯一剩余软肋 ~0.39）：纯视频增广都压不下，可能需数据层面（更宽速度分布训练数据）或非增广手段。
+2. **把增广接到 physion 训练验证**（physionpp/physion_collide）——真正跑通"phyworld+physion 通吃"（注意 physion 迁移封顶，须在真实数据上训；偏 physion 会话地盘，需协调）。
+3. **PIWM extrinsic 化**（若坚持物理路线）：需整套换成独立低维物理 latent + 分阶段 + decoder 强制依赖，而非黑盒挂 slot。但增广已封顶，ROI 低。
+4. **collision decoder 待修**（欠训、分区标注异常），修好才能用 pixel 尺复核 collision。
 
 ---
 
-**一句话**：这轮最大的确定收益是 **free-rollout（已默认）**；运动学能锦上添花，但要 free-rollout + 承重 + 光滑域 + pixel 尺四条齐备，冲量域另需 form-free 约束。
+**一句话**：这轮的性能天花板是 **数据增广**（外观通用、尺度治 collision，纯视频跨数据集），其次是 **free-rollout（主升力，已默认）+ num_preds 按域调**；**物理/运动学这条线（固定编码、二阶动力学、自由 MLP、严格 PIWM、consistency）实践上全部否掉**——它们的问题是架构（共享黑盒挂 slot），不是方程，而且都被增广甩开。
