@@ -41,6 +41,7 @@ def main():
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--max-trajs", type=int, default=300)
     ap.add_argument("--tag", default="")
+    ap.add_argument("--group-scenes", default="", help="comma-sep scene names; report mixed horizon nMSE/cos for this group (held-out OOD, robust vs per-scene artifact)")
     args = ap.parse_args()
     dev = args.device
     t0 = time.time()
@@ -150,6 +151,17 @@ def main():
         if m.sum() < 50:
             continue
         dec(f"PRED {scene_names[s]}", pred_E, m)
+
+    if args.group_scenes:
+        gids = [scene_names.index(s) for s in args.group_scenes.split(",") if s]
+        gm = np.isin(scn, gids)
+        print(f"\n--- GROUP [{args.group_scenes}] mixed horizon (all frames; OOD if held-out ckpt) ---")
+        for h in [1, 2, 4, 8, 16, 32, 64]:
+            m = gm & (horizon == h)
+            if m.sum() < 20:
+                continue
+            cos, nmse = lat(m)
+            print(f"  h={h:3d}  n={m.sum():5d}  cos={cos:+.4f}  nMSE={nmse:.4f}")
 
 
 if __name__ == "__main__":

@@ -18,6 +18,18 @@
 
 **novelty check 既有结论(lewm 会话 7-08/7-09,勿重复劳动)**:free-rollout 2/10、增广 2/10;竞品 SPARK(2510.24216,物理引导增广)、PIAug(2311.00815)、Augmented World Models(2104.05632);[UNVERIFIED] Persistent Robot WM 2603.25685、Sword 2605.07288、Train-Short-Infer-Long 2602.14027(写作前须 citation audit)。
 
+### 名词表:被解剖的五种物理注入方式(论文 §4 / C4 表的行)
+
+| 注入方式 | 约束什么 | 要位置标签吗 | 一句话原理 |
+|---|---|---|---|
+| structpos 固定编码 | 状态是什么 | 要 | 强制 latent 前 2 维 = 真实位置(`emb[:,0:2]≈proprio`),无读出头 |
+| probe 深监督 | 状态可读出 | 要 | 额外线性头从 latent 读出物理量(`probe_head(emb)≈proprio`),latent 无需固定维对齐 |
+| 运动学头 dynamics | 演化(固定方程形式) | 要 | 位置 slot 按 `z+v+a` 显式外推;a 可为 0(匀速)/g(严格 PIWM 重力)/MLP(自由) |
+| **consistency loss** | **演化(无固定形式)** | **要** | 预测 rollout 的位置 slot 做差分得"预测速度",强制等于真值速度(可加二阶);不假设 a 的形式 → 专为 collision 冲量设计(smooth-a 必死处) |
+| **无标签物理先验(label-free)** | **演化(只要求形式)** | **不要** | 不钉真值,只要求 slot"必须按二阶动力学平滑演化",指望位置信息自组织进 slot;动机 = physion_collide 纯视频无 proprio,一切带标签监督失效。对照组 grounded = 同结构 + 钉真值 |
+
+五行从"钉状态"扫到"钉演化"、从"有标签"扫到"无标签",设计空间闭合;全负(含 grounded)→ 支撑"根因是架构(承重问题),不是方程形式或标签有无"。
+
 ## 2. 三条候选故事线
 
 ### Story A:系统解剖(推荐主线)
@@ -30,9 +42,9 @@
 - **风险**:AAAI 评审偏好新方法;需要用"发现支配变量"的正面框架而非"负结果"框架来写。
 
 ### Story B:最小修复(并入 A,不单独成篇)
-> 把 pos_weight 承重包装成 **Load-Bearing Reweighting(LBR)**:一行改动让物理 slot 从有害翻正(0.183→0.114),配四条件边界(free-rollout×承重×光滑域×pixel 尺)。
-- 作用:给 Story A 一个建设性落点,证明机制解释可操作("按机制修,就见效;条件不满足,就失效"——可证伪性强)。
-- 不能当 headline:增益边际、伤迁移。
+> 把 pos_weight 承重包装成 **Load-Bearing Reweighting(LBR)**:一行改动让物理 slot 从有害(0.183)救回与 baseline 持平(3 种子 0.132±0.014 vs 0.136±0.007),pixel 尺与 v-OOD 解码位置上有正向(单种子)。
+- **7-11 种子定版后的降级**:latent 尺"净超 baseline"的说法作废(0.114 是种子噪声);诚实口径 = "承重让物理 slot **无害共存**并恢复可解码性,但不带来净 OOD 增益"。这反而让 Story A 更统一——连最好的物理配置也只是"不伤"。
+- 作用:仍是机制解释的可证伪验证("按机制修,危害确实消失");不能当 headline。
 
 ### Story C:诊断+治疗(extrinsic 架构)——本轮放弃
 > 解剖之后真的换 extrinsic 架构(独立低维物理 latent + 对抗解耦 + 分阶段)修复。

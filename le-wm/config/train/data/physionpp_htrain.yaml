@@ -1,0 +1,18 @@
+# Physion++ HELD-OUT-scene training set (2026-07-08).
+# Excludes bouncy_wall / deform_clothhang / mass_waterpush from training so that
+# rollout on those scenes is genuine property-OOD (within-category generalization:
+# each held-out scene has a same-property training sibling). Built by
+# phyworld/scripts/physion/make_heldout_h5.py from physionpp_readout.h5.
+dataset:
+  num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+  frameskip: 1
+  name: physionpp_htrain
+  keys_to_load:
+    - pixels
+    - action
+    - proprio
+    - state
+  keys_to_cache:
+    - action
+    - proprio
+    - state

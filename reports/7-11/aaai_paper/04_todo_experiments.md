@@ -14,7 +14,8 @@ GPU 现况参考:8×80GB,单 run ≈ 19–32GB / 30–90 min(20ep)。日期锚:a
 | P0-4 | **LBR 甜点 3 种子**(uniform structpos_fr_pw30 × seeds{1234,42}) | C5 的 0.114 是论文唯一正向物理结果,必须稳 | 2 × ~40min | **🔵 已进队列**(P0-1 之后) |
 | P0-5 | 冻结故事线 + 标题 + abstract 文本(不跑卡) | 7-21 要交 | 写作 | 骨架已备,待导师过故事线 |
 
-> 队列 tail:`tail -f /data1/likun-share/junjxu/runs/aaai_p0/p0_queue.log`;结果出后回填 [01_results_ledger.md](01_results_ledger.md)。撞名警示:`pp2_par_*` 归 lewm 会话(120ep),勿再用该前缀起新 run。
+> **✅ P0 实验全部收官(2026-07-11 22:43,18 run 零失败),数字已回填 ledger。** 要点:C1 三种子零重叠坐实;C4 干净基线下物理伤更狠(uniform Δ+0.558);**C5 降级——LBR latent 增益是种子噪声(0.132±0.014 vs 0.136±0.007),幸存正向只剩 pixel/可解码性(单种子)**。撞名警示:`pp2_par_*` 归 lewm 会话(120ep),勿再用该前缀起新 run。
+> 由 C5 降级新增的可选项 **P1-5**:若论文想保留"承重+运动学 pixel +1.25dB"作正向 claim,须补 structcv_fr_pw100 两个种子 + pixel eval(~2h);否则按"边际、指标依赖"写进 anatomy,不跑。
 
 ## P1 —— 全文前(7-21 ~ 7-27)
 

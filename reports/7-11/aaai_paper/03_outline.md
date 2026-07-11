@@ -30,7 +30,7 @@
 - **评测协议(本身是贡献的一部分)**:nMSE/pixel-PSNR 为判决指标,cos/probe-ρ 仅作诊断;probe 协议三件套(paper-init、K=4、no-projector,附 5-26 假阴性案例);按 trajectory 切分。
 
 ## 4. Physical Inductive Biases Fail(C4+C5,~1.5 页,论文的心脏)
-- 4.1 注入方式扫描表(Table 2:5 机制 × 3 域,全红)。
+- 4.1 注入方式扫描表(Table 2:5 机制 × 3 域,全红)。五种机制的定义/差异表见 [02 名词表](02_story_and_novelty.md)——正文开头用 2-3 句把"钉状态(structpos/probe) vs 钉演化(dynamics/consistency) vs 无标签(label-free)"的谱系交代清楚(琨哥八股:概念先定义后使用)。
 - 4.2 pretrain vs post-hoc 2×2(排除"要从头训"辩护;注明 scratch 基线欠拟合 caveat 或用 P0 补跑的干净版)。
 - 4.3 机制:承重问题(2/192 稀释、黑盒冗余编码、梯度比 15–125×、intrinsic-dim 塌方)。Fig.4 机制示意 + 证据面板。
 - 4.4 LBR 最小修复:pos_weight 甜点 30 翻正(0.183→0.114);四条件边界(光滑域 ✓ / 冲量域 ✗ / pixel 尺才可见 / 伤迁移)。**框架:机制的可证伪验证,不是 SOTA 方法。**
