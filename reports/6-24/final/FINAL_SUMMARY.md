@@ -10,6 +10,7 @@
 > - [piwm_dynamics_conclusion.md](../piwm_dynamics_conclusion.md) — 二阶动力学 + PIWM 对照 + free-rollout 发现
 > - [kinematics_exploration.md](../kinematics_exploration.md) — 怎么让运动学真正帮到 OOD/长程
 > - [final/general_augmentation.md](general_augmentation.md) — **通用增广（phyworld+physion 通吃的最强 OOD 方法）**
+> - [novelty trace](../../../../.aris/traces/novelty-check/2026-07-09_run01/free_rollout_lewm_novelty.md) — free-rollout 作为 LeWM 后训练方法的查新边界
 
 ---
 
@@ -173,3 +174,83 @@ free-rollout 三域全部大幅提升；长程 cos 普遍 +0.3 以上。**这是
 ---
 
 **一句话**：这轮的性能天花板是 **数据增广**（外观通用、尺度治 collision，纯视频跨数据集），其次是 **free-rollout（主升力，已默认）+ num_preds 按域调**；**物理/运动学这条线（固定编码、二阶动力学、自由 MLP、严格 PIWM、consistency）实践上全部否掉**——它们的问题是架构（共享黑盒挂 slot），不是方程，而且都被增广甩开。
+
+---
+
+## 8. Novelty check：free-rollout 能不能作为论文创新点？
+
+**结论**：不能把“把 LeWM 改成 free-rollout 训练”单独当成强 novelty。free-rollout / autoregressive rollout / multi-step rollout training 本身是序列模型、视频生成和 world model 里常见的 exposure-bias 修法。Reviewer 很容易说这只是把 teacher forcing 换成已有闭环训练协议。
+
+更合理的 novelty 边界是：
+
+| Claim | Novelty | 怎么写 |
+|---|---:|---|
+| LeWM 的 one-step / teacher-forcing 风格评估会掩盖长程漂移 | Medium | 作为诊断贡献：h=1 很好，但 h=16/28 和 OOD 明显崩 |
+| 直接用 free-rollout 做 LeWM post-training | Low | 不单独主张方法创新，只作为必要训练协议 |
+| free-rollout 暴露并优化物理 WM 的 long-horizon / OOD closed-loop dynamics | Medium | 可作为主线的一部分，但要配合物理漂移分析和三域证据 |
+| free-rollout + physics-consistent latent dynamics / 物理一致性约束 | Medium-High | 更像论文方法：不是换训练技巧，而是为物理闭环演化设计目标 |
+
+所以论文里不建议写：
+
+> We propose free-rollout training for LeWM.
+
+建议写成：
+
+> We identify that one-step teacher-forced LeWM training masks compounding physical errors, and use free-rollout post-training as a closed-loop objective to expose and optimize long-horizon OOD dynamics. We further show that state alignment alone is insufficient; physical consistency must constrain latent temporal evolution.
+
+中文主线：
+
+> 我们发现 LeWM 的单步/teacher-forcing 式训练会掩盖闭环 rollout 中的误差累积；因此用 free-rollout 后训练直接优化长程 OOD 动力学。同时，probe/structpos/PIWM-style 实验表明，只约束“状态是什么”不够，必须约束 latent “怎么随时间演化”。
+
+当前终报里的实验证据支撑这个写法：
+
+- §2：probe/structpos 让状态更可读、短程更好，但 h=28 / both-OOD 反而不如 baseline；
+- §3：free-rollout 三域都显著提升，是工程上的主升力；
+- §4：承重+运动学只有边际收益，说明纯 slot/方程嫁接到共享黑盒 latent 不够；
+- §0/§0b：最终最强结果来自 free-rollout + 按域 num_preds + 数据增广，而不是 “free-rollout alone” 或 “物理方程 alone”。
+
+**最终定位**：free-rollout 是本文必要的训练范式和强 baseline，不是单独 novelty；真正可讲的贡献是“用 closed-loop/free-rollout 视角重新暴露 LeWM 的物理长程/OOD failure，并系统比较状态对齐、动力学约束和增广后，给出哪些机制真正有效”。
+
+### 8.1 如果包装成“probe + struct slot + dynamics + free-rollout”的组合方法，够不够 AAAI？
+
+**不建议这么包装。** 如果写成“probe 作为 loss 保长程一致性并让物理量可解码，固定物理量编码保证短程变好，二阶动力学增强可解释性，承重编码优化，free-rollout 进一步优化长程和 OOD”，novelty 反而会显得弱。
+
+原因有两点：
+
+1. **模块本身都不是强新东西**：probe / physical slot / 二阶 dynamics / free-rollout / loss reweighting 都有近邻工作，容易被 reviewer 看成 engineering stack。
+2. **实验不支持每个模块都作为正贡献**：probe 和 structpos 主要改善可读性或短程；二阶动力学、严格 PIWM-style 和 consistency loss 基本被否；真正稳定提升来自 free-rollout、num_preds 按域调和增广。
+
+按 AAAI 方法论文的标准，这种“五件套”风险很高：
+
+| 写法 | Novelty | 风险 |
+|---|---:|---|
+| “我们提出 probe + slot + dynamics + rollout 的物理结构化 LeWM” | Low-Medium | 像拼已有模块，且 ablation 会暴露很多组件不增益 |
+| “我们用 free-rollout 修 LeWM teacher forcing 问题” | Low | free-rollout 是常见 exposure-bias 修法 |
+| “我们证明物理可解码 ≠ 物理可 rollout，并系统比较哪些结构真的有效” | Medium | 更像可靠诊断贡献 |
+| “closed-loop training + 承重物理通道/物理一致性目标形成统一机制，并显著超过增广/FR baseline” | Medium-High | 需要更强实验，目前还不够 |
+
+因此，不建议主张：
+
+> We propose a unified framework combining probe loss, structured physical slots, second-order dynamics, load-bearing encoding, and free-rollout training.
+
+更建议主张：
+
+> Physical interpretability does not imply physical rollout consistency in latent world models.
+
+对应论文贡献可以写成：
+
+1. **诊断贡献**：LeWM-style one-step / teacher-forced 训练会掩盖 long-horizon 和 OOD drift。
+2. **系统实证贡献**：probe、structpos、二阶 dynamics 分别改善可读性、短程预测或解释性，但都不能稳定解决长程/OOD。
+3. **有效 recipe**：closed-loop free-rollout + domain-adaptive rollout length + augmentation 是当前最稳的改进；承重物理通道只在平滑动力学域提供边际收益。
+
+这条线的 AAAI 风险更低，因为它不是声称“我发明了五个模块”，而是在回答一个更清楚的问题：
+
+> 为什么 latent WM 里“能读出物理量”不等价于“能按物理规律稳定演化”？
+
+**当前 novelty 评估**：
+
+- 组合式 method novelty：约 **4/10**，不稳。
+- 系统诊断 + 负结果 + 有效训练 recipe：约 **6/10**，有机会。
+- 如果后续能把“承重物理通道 + closed-loop rollout objective”抽象成统一算法，并在 OOD/长程上显著超过 free-rollout + augmentation baseline：可到 **7/10** 左右。
+
+对应 trace：`/home/likun-share/.aris/traces/novelty-check/2026-07-10_run01/composed_physics_lewm_aaai.md`。

@@ -74,11 +74,11 @@
 
 吸取 app05 教训后换方向：不碰像素统计，只调 **free-rollout 步数（num_preds）** 和 **几何增广（scale）**。三配置 epoch20 公平对比（horizon 整体 nMSE，越低越好）：
 
-| h | baseline(np8) | np20(纯 num_preds) | scnp16(scale+np16) |
-|---|---|---|---|
-| h16 | 0.0164 | 0.0215 | **0.0103** |
-| h32 | 0.1404 | 0.0326 | **0.0351** |
-| **h64** | 0.2797 | 0.2203 | **0.1361** |
+| h | baseline(np8) | np20(纯np) | scnp16(np16+scale) | **np20sc(np20+scale)** |
+|---|---|---|---|---|
+| h16 | 0.0164 | 0.0215 | 0.0103 | 0.0115 |
+| h32 | 0.1404 | 0.0326 | 0.0351 | **0.0236** |
+| **h64** | 0.2797 | 0.2203 | 0.1361 | **0.0866** |
 
 **变量分离结论：**
 1. **中程（h32）决定性杠杆 = 调大 num_preds**：np20 与 scnp16 都 ~0.033、比 baseline(0.140) 好 **4×**，两者接近 → 主力是 num_preds，不是 scale。
@@ -93,7 +93,9 @@
 
 friction_collision 上 np20 的 cos 仍 0.992（方向对）但 nMSE 炸 → **纯长 rollout 会在某些场景幅度过冲**；scale 几何增广（对物体尺度/位置 rOOD 鲁棒）把幅度拉回。
 
-→ **与 app05 相反，num_preds↑ 和 scale 是 cos/nMSE 同向的真实增益**：不改像素统计的方法（几何 + 更长 rollout）在真实 Physion++ 上稳赢，appearance（改亮度统计）则崩。**当前最优 = scnp16（num_preds16 + scale）**。
+→ **与 app05 相反，num_preds↑ 和 scale 是 cos/nMSE 同向的真实增益**：不改像素统计的方法（几何 + 更长 rollout）在真实 Physion++ 上稳赢，appearance（改亮度统计）则崩。
+
+**顶配 np20sc（num_preds20 + scale0.3）= 全局最优**：长程 h64 nMSE **0.087**（baseline 0.280 的 1/3.2、比 scnp16 0.136 再降 37%），h32 0.024（好 baseline 6×）。friction_collision 从纯 np20 的 24.6 稳到 **0.019**（比 scnp16 0.045 更低）。**num_preds 越长 + scale 稳幅度，长程越好，h64 未见拐点** → 值得再往 np24/28 推。剩余 mass_dominoes/friction_platform 的 nMSE 数十是静止物体的 nMSE 分母 artifact（cos 均 0.99），非真误差。
 
 **注**：per-scene nMSE 对静止/小位移物体有分母敏感性（cos 高而 nMSE 大时优先信同场景相对对比）；此处 scnp16 vs np20 用相同 GT、相同 n，差异纯来自预测，干净。
 

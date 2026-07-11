@@ -1,0 +1,77 @@
+# 故事线与创新性评估(AAAI-27)
+
+**先说结论**:推荐 **Story A+B 混合**——"系统解剖 + 最小建设性修复",统一论点是 **"可解码 ≠ 承重"(presence ≠ use)**。免得读者误会:这不是"负结果堆",而是"找到支配变量(承重/表示挤占)并给出边界条件"的实证科学。
+
+---
+
+## 1. 我们手里有什么(资产盘点,按论文价值排序)
+
+| 资产 | 强度 | 单独当创新点行吗 |
+|---|---|---|
+| 物理结构先验全线失效的**完整解剖**(5 种注入 × 2 init × 3 域 × 合成/真实)+ 机制解释 | ★★★★ | **行**——系统性、有机制、直接对话 PIWM/deep-sup 文献 |
+| **评测三陷阱**(cos 对偶陷阱 / 迁移天花板=random 先验 / 协议混淆假阴性) | ★★★★ | 接近——方法论贡献,审稿人喜欢,但单独撑不起主线 |
+| 增广**合成→真实反转**(合成最强杠杆,真实崩 100×) | ★★★ | 半行——反直觉发现,但 SPARK 等增广文献已密集 |
+| free-rollout 修 teacher forcing(三域+真实通用) | ★★(作为方法 **2/10**,lewm 会话 novelty check 已定) | **不行**——= Scheduled Sampling(Bengio 2015);只能当"训练协议压倒结构先验"论断的证据 |
+| 承重(pos_weight)niche + 四条件边界 | ★★ | 不行——边际收益;但作为"机制解释的可证伪验证"价值很高 |
+| horizon-complexity matching(num_preds 律) | ★★ | 不行——但是干净的实证规律,做小节 |
+| Physion++ 直训 np20sc(h64 nMSE 3.2×) | ★★ | 不行——工程性;当真实数据验证章 |
+
+**novelty check 既有结论(lewm 会话 7-08/7-09,勿重复劳动)**:free-rollout 2/10、增广 2/10;竞品 SPARK(2510.24216,物理引导增广)、PIAug(2311.00815)、Augmented World Models(2104.05632);[UNVERIFIED] Persistent Robot WM 2603.25685、Sword 2605.07288、Train-Short-Infer-Long 2602.14027(写作前须 citation audit)。
+
+## 2. 三条候选故事线
+
+### Story A:系统解剖(推荐主线)
+> **"物理归纳偏置没有让 latent world model 更懂物理——训练协议才有。我们解释为什么。"**
+
+- **主张 1(反直觉核心)**:在共享 latent 的 JEPA 世界模型上,物理结构先验(固定 slot / 运动学方程 / 深监督 probe / consistency / 无标签先验)**系统性失败**——无论嫁接还是 from-scratch、有无标签、软硬约束、正确与否的物理形式(严格重力形式也伤)。机制:**物理通道非承重**(2/192 维被平均 loss 稀释,黑盒通道冗余编码位置、预测走会漂的黑盒路)+ 梯度冲突(probe/pred 梯度比 15–125×,intrinsic dim 塌方)。
+- **主张 2(建设性)**:真正有效的是训练与数据侧:free-rollout(唯一跨合成/真实通用)、rollout horizon 匹配动力学复杂度、域匹配增广(附反转警示)。
+- **主张 3(方法论)**:评测三陷阱——先前文献看到"物理结构有效"很可能是 cos/probe-ρ 这类**监督对偶量**造成的假象(我们多处用 nMSE/pixel 反转)。
+- **优点**:数据全在手、诚实、有攻击性(直接对话 PIWM/2504.03861)、三主张互锁成完整故事。
+- **风险**:AAAI 评审偏好新方法;需要用"发现支配变量"的正面框架而非"负结果"框架来写。
+
+### Story B:最小修复(并入 A,不单独成篇)
+> 把 pos_weight 承重包装成 **Load-Bearing Reweighting(LBR)**:一行改动让物理 slot 从有害翻正(0.183→0.114),配四条件边界(free-rollout×承重×光滑域×pixel 尺)。
+- 作用:给 Story A 一个建设性落点,证明机制解释可操作("按机制修,就见效;条件不满足,就失效"——可证伪性强)。
+- 不能当 headline:增益边际、伤迁移。
+
+### Story C:诊断+治疗(extrinsic 架构)——本轮放弃
+> 解剖之后真的换 extrinsic 架构(独立低维物理 latent + 对抗解耦 + 分阶段)修复。
+- **10 天造不出来+验证**;且 grounded 都失败,风险极高。留作 ICLR-27(9 月截稿)的升级路线或 rebuttal 弹药。idea-stage 的 PhysConsist-Rollout(守恒流形投影)同此定位。
+
+## 3. 推荐定位(一段话,可直接改成 abstract 骨架)
+
+> Latent world models can *decode* physical state, yet fail to *obey* physical law over long-horizon rollout and under OOD physics. We systematically inject physical inductive biases into a JEPA-style world model (LeWM) across five mechanisms (fixed slots, kinematic dynamics, deep-supervision probes, consistency losses, label-free priors), two injection regimes (post-hoc / from-scratch), three synthetic physics domains, and two real-world video benchmarks — and find they consistently *hurt*. We trace the failure to a **load-bearing problem**: physical dimensions occupy a vanishing fraction of the latent and gradients, so prediction routes around them; a one-line loss reweighting (LBR) that makes the slot load-bearing flips it from harmful to helpful, but only within sharp boundary conditions (smooth dynamics, pixel-space evaluation). What robustly helps instead is the training protocol: autoregressive free-rollout, horizon matched to dynamics complexity, and domain-matched augmentation — though augmentation gains reverse catastrophically from synthetic to real data. Finally we show why prior evidence for physics priors may be illusory: cosine/probe metrics are *duals of the training loss* and systematically mislead. (数字往里填:三域 both-OOD −57~65%、Physion++ h64 3.2×、cos→nMSE 100× 反转。)
+
+**标题候选**(58d756a6 已有 + 新增,禁用 "PIWM"/"Physically Interpretable World Models" 字样):
+1. **Decodable but Not Load-Bearing: Why Physical Inductive Biases Fail in Latent World Models**(推荐——点出机制)
+2. Toward Physics-Consistent World Models: Diagnosing and Improving Long-Horizon OOD Prediction(58d756a6 定的 CV 版,稳)
+3. Training Beats Structure: An Anatomy of Physical Robustness in Latent World Models
+4. Presence Is Not Use: Physical State in World Models Is Decodable but Not Compliant
+
+## 4. 相关工作对比(novelty 台账)
+
+| 文献 | 他们说 | 我们的 delta |
+|---|---|---|
+| PhyWorld(Kang et al. 2024,数据来源) | video-gen(diffusion)靠 scaling 学不会物理规律,case-based 泛化 | 同一问题搬到 **latent/JEPA WM** + 追问"注入物理结构能不能救"→ 不能,并给机制;用他们的 OOD 协议,可比性天然 |
+| PIWM(2412.12870)+ Four Principles(2503.02143) | 物理结构化 latent + 固定形式动力学有效(from-scratch + extrinsic) | 在**共享 latent(intrinsic)**设定下系统证伪其可移植性:连严格重力形式、from-scratch 都伤;指出其成功依赖 extrinsic 架构整体而非物理方程本身(我们 pretrain 2×2 排除了"from-scratch 就行"的解释) |
+| Deep-supervision probes(2504.03861) | probe-in-loss 提升可解码性+减漂移 | 复现后在可信指标上反转(pixel h28 −0.71dB、both-OOD nMSE +0.036);其表面收益 = cos/ρ 对偶陷阱 |
+| Scheduled Sampling / exposure bias(Bengio 2015 起) | 自回归训练要消 exposure bias | 不 claim 方法新;贡献是"**在物理 WM 上它压倒一切结构先验**"这一系统证据 + horizon-复杂度匹配律 |
+| SPARK(2510.24216)/ PIAug 等增广 | 增广治 dynamics OOD | 补上"合成→真实反转"的边界:appearance 增广真实数据 nMSE 崩 100×;增广收益是域特定的 |
+| Physion / Physion++(评测基准) | 真实物理理解基准 | 提供 zero-shot 天花板=random 先验(0.607)的负结果 + 直训可行的正结果 |
+
+## 5. 审稿人反对意见预案
+
+| 预期攻击 | 应对 |
+|---|---|
+| "负结果不算贡献" | 框架反转:发现支配变量(承重),负结果是**对既有正面主张的系统检验**;附 LBR 可证伪验证;引用 "What Matters..." 类分析论文先例 |
+| "free-rollout 就是 scheduled sampling" | 主动承认并引用;我们的 claim 是相对重要性(协议>结构),不是方法 |
+| "单一 backbone(LeWM/ViT-tiny),结论会泛化吗" | 老实写进 limitation;5-19 的 7-encoder 横评(DiT-XL/ImageNet/PushT)提供部分外推;呼吁社区在更大 backbone 复验 |
+| "没有外部方法 baseline(如 PIWM 原实现)" | 严格 PIWM 形式(a=g const)臂 = 忠实复刻其方程假设;完整 PIWM extrinsic 复现列为 future work(P2) |
+| "单种子" | P0 补 headline 3 种子;collision 增广已有 3 种子 |
+| "为什么信 nMSE/pixel 不信 cos" | §评测陷阱整节论证:cos 是训练目标对偶量 + 三个实锤反转案例(含 nMSE=47659 时 cos=0.95 的发散案例) |
+
+## 6. 投稿决策
+
+- **首选 AAAI-27**(abstract 7-21 / 全文 7-28):Story A+B,现有数据 + P0 补实验足够成稿。
+- **备选 ICLR-27**(约 9 月下旬):若导师认为 AAAI 版单薄,加 extrinsic spike(Story C)升级成"诊断+治疗"再投;AAAI 版可作为压力测试。
+- 两条路不冲突:AAAI 被拒的反馈直接喂 ICLR 版。
