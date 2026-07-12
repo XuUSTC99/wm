@@ -26,9 +26,24 @@
 | probe 深监督 | 状态可读出 | 要 | 额外线性头从 latent 读出物理量(`probe_head(emb)≈proprio`),latent 无需固定维对齐 |
 | 运动学头 dynamics | 演化(固定方程形式) | 要 | 位置 slot 按 `z+v+a` 显式外推;a 可为 0(匀速)/g(严格 PIWM 重力)/MLP(自由) |
 | **consistency loss** | **演化(无固定形式)** | **要** | 预测 rollout 的位置 slot 做差分得"预测速度",强制等于真值速度(可加二阶);不假设 a 的形式 → 专为 collision 冲量设计(smooth-a 必死处) |
-| **无标签物理先验(label-free)** | **演化(只要求形式)** | **不要** | 不钉真值,只要求 slot"必须按二阶动力学平滑演化",指望位置信息自组织进 slot;动机 = physion_collide 纯视频无 proprio,一切带标签监督失效。对照组 grounded = 同结构 + 钉真值 |
+| **无标签物理先验(label-free)** | **演化(只要求形式)** | **不要** | 不钉真值,只要求 slot"必须按二阶动力学平滑演化"(即 `z_{t+1}=z_t+v_t+a_t`,序列的二阶差分≈加速度必须小/连续,不能跳变;匀速 a=0、抛体 a=g 满足,碰撞冲量不满足),指望位置信息自组织进 slot;动机 = physion_collide 纯视频无 proprio,一切带标签监督失效。对照组 grounded = 同结构 + 钉真值 |
 
 五行从"钉状态"扫到"钉演化"、从"有标签"扫到"无标签",设计空间闭合;全负(含 grounded)→ 支撑"根因是架构(承重问题),不是方程形式或标签有无"。
+
+**四把尺子(所有数字的指标定义)**:
+
+| 尺子 | 定义 | 量什么 | 坑(对应 C6) |
+|---|---|---|---|
+| cos | 预测 latent 与真值 latent 的余弦 `ẑ·z/(\|ẑ\|\|z\|)` | 方向一致性 | 尺度盲:真值(1,0) 预测(5,0) 也得满分;幅度过冲/崩塌看不见(friction cos 0.99 而 nMSE 24.6) |
+| probe-ρ | 线性头从 latent 解码物理量,与真值的 Pearson 相关(K=4 = 堆 4 帧,速度可差分) | 信息**存在**(可读出) | 是 probe/structured 训练目标的对偶量,加了该 loss 必然涨,不代表预测变好 |
+| **nMSE** | `‖预测−真值‖²/真值方差`,0=完美、≈1=瞎猜均值 | 预测真误差(方向+尺度) | 分母退化除零爆炸(parabola h28 球出框→方差→0→nMSE 飙百万);先查 by-horizon 再引用 |
+| **pixel PSNR** | 预测 latent 解码成图 vs 真实帧,`10·log10(MAX²/MSE)` dB,+3dB≈像素误差减半 | 端到端画面(位置权重天然高) | 依赖 decoder(collision decoder-limited,只用 latent 尺) |
+
+上两行量"存在"、下两行量"使用";判决规则 = 逐分区、逐 horizon、nMSE/pixel 为主、双指标交叉验证。
+
+**核心概念:intrinsic vs extrinsic(物理状态住在哪)** —— *intrinsic*(我们/LeWM+slot):物理是共享 192 维 latent 里切出的 2 维"租客",共享黑盒 predictor 滚整体,190 维黑盒冗余编码位置 → **有旁路,slot 可被绕过,天生不承重**。*extrinsic*(PIWM):独立低维物理态 z_p **就是**主状态,由固定形式动力学方程演化,decoder 被强制只从 z_p 重建 → **无旁路,架构结构性强制承重**(+分阶段训练避免梯度打架)。我们把 PIWM 的零件(方程形式/slot/probe/from-scratch/有无标签)逐一嫁接到 intrinsic 上全部失败 → **PIWM 的红利归因于 extrinsic 架构整体,而非物理方程知识**;整换 extrinsic 是设计空间仅剩的未测分支(P2-1 spike / future work)。
+
+**核心概念:承重(load-bearing,借自"承重墙")** —— 区分两件事:①位置信息**存在**于 latent(可解码,probe ρ 0.96 ✅);②预测**真正依赖**这几维(它们错则预测错、loss 疼 ❌)。物理 slot 是"装饰墙":pred_loss 对 192 维平均后这 2 维只占 ~1% 梯度,且 190 维黑盒**冗余编码了位置**(predictor 走黑盒路即可,不必经过 slot),外加物理梯度与预测梯度打架(比值 15–125×)。**可证伪验证**:pos_weight=30 把重量压上去 → structpos 危害消失(0.183→0.132 持平);一切挂在非承重 slot 上的方程/约束则全灭。PIWM 之所以行,是 extrinsic 架构让低维物理态**就是**主 latent(架构强制承重)。此落差 = 论文标题 *Decodable but Not Load-Bearing*。
 
 ## 2. 三条候选故事线
 

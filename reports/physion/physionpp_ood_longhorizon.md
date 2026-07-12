@@ -101,6 +101,20 @@ friction_collision 上 np20 的 cos 仍 0.992（方向对）但 nMSE 炸 → **�
 
 **注**：per-scene nMSE 对静止/小位移物体有分母敏感性（cos 高而 nMSE 大时优先信同场景相对对比）；此处 scnp16 vs np20 用相同 GT、相同 n，差异纯来自预测，干净。
 
+## 3.7 真 held-out scene OOD —— 泛化是分层的（2026-07-12）
+
+此前 by-scene 是「全训练后分场景」，非严格 OOD。真 OOD 协议：训练时**整个排除** 3 个场景（bouncy_wall / deform_clothhang / mass_waterpush，各留一个同物理属性的训练伙伴），rollout 才是真泛化。用最优配置 np28sc，训 held-out 版（533 clip）对比 full 版，同 3 场景 rollout **cos**（nMSE 被静止分母 artifact + deform 污染，以 cos 判）：
+
+| 场景（属性） | held-out（没训过） | full（训过） | cos 掉幅 | 判定 |
+|---|---|---|---|---|
+| mass_waterpush（质量） | **0.972** | 0.994 | −0.02 | ✅ 泛化成功 |
+| bouncy_wall（弹性） | 0.846 | 0.996 | −0.15 | ◐ 部分泛化 |
+| deform_clothhang（形变） | **0.263** | 0.982 | −0.72 | ❌ 泛化失败 |
+
+→ **OOD 泛化随物理复杂度分层**：刚体质量动力学（mass_collision/dominoes → waterpush）几乎完整迁移（cos 0.972）；弹性部分迁移；高自由度形变本就是共同短板，叠加 OOD 直接崩。**可迁移的是刚体表观动力学，形变学不到也迁不动。** ⚠️ 单种子（单个 held-out 划分）。
+
+**方法论（双指标交叉，呼应 §3.5/3.6）**：GROUP 混合 nMSE h64=3.22 是假象（被 deform 崩 + 静止物体分母 artifact 拉爆），此处以 cos 判；而 §3.5 的 appearance 陷阱里反过来是 nMSE 才对（cos 升 nMSE 崩）。**两个指标各有失效模式（cos 无尺度会漏报、nMSE 遇退化分母会引爆），必须逐场景逐 horizon 交叉验证。**
+
 ## 4. 结论与下一步
 
 **回答核心问题**：跳出 zero-shot、**在真实数据上训**，OOD+长程能做好 —— 这条路验证有效。方法选择：

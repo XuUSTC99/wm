@@ -40,7 +40,7 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 |---|---|---|---|
 | uniform | 0.131 | **0.068**(app0.5) | −48% |
 | parabola | 0.313 | **0.115**(app0.5) | −63% |
-| collision | 0.393 | **0.172**(scale0.5+np20) | −56%,3 种子均值 ~0.21 ✅✅ |
+| collision | 0.393 | **0.172**(scale0.5+np20) | −56%,**scale0.5 自己的 3 种子 = 0.172/0.168/0.177(0.172±0.004)✅✅**;旧文"~0.21"其实是 scale0.3 的种子(0.208/0.198/0.244),之前张冠李戴,2026-07-12 审计修正 |
 
 - 超过所有物理结构方法(uniform aug05 0.068 < 最好物理配置 0.109)。
 - **交互非平凡**:appearance×np20 冲突(0.472 ❌)、scale×np20 最佳叠加(0.208 ✅)、app×scale 温和(0.262);三重组合更差(0.253)。强度甜点 0.5,0.7/1.0 过增广。
@@ -56,15 +56,16 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 **变体扫描(uniform/parabola/collision, pusht init, both-OOD nMSE,基线=纯FR)**:
 | 变体 | 结果 | 出处 |
 |---|---|---|
-| 自由 accel MLP | uniform 上 accel 过拟合(真 a=0 学出 ~0.5·\|v\|),净贡献≤0 | piwm_dynamics_conclusion |
-| **严格 PIWM**(a=g 只学重力,parabola 上是正确物理!) | parabola 0.313→0.372 ❌ / uniform 0.131→0.206 ❌,比自由 MLP 还差 | FINAL_SUMMARY §0.3 |
+| 自由 accel MLP | uniform 0.131→**0.155** ❌ / parabola r/m 0.127→**0.178** ❌ / collision 0.393→**0.560** ❌(2026-07-12 从日志补齐三域) | rollout_{uniform_dyn_mlp,parabola_dyn_mlp,collision_structdyn}_fr_id1k.log |
+| **严格 PIWM**(a=g 只学重力,parabola 上是正确物理!) | parabola r/m 0.127→0.173 ❌ / uniform 0.131→0.206 ❌ / **collision 0.393→0.559 ❌(日志补齐)**;干净分区下与自由 MLP 相当 | FINAL_SUMMARY §0.3 + rollout_collision_piwm_const_fr_id1k.log |
 | 无标签物理(不钉真值,只要求 slot 按二阶动力学平滑演化、让位置自组织进 slot;动机=physion_collide 纯视频无 proprio) | uniform 0.171 / parabola 0.359 / collision 0.653,全掉 ❌ | physics_paper_design §5;名词详解见 [02 名词表](02_story_and_novelty.md) |
 | grounded(上行的有标签对照:同结构 + slot 钉真值 proprio) | uniform 0.166 / parabola 0.392 ❌ —— 连完美标签+正确物理形式也伤 | 同上 |
-| consistency loss(约束"怎么变"而非"是什么":预测 rollout 位置 slot 的差分速度 ≈ 真值速度,不假设加速度形式 → 本为 collision 冲量设计) | collision 0.57–0.64 全差于纯 FR 0.393 ❌,专治的域恰恰最差 | optimization_plan;实现 [train.py L181-211](../../../le-wm/train.py) |
+| consistency loss(约束"怎么变"而非"是什么":预测 rollout 位置 slot 的差分速度 ≈ 真值速度,不假设加速度形式 → 本为 collision 冲量设计) | collision 0.57–0.64 全差于纯 FR 0.393 ❌,专治的域恰恰最差;**光滑域也败(日志补齐):uniform 0.151 vs 0.131 ❌、parabola r/m 0.147 vs 0.127 ❌**(旧 both-OOD 0.291"看似变好"是爆点假象,又一 C6 实例) | optimization_plan + rollout_uniform_cons_B_v1 / parabola_structpos_cons1p0acc;实现 [train.py L181-211](../../../le-wm/train.py) |
 | probe 单用(λ1,f2,[pos,vel]) | 0.131→0.167 ❌;pixel 同向:both-OOD 19.83 / h28 21.71(均低于 baseline 20.41/22.09) | 本 session 2×2(7-07;pixel 7-11 补全) |
 | structpos 单用(无承重) | 0.131→0.183 ❌ | kinematics_exploration |
 | probe+structpos 组合(承重上) | 0.125,打不过 structpos 单用 0.114;pixel 同向:both-OOD 20.02 / h28 21.91,低于 structpos 单用(21.30/22.41)甚至 baseline | 本 session 2×2(**latent+pixel 双尺闭环 ✅✅**) |
-| 速度进承重 slot([pos,vel]×pw30) | 0.114→**0.207** ❌❌ | 本 session Arm C |
+| 速度进承重 slot([pos,vel]×pw30) | uniform 0.114→**0.207** ❌❌;collision 0.621 ❌;**parabola r/m 0.093 ⚠️ 单种子"疑似正向"(基线种子区间 0.115–0.127 之下),种子复跑进行中,且跨域符号翻转不构成鲁棒性主张** | 本 session Arm C + 2026-07-12 补齐 |
+| **2026-07-12 补齐的 9 臂**(probe/组合/posvel 的 par+col 版、plain slot 两域、grounded col) | 全部就位:Table 2 凑满 30 格,28/30 不优于基线;仅有的两个"例外"均在 parabola r/m 单种子(probe 0.115=基线种子下沿=噪声;posvel 0.093 待种子判) | `/data1/.../runs/aaai_p0/rollout_{parabola,collision}_*` |
 
 **pretrain vs post-train 2×2(2026-07-11,60ep 统一,证伪"要在预训练注入"假设)**:
 | 域 | scratch+off | scratch+on(Δ) | pusht+off | pusht+on(Δ) |
@@ -95,6 +96,7 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 
 - **⚠️ 种子定版(2026-07-11 P0-4)**:structpos_fr_pw30 三种子 both-OOD = 0.114/0.135/0.147(**0.132±0.014**)vs baseline_fr **0.136±0.007** —— **latent 尺上的"净超"消失,单种子 0.114 vs 0.131 是种子噪声**。
 - 幸存的诚实表述:**pos_weight 把 structpos 从净负救回与 baseline 持平**(pw1=0.183 有害 → pw30≈0.132 平),即"承重让物理 slot 无害共存",而非净提升;正向证据剩 **pixel 尺**(structpos_pw30 both-OOD 21.30 vs 20.41 dB;承重+运动学 h28 +1.25dB)与 **v-OOD 解码位置 ρ 0.991/0.987** —— 但这些仍单种子(若写进论文作为正向 claim,需补 pixel 臂种子;或按"边际、指标依赖"的口径写进 anatomy)。
+- **⚠️ 承重持平只在 uniform 成立(2026-07-12 日志补齐)**:parabola slot+pw30 r/m 0.160 vs 基线 0.127 ❌、collision 0.596 vs 0.393 ❌ —— 富动力学域连承重后的 slot 都仍有害。论文 §4.5 已按此口径收窄("removes the harm where the slot matches the dynamics")。
 - **承重+运动学 = 光滑域长程 pixel 净超纯 FR**:uniform pixel h28 **+1.25dB**、both-OOD **+1.26dB**(structcv_fr_pw100:23.34/21.67 vs 22.09/20.41);v-OOD 位置 ρ 全场最高 0.991/0.987;parabola both-OOD 0.313→**0.262**(accel 学到常重力)。
 - **四条件缺一不可**:free-rollout + pos_weight + 光滑域(collision 失败)+ pixel 尺(latent 聚合被 190 维稀释看不出)。
 - 软肋:r/m-OOD(外观变)posρ 仅 0.29→0.43(无运动学 0.96);且承重伤 Physion 迁移。
@@ -115,8 +117,9 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 > - **直训**(直接训练)= 跳过迁移,**直接把 Physion++ 真实视频喂给模型从头训**。测"真实数据上到底能做多好"→ **结论:很好**(长程/OOD 都做到了)。
 
 - zero-shot phyworld→Physion:封顶 0.607(random 先验),仅 Support(+0.10)/Collide(+0.07)有真信号。
-- **Physion++ 直训**(活路,统一以 nMSE 判——cos 无尺度会漏报,见 C6):长程 rollout **h64 nMSE 从 baseline 0.280 → 顶配 np28sc(np28+scale0.3)0.014(1/19)**;num_preds 16→20→28 单调陡降 0.136→0.087→0.014、**未见拐点**。刚体场景准(cos 0.96–0.99)、布料形变是短板(见下条)。真 held-out scene OOD(训刚体、测同属性未见场景)验证中。
+- **Physion++ 直训**(活路,统一以 nMSE 判——cos 无尺度会漏报,见 C6):长程 rollout **h64 nMSE 从 baseline 0.280 → 顶配 np28sc(np28+scale0.3)0.014(1/19)**;num_preds 16→20→28 单调陡降 0.136→0.087→0.014、**未见拐点**。刚体场景准(cos 0.96–0.99)、布料形变是短板。真 held-out scene OOD 结果见下条。
 - 共同短板:布料形变(deform_clothhit 0.610 / clothhang 0.367)。
+- **真 held-out scene OOD ✅(2026-07-12,⚠️单种子)**:训练**整场景排除**(bouncy_wall/deform_clothhang/mass_waterpush,各留同属性训练伙伴),rollout 泛化**分层**——mass_waterpush cos **0.972**(几乎不降,vs full 0.994,刚体质量动力学可迁移)、bouncy_wall 0.846(部分,vs 0.996)、deform_clothhang **0.263**(崩,vs 0.982,形变短板叠 OOD)。**可迁移的是刚体表观动力学,形变迁不动。** GROUP 混合 nMSE h64=3.22 是 deform+静止分母 artifact 假象,以 cos 分场景判(双指标交叉,呼应 C6)。出处:[physionpp §3.7](../../physion/physionpp_ood_longhorizon.md)。
 - 早期支撑:预训练域 > 规模 > task-FT(5.5M PushT ViT-tiny ≈ 749M ImageNet DiT-XL;vel_x 阶梯 pixel-stats 0.516→random 0.573→ImageNet 0.754→PushT 0.878→DiT 0.890);phyworld 上任何 SSL 微调 net-negative。
 
 ---

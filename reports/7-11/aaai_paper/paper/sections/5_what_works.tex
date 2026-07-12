@@ -1,0 +1,35 @@
+\section{What Actually Helps: Training and Data}
+\label{sec:works}
+
+\subsection{Free Rollout Dominates}
+\label{sec:fr}
+
+Replacing teacher forcing with free rollout is the single largest and most portable improvement we find (Table~\ref{tab:headline}): $2.2\times$ on uniform, $3.6\times$ on parabola, and $2.4\times$ on collision, with three-seed intervals that do not overlap in any domain. The diagnosis matches the classic exposure-bias account \citep{bengio2015scheduled,venkatraman2015improving}: under teacher forcing, one-step predictions are near-perfect (cosine $0.98$--$0.99$) while multi-step rollouts drift at a rate ordered by dynamics complexity (uniform $<$ parabola $<$ collision)---the failure is invisible at training time and catastrophic at rollout time. The result carries to photorealistic simulation: on Physion++, free rollout is the main long-horizon lever (horizon-$32$ cosine $0.91$ vs.\ $0.79$--$0.87$ for every physics-augmented variant), and among all synthetic-training configurations it transfers best to Physion OCP.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & teacher forcing & free rollout & gain \\
+\midrule
+uniform & $0.300\pm0.007$ & $\mathbf{0.136\pm0.009}$ & $2.2\times$ \\
+parabola (\rmood) & $0.443\pm0.048$ & $\mathbf{0.122\pm0.007}$ & $3.6\times$ \\
+collision & $1.152\pm0.048$ & $\mathbf{0.479\pm0.079}$ & $2.4\times$ \\
+\bottomrule
+\end{tabular}
+\caption{Headline result: free rollout vs.\ teacher forcing, hardest clean split, latent nMSE ($\downarrow$), three seeds each (mean$\pm$sample std). Intervals do not overlap in any domain.}
+\label{tab:headline}
+\end{table}
+
+\subsection{Match the Horizon to Dynamics Complexity}
+\label{sec:horizon}
+
+The rollout horizon $H$ is not a free win; it must match the domain. Collision improves markedly at $H{\approx}20$ (both-OOD $0.393\!\to\!0.294$; horizon-$28$ cosine $0.58\!\to\!0.70$)---the training window must contain post-impulse futures for the model to learn them. Smooth domains show the opposite: at $H{=}16$, uniform's long-horizon cosine drops from $0.969$ to $0.814$ and parabola degrades on every partition; excess horizon destabilizes amplitudes where $H{=}8$ already spans the dynamics. On photorealistic video the appetite is larger still, but horizon alone is not the whole story. Longer horizons monotonically improve mid-range accuracy (Physion++ horizon-$32$ nMSE $0.140$ at $H{=}8$ down to $0.033$ at $H{=}20$); at long range, however, a plain long rollout can overshoot amplitude on some scenes (friction-collision nMSE $24.6$ at cosine $0.99$ under $H{=}20$ without augmentation). Pairing the long horizon with geometric scale jitter, which stabilizes amplitude, is what unlocks the regime: horizon-$64$ nMSE falls from $0.280$ ($H{=}8$) to $0.087$ ($H{=}20{+}$scale) and $0.014$ ($H{=}28{+}$scale), a $19\times$ reduction with no inflection yet found. The practical law: extend the training horizon to cover the domain's causal event span, and add geometric augmentation to keep long rollouts stable.
+
+\subsection{Augmentation: Strongest Synthetic Lever, Reversed on Photorealistic Video}
+\label{sec:aug}
+
+On synthetic domains, simple video-only augmentation beats every physical-structure method. Per-trial appearance jitter (brightness/contrast, strength $0.5$) targets the appearance shift induced by radius/mass changes and roughly halves the hardest split: uniform $0.131\!\to\!0.068$ ($-48\%$), parabola $-63\%$ (with the clean \rmood{} partition confirming, $0.127\!\to\!0.065$). Geometric scale jitter targets object size directly and, \emph{only} in combination with a long horizon, sets the collision record ($0.393\!\to\!0.172\pm0.004$ over three seeds). The combinations are non-monotone and must be chosen, not stacked: appearance conflicts with long-horizon training ($0.472$, worse than either alone), scale synergizes with it ($0.208$), and the triple combination is worse than the best pair ($0.253$). Velocity-OOD resists all of it---temporal-stride augmentation, the natural candidate, loses even to appearance jitter ($0.556$ vs.\ $0.376$)---marking unseen velocities as the open hard case.
+
+The appearance recipe does not survive contact with photorealistic simulation. On Physion++, the same appearance augmentation that halves simple-synthetic OOD error \emph{degrades friction-collision prediction by two orders of magnitude} (nMSE $0.062\!\to\!6.44$) while the \emph{aggregate} long-horizon cosine improves---a preview of the metric traps in \S\ref{sec:traps}---and it does not help zero-shot Physion transfer either ($0.597$, below the $0.607$ random-prior ceiling). The boundary is principled: appearance jitter encodes an appearance-invariance assumption that holds under PhyWorld's simple renderer but breaks in photorealistic scenes, where appearance \emph{carries} physical information---friction, mass, and material are read off surface appearance. The split runs within augmentation itself: geometric scale jitter, which assumes only size-invariance, remains helpful at photorealistic scale (it is the long-horizon stabilizer of \S\ref{sec:horizon}), whereas appearance jitter reverses. Augmentation gains are thus domain- and type-specific, not portable.

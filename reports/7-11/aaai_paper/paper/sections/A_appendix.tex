@@ -1,0 +1,38 @@
+\section{Training and Evaluation Details}
+\label{app:details}
+
+\paragraph{Hyperparameters.}
+All PhyWorld runs: AdamW, lr $5{\times}10^{-5}$ (from-scratch reruns: $2{\times}10^{-5}$), weight decay $10^{-3}$, bf16, gradient clip $1.0$, $20$ epochs ($60$ for from-scratch cells; the pretraining-regime $2{\times}2$ uses $60$ epochs uniformly), batch size $64$ for free rollout ($H{=}8$), $128$ for teacher forcing ($H{=}1$), $48$ for $H{\geq}16$. History size $3$; embedding dimension $192$; SIGReg weight $0.09$. Seeds: $3072/1234/42$ where seed-replicated. Physion++ runs use the readout split ($800$ clips) with the same optimizer.
+
+\paragraph{OOD partitions.}
+ID: radius/mass $\in[0.7,1.5]$, velocity $\in[1.0,4.0]$. OOD draws radius/mass from $[0.3,0.6]\cup[1.5,2.0]$ and velocity from $[0,0.8]\cup[4.5,6.0]$. Collision uses the four-column variant (two objects' masses and velocities). Training sets are ID-only ($1{,}000$ trajectories); evaluation covers all four partitions ($\geq$1{,}600 trajectories per domain).
+
+\paragraph{Probe protocol.}
+Ridge regression ($\alpha{=}1$), trajectory-level 80/20 splits, probing the encoder output (not the projector), pretrained ``paper'' initialization, and $K{=}4$ stacked consecutive latents for velocity. Each choice matters: the naive combination (random init, single frame, through-projector) reads $\rho{=}0.166$ for uniform velocity where the corrected protocol reads $0.939$. Random-encoder and pixel-statistics controls are run alongside every probe.
+
+\section{Full Injection Results}
+\label{app:injection}
+
+\paragraph{Probe/slot factorial (uniform, free rollout).}
+Latent both-OOD nMSE / pixel both-OOD PSNR (dB): baseline $0.131$ / $20.41$; probe-only $0.167$ / $19.83$; slot$+$LBR $0.114$ / $21.30$; probe$+$slot$+$LBR $0.125$ / $20.02$. The combination underperforms the slot alone on both scales; the latent and pixel verdicts agree.
+
+\paragraph{Slot reweighting sweep (uniform).}
+Slot weight $1/30/100$: $0.183$ / $0.114$ / $0.136$ (single seed), with the $w{=}30$ cell seed-replicated at $0.132\pm0.017$ against the baseline $0.136\pm0.009$. Kinematic head on the load-bearing slot: velocity-OOD decoded position $\rho{=}0.991/0.987$ ($x$/$y$); uniform pixel horizon-28 $23.34$ vs.\ $22.09$\,dB ($+1.25$); appearance-OOD remains the weak axis (decoded $\rho$ $0.29\!\to\!0.43$, vs.\ $0.96$ without the kinematic head).
+
+\paragraph{Augmentation interactions (collision, both-OOD nMSE).}
+Long horizon ($H{=}20$) alone $0.294$; appearance alone $0.301$; appearance$\times H{=}20$ $0.472$ (conflict); scale$\times H{=}20$ $0.208$ (synergy; three seeds $0.208/0.198/0.244$); appearance$\times$scale $0.262$; triple $0.253$; scale strength $0.5$ with $H{=}20$: $0.172$. Temporal-stride (velocity) augmentation: v-OOD $0.556$, worse than appearance's $0.376$.
+
+\paragraph{Physion++ horizons.}
+Overall nMSE at horizons $16/32/64$: baseline ($H{=}8$) $0.016/0.140/0.280$; $H{=}20$ $0.022/0.033/0.220$; $H{=}16{+}$scale $0.010/0.035/0.136$; $H{=}20{+}$scale $0.012/0.024/0.087$; $H{=}28{+}$scale reaches horizon-$64$ nMSE $0.014$. Scale acts as an amplitude stabilizer for long rollouts: without it, $H{=}20$ explodes on friction-collision (nMSE $24.6$ at cosine $0.99$); with it, $0.019$.
+
+\section{Metric Pathologies}
+\label{app:metrics}
+
+\paragraph{Parabola denominator blow-up.}
+At horizons near $28$, trajectories whose ball exits the frame leave near-constant target latents; the nMSE normalizer (target variance) approaches zero and per-horizon nMSE reaches $3{\times}10^{4}$--$2{\times}10^{6}$ across all six parabola baseline arms while cosine stays in $[0.55,0.95]$. Both-OOD aggregates over horizons inherit the blow-up, which is why parabola is judged on \rmood{} (no degenerate targets) throughout.
+
+\paragraph{Gradient competition.}
+At probe weight $\lambda{=}10$, probe-to-prediction gradient-norm ratios are $15\times$ (collision), $44\times$ (uniform), and $125\times$ (parabola); encoder effective (intrinsic) dimensionality collapses by $39$--$90\%$ relative to baseline. At $\lambda{=}1$ the ratios are benign, which is the setting used in \S\ref{sec:fails}.
+
+\paragraph{Transfer ceiling.}
+Physion OCP mean AUC: random-init encoder $0.607$; best synthetic-trained (free rollout) $0.603$; physics-structured variants $0.551$--$0.582$; appearance augmentation $0.579$--$0.597$. Per-scenario, only Support ($+0.10$) and Collide ($+0.07$) show genuine signal above the random control; training longer approaches the ceiling monotonically ($0.554$ at epoch $1$ to $0.603$ at epoch $20$) without crossing it.
