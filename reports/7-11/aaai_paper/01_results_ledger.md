@@ -64,7 +64,7 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 | probe 单用(λ1,f2,[pos,vel]) | 0.131→0.167 ❌;pixel 同向:both-OOD 19.83 / h28 21.71(均低于 baseline 20.41/22.09) | 本 session 2×2(7-07;pixel 7-11 补全) |
 | structpos 单用(无承重) | 0.131→0.183 ❌ | kinematics_exploration |
 | probe+structpos 组合(承重上) | 0.125,打不过 structpos 单用 0.114;pixel 同向:both-OOD 20.02 / h28 21.91,低于 structpos 单用(21.30/22.41)甚至 baseline | 本 session 2×2(**latent+pixel 双尺闭环 ✅✅**) |
-| 速度进承重 slot([pos,vel]×pw30) | uniform 0.114→**0.207** ❌❌;collision 0.621 ❌;**parabola r/m 0.093 ⚠️ 单种子"疑似正向"(基线种子区间 0.115–0.127 之下),种子复跑进行中,且跨域符号翻转不构成鲁棒性主张** | 本 session Arm C + 2026-07-12 补齐 |
+| 速度进承重 slot([pos,vel]×pw30) | **跨域符号翻转,和动力学结构精确对应**:uniform(a=0,v 恒定)0.114→**0.207** ❌❌(冗余+过约束,最差);collision(v 跳变)0.621 ❌(smooth slot 表达不了冲量);**parabola(a=g,v 线性驱动)r/m 0.122→0.096 ✅ 三种子确证**(0.093/0.091/0.104 vs 基线 0.127/0.125/0.115,逐种子 3:0,区间零重叠,−21%)。**唯一真提升 = 结构既承重、又匹配该域动力学时才有用 → 机制的最强证据,非可用先验**(需预知动力学、跨域翻号、量级 −0.026 远小于 free-rollout ×2–3) | Arm C + 2026-07-12 三种子(aaai_p0/rollout_parabola_structposvel_pw30_{fr,s1234,s42}) |
 | **2026-07-12 补齐的 9 臂**(probe/组合/posvel 的 par+col 版、plain slot 两域、grounded col) | 全部就位:Table 2 凑满 30 格,28/30 不优于基线;仅有的两个"例外"均在 parabola r/m 单种子(probe 0.115=基线种子下沿=噪声;posvel 0.093 待种子判) | `/data1/.../runs/aaai_p0/rollout_{parabola,collision}_*` |
 
 **pretrain vs post-train 2×2(2026-07-11,60ep 统一,证伪"要在预训练注入"假设)**:

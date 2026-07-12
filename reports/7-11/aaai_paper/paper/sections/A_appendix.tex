@@ -19,6 +19,9 @@ Latent both-OOD nMSE / pixel both-OOD PSNR (dB): baseline $0.131$ / $20.41$; pro
 \paragraph{Slot reweighting sweep (uniform).}
 Slot weight $1/30/100$: $0.183$ / $0.114$ / $0.136$ (single seed), with the $w{=}30$ cell seed-replicated at $0.132\pm0.017$ against the baseline $0.136\pm0.009$. Kinematic head on the load-bearing slot: velocity-OOD decoded position $\rho{=}0.991/0.987$ ($x$/$y$); uniform pixel horizon-28 $23.34$ vs.\ $22.09$\,dB ($+1.25$); appearance-OOD remains the weak axis (decoded $\rho$ $0.29\!\to\!0.43$, vs.\ $0.96$ without the kinematic head).
 
+\paragraph{Velocity in the load-bearing slot (domain match).}
+Adding velocity to the reweighted position slot gives parabola \rmood{} nMSE $0.093/0.091/0.104$ over seeds $3072/1234/42$ (mean $0.096\pm0.007$) against the baseline's $0.127/0.125/0.115$ ($0.122\pm0.007$): every seed lower, non-overlapping. The same configuration is the worst uniform variant (both-OOD $0.207$ vs.\ $0.131$) and harmful on collision (both-OOD $0.621$ vs.\ $0.393$). The sign tracks the role of velocity in each domain's dynamics---linearly driving (parabola, helps), constant (uniform, redundant), discontinuous (collision, unrepresentable by a smooth slot)---the sole seed-robust structural gain in the grid, and a coincidence of match rather than a portable prior (\S\ref{sec:posthoc}).
+
 \paragraph{Augmentation interactions (collision, both-OOD nMSE).}
 Long horizon ($H{=}20$) alone $0.294$; appearance alone $0.301$; appearance$\times H{=}20$ $0.472$ (conflict); scale$\times H{=}20$ $0.208$ (synergy; three seeds $0.208/0.198/0.244$); appearance$\times$scale $0.262$; triple $0.253$; scale strength $0.5$ with $H{=}20$: $0.172$. Temporal-stride (velocity) augmentation: v-OOD $0.556$, worse than appearance's $0.376$.
 
