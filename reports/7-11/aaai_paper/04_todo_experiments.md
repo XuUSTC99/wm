@@ -14,8 +14,8 @@ GPU 现况参考:8×80GB,单 run ≈ 19–32GB / 30–90 min(20ep)。日期锚:a
 | P0-4 | **LBR 甜点 3 种子**(uniform structpos_fr_pw30 × seeds{1234,42}) | C5 的 0.114 是论文唯一正向物理结果,必须稳 | 2 × ~40min | **🔵 已进队列**(P0-1 之后) |
 | P0-5 | 冻结故事线 + 标题 + abstract 文本(不跑卡) | 7-21 要交 | 写作 | 骨架已备,待导师过故事线 |
 
-> **✅ P0 实验全部收官(2026-07-11 22:43,18 run 零失败),数字已回填 ledger。** 要点:C1 三种子零重叠坐实;C4 干净基线下物理伤更狠(uniform Δ+0.558);**C5 降级——LBR latent 增益是种子噪声(0.132±0.014 vs 0.136±0.007),幸存正向只剩 pixel/可解码性(单种子)**。撞名警示:`pp2_par_*` 归 lewm 会话(120ep),勿再用该前缀起新 run。
-> 由 C5 降级新增的可选项 **P1-5**:若论文想保留"承重+运动学 pixel +1.25dB"作正向 claim,须补 structcv_fr_pw100 两个种子 + pixel eval(~2h);否则按"边际、指标依赖"写进 anatomy,不跑。
+> **✅ P0 实验全部收官(2026-07-11 22:43,18 run 零失败),数字已回填 ledger。** 要点:C1 三种子零重叠坐实;C4 干净基线下物理伤更狠(uniform Δ+0.558);**C5:LBR latent 只到持平(0.132±0.014 vs 0.136±0.007,无净增益),幸存正向只剩 pixel/可解码性(单种子)**。撞名警示:`pp2_par_*` 归 lewm 会话(120ep),勿再用该前缀起新 run。
+> 由 C5 结论新增的可选项 **P1-5**:若论文想保留"pos_weight 加权+运动学 pixel +1.25dB"作正向 claim,须补 structcv_fr_pw100 两个种子 + pixel eval(~2h);否则按"边际、指标依赖"写进 anatomy,不跑。
 
 ## P1 —— 全文前(7-21 ~ 7-27)
 
@@ -33,8 +33,8 @@ GPU 现况参考:8×80GB,单 run ≈ 19–32GB / 30–90 min(20ep)。日期锚:a
 | P2-1 | **extrinsic 架构 spike**(独立低维 z_p + 对抗解耦 + 分阶段;physics_paper_design §3 设计已在) | Story C:若 work,ICLR 版从"解剖"升级为"诊断+治疗";若不 work,反而完成机制解释的最后一块拼图 |
 | P2-2 | **Physion++ 真 held-out scene OOD**(训刚体、测形变) | 356c245c 评为"论文说服力最强"的缺口;现 by-scene 不是严格 OOD |
 | P2-3 | PhysConsist-Rollout(自监督守恒量 + rollout 投影回守恒流形) | idea-stage 存货;label-free、攻长程漂移,可作独立方法论文 |
-| P2-4 | PIWM 原实现在 phyworld 上端到端复现 | 补"无外部 baseline"短板(repo 已在 tree 里) |
-| P2-5 | 更大 backbone(V-JEPA/更大 ViT)复验承重结论 | 回应"单 backbone 泛化性"攻击 |
+| ~~P2-4~~ **✅已做(2026-07-13)** | 官方 PIWM extrinsic 移植 phyworld 端到端复现 | 补"无外部 baseline"短板——学到正确物理但 r/m/both-OOD 崩(编码器瓶颈);见 [ledger C4 外部 baseline](01_results_ledger.md)、[piwm_baseline/PLAN.md](../piwm_baseline/PLAN.md)。⚠️单种子,δ=0.05 弱监督档 + collision 参考档可选补 |
+| P2-5 | 更大 backbone(V-JEPA/更大 ViT)复验"物理结构不被预测依赖"的结论 | 回应"单 backbone 泛化性"攻击 |
 | P2-6 | deform 布料短板(形变感知损失/多物体 proprio) | 真实域 limitation 的后续 |
 
 ## 排卡建议(P0)

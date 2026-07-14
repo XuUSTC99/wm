@@ -80,6 +80,9 @@
 | h32 | 0.1404 | 0.0326 | 0.0351 | 0.0236 | 0.0101 |
 | **h64** | 0.2797 | 0.2203 | 0.1361 | 0.0866 | **0.0144** |
 
+![num_preds 越大长程 nMSE 越低](figures/fig_num_preds.png)
+> **原始数据**（`/data1/likun-share/junjxu/runs/physionpp/`）：`eval_pp_fr_e20.log`(np8) · `eval_pp_fr_np20_e20.log` · `eval_pp_fr_np20sc_e20.log` · `eval_pp_fr_np28sc_e20.log` · `eval_pp_fr_scnp16_e20fair.log`
+
 **变量分离结论：**
 1. **中程（h32）决定性杠杆 = 调大 num_preds**：np20 与 scnp16 都 ~0.033、比 baseline(0.140) 好 **4×**，两者接近 → 主力是 num_preds，不是 scale。
 2. **长程（h64）scale 再加成**：scnp16 0.136 < np20 0.220 < baseline 0.280。纯 num_preds 已把长程 0.280→0.220，scale 在此基础上再砍一半到 0.136。
@@ -115,6 +118,39 @@ friction_collision 上 np20 的 cos 仍 0.992（方向对）但 nMSE 炸 → **�
 
 **方法论（双指标交叉，呼应 §3.5/3.6）**：GROUP 混合 nMSE h64=3.22 是假象（被 deform 崩 + 静止物体分母 artifact 拉爆），此处以 cos 判；而 §3.5 的 appearance 陷阱里反过来是 nMSE 才对（cos 升 nMSE 崩）。**两个指标各有失效模式（cos 无尺度会漏报、nMSE 遇退化分母会引爆），必须逐场景逐 horizon 交叉验证。**
 
+## 3.8 论点定版：FR≫TF 多种子 + 物理结构 + init 消融（2026-07-12，12-arm 打满 GPU）
+
+围绕论文三论点，pusht init、epoch20、physionpp full，一次性 solid 验证。
+
+**① free-rollout ≫ teacher-forcing（headline，3 种子，np8）**——h64 长程 nMSE：
+
+| seed | TF(np1) | FR(np8) |
+|---|---|---|
+| 3072 | 1.219 | 0.139 |
+| 1234 | 1.165 | 0.124 |
+| 42 | 1.139 | 0.159 |
+| **均值** | **1.174** | **0.141** |
+
+→ FR 好 **8.3×**，3v3 区间零重叠；h64 cos 0.89 vs 0.50（TF 长程 nMSE >1 = 完全漂移）。**free-rollout 在真实 physion 也是决定性主升力**，与 phyworld C1 一致。
+
+![FR vs TF by horizon](figures/fig_fr_vs_tf.png)
+> **原始数据**：`eval_pp_tf_s{3072,1234,42}.log`(TF) · `eval_pp_fr_s{3072,1234,42}.log`(FR)
+
+**② 物理结构无用（FR np8 + 各结构，seed3072）**——h64 nMSE：纯 FR **0.141** vs structured **0.266** / consistency **0.168** / consist+accel **0.213**。全部拖累长程（中程 struct h32 0.065 略好但长程崩）。位置编码/动力学在 physion 同样无用/有害，与 phyworld C4 一致。
+
+**③ init 消融（np20sc；pusht 2D vs cube 3D vs scratch，3 种子）**——h64 nMSE（mean±std）：
+
+| init | h64 nMSE (3 seeds) | 3 种子实测 |
+|---|---|---|
+| **scratch** | **0.038 ± 0.003** | 0.034 / 0.041 / 0.039 |
+| cube（3D 堆方块） | 0.065 ± 0.021 | 0.048 / 0.094 / 0.052 |
+| pusht（2D pushing） | 0.080 ± 0.016 | 0.058 / 0.096 / 0.084 |
+
+→ **scratch 显著最好**（error bar [0.035,0.041] 与 cube/pusht 均不重叠）：physion 数据量足够（800 clip），encoder 从头学到最贴合表示，**预训练 init 的域偏见反而拖累**。**cube(3D) vs pusht(2D) 不显著**（error bar 重叠 [0.064,0.085]）——单种子看着 cube 好 17% 是**假象**（cube 的 seed1234 跳到 0.094），多种子后淹没在噪声里。**诚实结论：physion 直训「要不要 init」是真信号（不要最好），「init 域接近度（3D vs 2D）」不是可靠杠杆。** 与 phyworld 相反（那里 pusht init > random，因数据少、init 提供先验）→ **init 价值随目标数据规模/真实度递减**。✅ 3 种子。
+
+![init 消融（3 种子 error bar）+ 物理结构 h64 nMSE](figures/fig_init_structure.png)
+> **原始数据**：init `eval_pp_init_{scratch,cube,pusht}{,_s1234,_s42}.log`（3 种子）；物理结构 `eval_pp_{struct2,cons2,consacc2}.log` + 纯FR `eval_pp_fr_s3072.log`
+
 ## 4. 结论与下一步
 
 **回答核心问题**：跳出 zero-shot、**在真实数据上训**，OOD+长程能做好 —— 这条路验证有效。方法选择：
@@ -128,5 +164,22 @@ friction_collision 上 np20 的 cos 仍 0.992（方向对）但 nMSE 炸 → **�
 
 ---
 
-*产物*：ckpt `$STABLEWM_HOME/pp_{fr,struct,cons,consacc}/*_epoch_20_object.ckpt`；eval log `/data1/likun-share/junjxu/runs/physionpp/eval_*_e20.log`。
-*脚本*：`physion_plus_to_lewm.py`（转换）、`run_physionpp.sh`（训练）、`rollout_eval_physionpp.py`（评估）。setsid 跑法见 memory `background-tasks-use-setsid`。
+## 原始数据源总表（供 AI 总结 / 复现拉数据）
+
+**eval log 目录**：`/data1/likun-share/junjxu/runs/physionpp/`　　**ckpt**：`$STABLEWM_HOME/<subdir>/<name>_epoch_20_object.ckpt`（`STABLEWM_HOME=/data1/likun-share/junjxu/.stable_worldmodel`）
+
+| 报告 section | 内容 | eval log |
+|---|---|---|
+| §1 | 4 配置长程 rollout | `eval_pp_{fr,struct,cons,consacc}_e20.log` |
+| §2 | scene 属性 OOD | `eval_pp_fr_e20.log` |
+| §3.5 | appearance 陷阱 | `eval_pp_fr_e20.log` / `eval_pp_fr_app05_e20.log` |
+| §3.6 | num_preds/scale 变量分离 | `eval_pp_fr_{e20,np20_e20,np20sc_e20,np28sc_e20}.log` / `eval_pp_fr_scnp16_e20fair.log` |
+| §3.7 | held-out scene OOD | `eval_np28sc_ho_ood.log` / `eval_np28sc_full_seen.log` |
+| §3.8 ① | FR vs TF headline（3 种子） | `eval_pp_{tf,fr}_s{3072,1234,42}.log` |
+| §3.8 ② | 物理结构 | `eval_pp_{struct2,cons2,consacc2}.log` |
+| §3.8 ③ | init 消融 | `eval_pp_init_{scratch,cube,pusht}.log` |
+
+每个 log 内含 `h= <horizon> ... cos=<...> nMSE=<...>`（by-horizon 整体，前 7 行）+ by-scene + PRED decode ρ。
+
+*图*：`reports/physion/figures/*.png`，由 `make_figures.py` 从上述 log 生成。
+*脚本*：`physion_plus_to_lewm.py`（Physion++→HDF5）、`make_heldout_h5.py`（held-out split）、`run_physionpp.sh`（训练）、`rollout_eval_physionpp.py`（评估，`--group-scenes` 出 held-out OOD）、`make_figures.py`（画图）。setsid 跑法见 memory `background-tasks-use-setsid`。

@@ -82,6 +82,16 @@ pp_fr 各场景长程 cos：刚体场景（friction/bouncy/mass）**0.96-0.99** 
 
 ---
 
+## 3.5 论点定版：FR≫TF + 物理结构无用 + init 消融（2026-07-12，12-arm 打满 GPU）
+
+pusht init、epoch20、physionpp full 上一次性 solid 验证论文三论点：
+
+- **① FR ≫ TF（headline，3 种子）**：h64 nMSE FR **0.141** vs TF **1.174**（好 **8.3×**，3v3 区间零重叠，cos 0.89 vs 0.50）。free-rollout 在真实 physion 也是决定性主升力。
+- **② 物理结构无用**：h64 nMSE 纯 FR 0.141 vs struct 0.266 / cons 0.168 / consacc 0.213，全部拖累长程。
+- **③ init 消融（np20sc，3 种子）**：h64 nMSE **scratch 0.038±0.003 < cube 0.065±0.021 ≈ pusht 0.080±0.016**。**scratch 显著最好**（error bar 与两者不重叠，预训练 init 域偏见拖累）；**cube(3D) vs pusht(2D) 不显著**（error bar 重叠，单种子的"3D 更好"是假象）。→ physion 直训「要不要 init」是真信号（不要最好），域接近度不是可靠杠杆；与 phyworld（init 有用）相反 → **init 价值随数据规模递减**。✅ 3 种子。
+
+详见 [physionpp §3.8](physionpp_ood_longhorizon.md)。
+
 ## 4. 方法论教训（写进 memory）
 
 > **latent-space world-model 的 rollout 评估必须用 nMSE（含尺度）判决，cos 单指标会骗人** —— 尤其当某方法改变了 encoder 的表示分布（尺度/范数）时，cos 可以升而 nMSE 崩。这次 appearance 增广就差点把「搞坏模型」报成「提升」。per-scene nMSE 对静止/小位移物体有分母敏感性（cos 高 nMSE 大时优先信同 GT 相对对比）。

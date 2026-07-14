@@ -1,6 +1,6 @@
 # 故事线与创新性评估(AAAI-27)
 
-**先说结论**:推荐 **Story A+B 混合**——"系统解剖 + 最小建设性修复",统一论点是 **"可解码 ≠ 承重"(presence ≠ use)**。免得读者误会:这不是"负结果堆",而是"找到支配变量(承重/表示挤占)并给出边界条件"的实证科学。
+**先说结论**:推荐 **Story A+B 混合**——"系统解剖 + 最小建设性修复",统一论点是 **"可解码 ≠ 预测依赖它"(presence ≠ use)**。免得读者误会:这不是"负结果堆",而是"找到支配变量(预测是否依赖物理 slot / 表示挤占)并给出边界条件"的实证科学。
 
 ---
 
@@ -12,7 +12,7 @@
 | **评测三陷阱**(cos 对偶陷阱 / 迁移天花板=random 先验 / 协议混淆假阴性) | ★★★★ | 接近——方法论贡献,审稿人喜欢,但单独撑不起主线 |
 | 增广**合成→真实反转**(合成最强杠杆,真实崩 100×) | ★★★ | 半行——反直觉发现,但 SPARK 等增广文献已密集 |
 | free-rollout 修 teacher forcing(三域+真实通用) | ★★(作为方法 **2/10**,lewm 会话 novelty check 已定) | **不行**——= Scheduled Sampling(Bengio 2015);只能当"训练协议压倒结构先验"论断的证据 |
-| 承重(pos_weight)niche + 四条件边界 | ★★ | 不行——边际收益;但作为"机制解释的可证伪验证"价值很高 |
+| pos_weight 加权 niche + 四条件边界 | ★★ | 不行——边际收益;但作为"机制解释的可证伪验证"价值很高 |
 | horizon-complexity matching(num_preds 律) | ★★ | 不行——但是干净的实证规律,做小节 |
 | Physion++ 直训 np20sc(h64 nMSE 3.2×) | ★★ | 不行——工程性;当真实数据验证章 |
 
@@ -28,7 +28,7 @@
 | **consistency loss** | **演化(无固定形式)** | **要** | 预测 rollout 的位置 slot 做差分得"预测速度",强制等于真值速度(可加二阶);不假设 a 的形式 → 专为 collision 冲量设计(smooth-a 必死处) |
 | **无标签物理先验(label-free)** | **演化(只要求形式)** | **不要** | 不钉真值,只要求 slot"必须按二阶动力学平滑演化"(即 `z_{t+1}=z_t+v_t+a_t`,序列的二阶差分≈加速度必须小/连续,不能跳变;匀速 a=0、抛体 a=g 满足,碰撞冲量不满足),指望位置信息自组织进 slot;动机 = physion_collide 纯视频无 proprio,一切带标签监督失效。对照组 grounded = 同结构 + 钉真值 |
 
-五行从"钉状态"扫到"钉演化"、从"有标签"扫到"无标签",设计空间闭合;全负(含 grounded)→ 支撑"根因是架构(承重问题),不是方程形式或标签有无"。
+五行从"钉状态"扫到"钉演化"、从"有标签"扫到"无标签",设计空间闭合;全负(含 grounded)→ 支撑"根因是架构(物理 slot 占比低+被黑盒旁路绕过),不是方程形式或标签有无"。
 
 **四把尺子(所有数字的指标定义)**:
 
@@ -41,24 +41,24 @@
 
 上两行量"存在"、下两行量"使用";判决规则 = 逐分区、逐 horizon、nMSE/pixel 为主、双指标交叉验证。
 
-**核心概念:intrinsic vs extrinsic(物理状态住在哪)** —— *intrinsic*(我们/LeWM+slot):物理是共享 192 维 latent 里切出的 2 维"租客",共享黑盒 predictor 滚整体,190 维黑盒冗余编码位置 → **有旁路,slot 可被绕过,天生不承重**。*extrinsic*(PIWM):独立低维物理态 z_p **就是**主状态,由固定形式动力学方程演化,decoder 被强制只从 z_p 重建 → **无旁路,架构结构性强制承重**(+分阶段训练避免梯度打架)。我们把 PIWM 的零件(方程形式/slot/probe/from-scratch/有无标签)逐一嫁接到 intrinsic 上全部失败 → **PIWM 的红利归因于 extrinsic 架构整体,而非物理方程知识**;整换 extrinsic 是设计空间仅剩的未测分支(P2-1 spike / future work)。
+**核心概念:intrinsic vs extrinsic(物理状态住在哪)** —— *intrinsic*(我们/LeWM+slot):物理是共享 192 维 latent 里切出的 2 维"租客",共享黑盒 predictor 滚整体,190 维黑盒冗余编码位置 → **有旁路,slot 可被绕过,预测天生不依赖它**。*extrinsic*(PIWM):独立低维物理态 z_p **就是**主状态,由固定形式动力学方程演化,decoder 被强制只从 z_p 重建 → **无旁路,架构结构上强制预测必经它**(+分阶段训练避免梯度打架)。我们把 PIWM 的零件(方程形式/slot/probe/from-scratch/有无标签)逐一嫁接到 intrinsic 上全部失败 → **PIWM 的红利归因于 extrinsic 架构整体,而非物理方程知识**;整换 extrinsic 是设计空间仅剩的未测分支(P2-1 spike / future work)。
 
-**核心概念:承重(load-bearing,借自"承重墙")** —— 区分两件事:①位置信息**存在**于 latent(可解码,probe ρ 0.96 ✅);②预测**真正依赖**这几维(它们错则预测错、loss 疼 ❌)。物理 slot 是"装饰墙":pred_loss 对 192 维平均后这 2 维只占 ~1% 梯度,且 190 维黑盒**冗余编码了位置**(predictor 走黑盒路即可,不必经过 slot),外加物理梯度与预测梯度打架(比值 15–125×)。**可证伪验证**:pos_weight=30 把重量压上去 → structpos 危害消失(0.183→0.132 持平);一切挂在非承重 slot 上的方程/约束则全灭。PIWM 之所以行,是 extrinsic 架构让低维物理态**就是**主 latent(架构强制承重)。此落差 = 论文标题 *Decodable but Not Load-Bearing*。
+**核心概念:存在 ≠ 预测依赖(presence ≠ use)** —— 区分两件事:①位置信息**存在**于 latent(可解码,probe ρ 0.96 ✅);②预测**真正依赖**这几维(它们错则预测错、loss 疼 ❌)。物理 slot 满足①不满足②:pred_loss 对 192 维平均后这 2 维只占 ~1% 梯度,且 190 维黑盒**冗余编码了位置**(predictor 走黑盒旁路即可,不必经过 slot),外加物理梯度与预测梯度打架(比值 15–125×)→ 预测不依赖它。**可证伪验证**:pos_weight=30 提高 slot 在 loss 里的占比 → structpos 危害消失(0.183→0.132 持平);但加大占比并没消除黑盒旁路,一切挂在被旁路绕过的 slot 上的方程/约束仍全灭。PIWM 之所以行,是 extrinsic 架构让低维物理态**就是**主 latent(预测唯一必经通道)。此落差 = 论文标题 *Decodable but Not Load-Bearing*。
 
 ## 2. 三条候选故事线
 
 ### Story A:系统解剖(推荐主线)
 > **"物理归纳偏置没有让 latent world model 更懂物理——训练协议才有。我们解释为什么。"**
 
-- **主张 1(反直觉核心)**:在共享 latent 的 JEPA 世界模型上,物理结构先验(固定 slot / 运动学方程 / 深监督 probe / consistency / 无标签先验)**系统性失败**——无论嫁接还是 from-scratch、有无标签、软硬约束、正确与否的物理形式(严格重力形式也伤)。机制:**物理通道非承重**(2/192 维被平均 loss 稀释,黑盒通道冗余编码位置、预测走会漂的黑盒路)+ 梯度冲突(probe/pred 梯度比 15–125×,intrinsic dim 塌方)。
+- **主张 1(反直觉核心)**:在共享 latent 的 JEPA 世界模型上,物理结构先验(固定 slot / 运动学方程 / 深监督 probe / consistency / 无标签先验)**系统性失败**——无论嫁接还是 from-scratch、有无标签、软硬约束、正确与否的物理形式(严格重力形式也伤)。机制:**预测不依赖物理通道**(2/192 维被平均 loss 稀释,黑盒通道冗余编码位置、预测走会漂的黑盒路)+ 梯度冲突(probe/pred 梯度比 15–125×,intrinsic dim 塌方)。
 - **主张 2(建设性)**:真正有效的是训练与数据侧:free-rollout(唯一跨合成/真实通用)、rollout horizon 匹配动力学复杂度、域匹配增广(附反转警示)。
 - **主张 3(方法论)**:评测三陷阱——先前文献看到"物理结构有效"很可能是 cos/probe-ρ 这类**监督对偶量**造成的假象(我们多处用 nMSE/pixel 反转)。
 - **优点**:数据全在手、诚实、有攻击性(直接对话 PIWM/2504.03861)、三主张互锁成完整故事。
 - **风险**:AAAI 评审偏好新方法;需要用"发现支配变量"的正面框架而非"负结果"框架来写。
 
-### Story B:最小修复(并入 A,不单独成篇)
-> 把 pos_weight 承重包装成 **Load-Bearing Reweighting(LBR)**:一行改动让物理 slot 从有害(0.183)救回与 baseline 持平(3 种子 0.132±0.014 vs 0.136±0.007),pixel 尺与 v-OOD 解码位置上有正向(单种子)。
-- **7-11 种子定版后的降级**:latent 尺"净超 baseline"的说法作废(0.114 是种子噪声);诚实口径 = "承重让物理 slot **无害共存**并恢复可解码性,但不带来净 OOD 增益"。这反而让 Story A 更统一——连最好的物理配置也只是"不伤"。
+### Story B:机制的可证伪验证(并入 A,不单独成篇)
+> 把 pos_weight 加权(LBR)当作机制验证:加大物理 slot 在 loss 里的占比,看危害是否随之消失。
+- **诚实口径(全曲线 pw1→300)**:加权到头,4 个域×分区只有 2 个救回与 baseline 持平(uniform·both、parabola 高权 r/m),另 2 个全程有害(uniform·r/m、collision,后者越加越差)。→ 加权**只在 slot 占主导那格消掉危害,多数格子仍有害、无净增益**。这反而让 Story A 更统一——即使加权到极致,物理结构整体仍是负效果,验证了"机制方向对但修不了根本(旁路在)"。**别把 LBR 写成"修复/最小修复"**(它只 2/4 格回持平),写成"机制的可证伪验证"。
 - 作用:仍是机制解释的可证伪验证("按机制修,危害确实消失");不能当 headline。
 
 ### Story C:诊断+治疗(extrinsic 架构)——本轮放弃
@@ -90,10 +90,11 @@
 
 | 预期攻击 | 应对 |
 |---|---|
-| "负结果不算贡献" | 框架反转:发现支配变量(承重),负结果是**对既有正面主张的系统检验**;附 LBR 可证伪验证;引用 "What Matters..." 类分析论文先例 |
+| "负结果不算贡献" | 框架反转:发现支配变量(预测是否依赖物理 slot),负结果是**对既有正面主张的系统检验**;附 LBR 可证伪验证;引用 "What Matters..." 类分析论文先例 |
+| **"你实现有 bug / 物理 loss 没真生效"**(最致命) | **不辩"检查过代码",用行为证明约束真生效**:structured_loss 2.53→0.015、slot 可解码 0.31→0.96、按 pos_weight 甜点响应、恰在匹配域(parabola)三种子生效、梯度比 15–125× 可测、危害随强度单调(+0.035→+0.558);外加 free-rollout 阳性对照证明 pipeline/指标灵敏。**弹药库见 [detail/why_physics_structure_fails.md](detail/why_physics_structure_fails.md)** |
 | "free-rollout 就是 scheduled sampling" | 主动承认并引用;我们的 claim 是相对重要性(协议>结构),不是方法 |
 | "单一 backbone(LeWM/ViT-tiny),结论会泛化吗" | 老实写进 limitation;5-19 的 7-encoder 横评(DiT-XL/ImageNet/PushT)提供部分外推;呼吁社区在更大 backbone 复验 |
-| "没有外部方法 baseline(如 PIWM 原实现)" | 严格 PIWM 形式(a=g const)臂 = 忠实复刻其方程假设;完整 PIWM extrinsic 复现列为 future work(P2) |
+| "没有外部方法 baseline(如 PIWM 原实现)" | **已做(2026-07-13)**:官方 PIWM extrinsic code 忠实移植到 phyworld(δ=0 最有利档),学到正确物理(parabola g_y=−0.028≈真值),ID/v-OOD ρ 比 LeWM 更准,但 **r/m/both-OOD 崩(ρ 0.33/0.48 vs LeWM 0.89/0.87)**——**其 VAE 编码器扛不住尺寸 OOD**;佐证"物理结构买不到 OOD 鲁棒"。⚠️单种子。见 [ledger C4 外部 baseline 块](01_results_ledger.md)。**附带 nuance**:extrinsic 修好承重但不修编码器-OOD → 温和了"extrinsic 是唯一出路",诚实框架 = 两条物理路(intrinsic 旁路/extrinsic 编码器)都不买 OOD 鲁棒 |
 | "单种子" | P0 补 headline 3 种子;collision 增广已有 3 种子 |
 | "为什么信 nMSE/pixel 不信 cos" | §评测陷阱整节论证:cos 是训练目标对偶量 + 三个实锤反转案例(含 nMSE=47659 时 cos=0.95 的发散案例) |
 

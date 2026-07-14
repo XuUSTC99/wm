@@ -7,7 +7,7 @@
 ---
 
 ## Abstract(~180 词)
-骨架见 02 §3。结构:现象(可解码≠守规律)→ 做了什么(5 注入 × 2 init × 3 合成域 + 2 真实基准的系统检验)→ 发现 1(结构全线伤)→ 机制(承重问题)+ 最小修复(LBR,带边界)→ 发现 2(有效的是训练协议;增广合成→真实反转)→ 发现 3(cos 对偶陷阱解释既有文献假象)。
+骨架见 02 §3。结构:现象(可解码≠守规律)→ 做了什么(5 注入 × 2 init × 3 合成域 + 2 真实基准的系统检验)→ 发现 1(结构全线伤)→ 机制(物理 slot 占比低+被旁路绕过)+ 最小修复(LBR,带边界)→ 发现 2(有效的是训练协议;增广合成→真实反转)→ 发现 3(cos 对偶陷阱解释既有文献假象)。
 
 ## 1. Introduction(七段八股,吸收 papers/mypaper/introduction.md 的导师反馈)
 
@@ -17,7 +17,7 @@
 | P2 现状 | 两条主流药方:①物理归纳偏置(PIWM 系/deep-sup probe);②scaling+数据(PhyWorld 已证 video-gen 不行)。latent WM 上①是否真有效缺系统检验 | — |
 | P3 概念先定义清楚 | latent WM/JEPA、rollout、teacher forcing、OOD 分区、nMSE/PSNR(**导师反馈:别让读者带着未定义概念读下去;"换言之"类词删掉**) | — |
 | P4 缺口 | 既有正面证据依赖 cos/probe-ρ 这类**监督对偶量**;注入方式、init、域覆盖零散;无"结构 vs 训练协议"的受控对比 | — |
-| P5 我们做什么 | 系统解剖(5×2×3+真实)+ 机制假说(承重)+ 最小修复验证(LBR)+ 协议侧对照(free-rollout/horizon/增广) | — |
+| P5 我们做什么 | 系统解剖(5×2×3+真实)+ 机制假说(物理 slot 占比低+被旁路绕过)+ 最小修复验证(LBR)+ 协议侧对照(free-rollout/horizon/增广) | — |
 | P6 效果 | 结构全伤(严格重力形式也伤);LBR 翻正但窄;协议侧 −57~65%、真实 h64 3.2×;cos 三次反转 | — |
 | P7 贡献 | 四条:①解剖+机制 ②LBR+边界条件 ③协议配方+增广反转 ④评测陷阱与修正协议 | — |
 
@@ -32,7 +32,7 @@
 ## 4. Physical Inductive Biases Fail(C4+C5,~1.5 页,论文的心脏)
 - 4.1 注入方式扫描表(Table 2:5 机制 × 3 域,全红)。五种机制的定义/差异表见 [02 名词表](02_story_and_novelty.md)——正文开头用 2-3 句把"钉状态(structpos/probe) vs 钉演化(dynamics/consistency) vs 无标签(label-free)"的谱系交代清楚(琨哥八股:概念先定义后使用)。
 - 4.2 pretrain vs post-hoc 2×2(排除"要从头训"辩护;注明 scratch 基线欠拟合 caveat 或用 P0 补跑的干净版)。
-- 4.3 机制:承重问题(2/192 稀释、黑盒冗余编码、梯度比 15–125×、intrinsic-dim 塌方)。Fig.4 机制示意 + 证据面板。
+- 4.3 机制:物理 slot 被旁路绕过(2/192 稀释、黑盒冗余编码、梯度比 15–125×、intrinsic-dim 塌方)。Fig.4 机制示意 + 证据面板。
 - 4.4 LBR 最小修复:pos_weight 甜点 30 翻正(0.183→0.114);四条件边界(光滑域 ✓ / 冲量域 ✗ / pixel 尺才可见 / 伤迁移)。**框架:机制的可证伪验证,不是 SOTA 方法。**
 
 ## 5. What Actually Helps: Training and Data(C1+C2+C3,~1.5 页)
@@ -57,7 +57,7 @@
 | Fig.1 | teaser:decodable≠compliant(左:probe ρ 高;右:rollout 漂移) | 5-27 rollout + probe |
 | Fig.2 | TF vs FR by-horizon,3 域 | C1 |
 | Fig.3 | num_preds 甜点随域复杂度移动 | C2 |
-| Fig.4 | 承重机制示意 + 梯度比/塌方证据 | C4 diagnostic |
+| Fig.4 | 旁路机制示意 + 梯度比/塌方证据 | C4 diagnostic |
 | Fig.5 | cos-vs-nMSE 反转散点(三案例标注) | C6 |
 | Fig.6 | 增广交互矩阵 + 真实反转柱状 | C3 |
 | Tab.1 | 主表:三域 both-OOD(TF/FR/np/aug/物理各臂) | C1-C4 |
