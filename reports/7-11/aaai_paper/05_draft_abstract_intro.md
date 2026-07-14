@@ -7,7 +7,7 @@
 
 ## Title
 
-**Decodable but Not Load-Bearing: Why Physical Inductive Biases Fail in Latent World Models**
+**Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does**
 
 ## Abstract (~185 words)
 

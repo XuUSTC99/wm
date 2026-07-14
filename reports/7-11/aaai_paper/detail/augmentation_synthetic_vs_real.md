@@ -1,8 +1,10 @@
 # 论据:数据增广是合成域最强杠杆,但合成→真实反转 100×
 
+> # 🎯 一句话结论
+> **同一个 appearance 增广,在简单合成域是最强 OOD 杠杆(−48~63%),搬到照片级仿真 nMSE 崩 100×——真实场景外观携带物理信息(摩擦/质量/材质)、不是可抹掉的 nuisance,所以 appearance 增广是反面边界警示、不是正面方法(几何 scale 增广不反转,可留)。**
+
 **对应主张**:[01_results_ledger.md](../01_results_ledger.md) **C3** / [06_storyline.md](../06_storyline.md) 发现二（增广边界警示）
 **配图**:[../figures/fig4_aug_synthetic_vs_real.png](../figures/fig4_aug_synthetic_vs_real.png)
-**一句话**:同一个 appearance 增广,在简单合成域是最强 OOD 杠杆（−48~63%）,搬到照片级仿真 nMSE 崩 100×——因为真实场景里外观携带物理信息（摩擦/质量/材质），不是可抹掉的 nuisance。所以 appearance 增广是**反面边界警示,不是正面方法**。
 
 ![](../figures/fig4_aug_synthetic_vs_real.png)
 

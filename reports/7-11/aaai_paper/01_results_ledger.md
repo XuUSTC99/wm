@@ -53,6 +53,8 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 
 ## C4. 物理结构先验在共享 latent JEPA 上全线失效(注入方式×init×域 全否)✅✅
 
+> **claim 口径(信息论+建设性,2026-07-13 收敛)**:latent 已把物理**状态**编强(位置 ρ 0.9、冗余分布在黑盒 190 维,probe-190 实证)→ 再注入**同一份状态**是**冗余的**(不带新信号→不提升)、还占容量分梯度(→有害,intrinsic dim 塌 39–90%)。真正短板不在状态、在**预测器长程动力学**(可解码但 rollout 漂)——统一了"注入状态没用"与"free-rollout 有用"。物理注入要帮须补 latent **真正缺的**(动力学/守恒量),非已在里面的状态(⚠️未证实,future work)。**精确 scope**:限"往保留全维黑盒预测通道的共享 latent 嫁接状态";更高维 slot/更好映射仍是塞冗余状态、没堵旁路→同预测无用(reweighting 到 300× 已直接测"给物理更多梯度份额",只到持平);突破须改架构堵旁路(extrinsic),而 extrinsic 也只解决承重、不解决编码器-OOD(见下 PIWM 块)。详见 [why_physics_structure_fails 层3](detail/why_physics_structure_fails.md)。
+
 **变体扫描(uniform/parabola/collision, pusht init, both-OOD nMSE,基线=纯FR)**:
 | 变体 | 结果 | 出处 |
 |---|---|---|

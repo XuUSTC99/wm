@@ -1,4 +1,4 @@
-# 论文故事线 —— Decodable but Not Load-Bearing
+# 论文故事线 —— Toward Physics-Consistent Latent World Models
 
 **对应稿件**:[paper/main.pdf](paper/main.pdf)(AAAI-27,正文 6 页 + 附录,已编译)
 **日期**:2026-07-12
@@ -10,7 +10,9 @@
 
 > **物理信息"存在"于世界模型的 latent 里(可解码),但预测从不"使用"它(不承重)——所以往共享 latent 上嫁接物理结构全都白费甚至有害;真正让模型遵守物理的是训练协议,不是结构先验。**
 
-标题 *Decodable but Not Load-Bearing* 就是这句话的浓缩:decodable = 信息在场,load-bearing = 预测真的靠它。全文所有发现都挂在这个"**存在 ≠ 使用**(presence ≠ use)"的落差上。
+核心概念 ***decodable but not load-bearing*(存在 ≠ 使用,presence ≠ use)**:decodable = 信息在场,load-bearing = 预测真的靠它。全文发现都挂在这个落差上。
+
+**更精确的机制表述(信息论+建设性,2026-07-13 收敛)**:为什么"嫁接白费甚至有害"?——因为 **latent 已经把物理"状态"编强了(位置 ρ 0.9、冗余分布在黑盒 190 维,probe-190 实证)**,再注入**同一份状态**是**冗余的**(不带新信号 → 不提升)、还占表示容量分梯度(→ 有害,与预测目标打架)。**真正的短板不在"状态",而在"预测器的长程动力学"**(状态可解码但 rollout 会漂)——这一句就把"注入物理状态没用"和"修训练协议(free-rollout)有用"统一了。物理注入若要帮,前提是补 latent **真正缺的东西**(动力学/守恒量),而非已在里面的状态(⚠️此点未证实,唯一疑似正例 parabola 速度 −0.026 不倚重,future work)。这也**免疫"换更高维 slot / 更好映射会不会好"的质疑**:那还是塞冗余状态、没堵旁路;要突破须改架构堵旁路(extrinsic),不是换编码。详见 [detail/why_physics_structure_fails.md 层3](detail/why_physics_structure_fails.md)。
 
 ---
 

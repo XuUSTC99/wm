@@ -43,7 +43,7 @@
 
 **核心概念:intrinsic vs extrinsic(物理状态住在哪)** —— *intrinsic*(我们/LeWM+slot):物理是共享 192 维 latent 里切出的 2 维"租客",共享黑盒 predictor 滚整体,190 维黑盒冗余编码位置 → **有旁路,slot 可被绕过,预测天生不依赖它**。*extrinsic*(PIWM):独立低维物理态 z_p **就是**主状态,由固定形式动力学方程演化,decoder 被强制只从 z_p 重建 → **无旁路,架构结构上强制预测必经它**(+分阶段训练避免梯度打架)。我们把 PIWM 的零件(方程形式/slot/probe/from-scratch/有无标签)逐一嫁接到 intrinsic 上全部失败 → **PIWM 的红利归因于 extrinsic 架构整体,而非物理方程知识**;整换 extrinsic 是设计空间仅剩的未测分支(P2-1 spike / future work)。
 
-**核心概念:存在 ≠ 预测依赖(presence ≠ use)** —— 区分两件事:①位置信息**存在**于 latent(可解码,probe ρ 0.96 ✅);②预测**真正依赖**这几维(它们错则预测错、loss 疼 ❌)。物理 slot 满足①不满足②:pred_loss 对 192 维平均后这 2 维只占 ~1% 梯度,且 190 维黑盒**冗余编码了位置**(predictor 走黑盒旁路即可,不必经过 slot),外加物理梯度与预测梯度打架(比值 15–125×)→ 预测不依赖它。**可证伪验证**:pos_weight=30 提高 slot 在 loss 里的占比 → structpos 危害消失(0.183→0.132 持平);但加大占比并没消除黑盒旁路,一切挂在被旁路绕过的 slot 上的方程/约束仍全灭。PIWM 之所以行,是 extrinsic 架构让低维物理态**就是**主 latent(预测唯一必经通道)。此落差 = 论文标题 *Decodable but Not Load-Bearing*。
+**核心概念:存在 ≠ 预测依赖(presence ≠ use)** —— 区分两件事:①位置信息**存在**于 latent(可解码,probe ρ 0.96 ✅);②预测**真正依赖**这几维(它们错则预测错、loss 疼 ❌)。物理 slot 满足①不满足②:pred_loss 对 192 维平均后这 2 维只占 ~1% 梯度,且 190 维黑盒**冗余编码了位置**(predictor 走黑盒旁路即可,不必经过 slot),外加物理梯度与预测梯度打架(比值 15–125×)→ 预测不依赖它。**可证伪验证**:pos_weight=30 提高 slot 在 loss 里的占比 → structpos 危害消失(0.183→0.132 持平);但加大占比并没消除黑盒旁路,一切挂在被旁路绕过的 slot 上的方程/约束仍全灭。PIWM 之所以行,是 extrinsic 架构让低维物理态**就是**主 latent(预测唯一必经通道)。此落差 = 我们命名的核心概念 *decodable but not load-bearing*(presence ≠ use;不再作标题,升级为正文机制短语,主标题见 §标题候选 #0)。
 
 ## 2. 三条候选故事线
 
@@ -69,11 +69,9 @@
 
 > Latent world models can *decode* physical state, yet fail to *obey* physical law over long-horizon rollout and under OOD physics. We systematically inject physical inductive biases into a JEPA-style world model (LeWM) across five mechanisms (fixed slots, kinematic dynamics, deep-supervision probes, consistency losses, label-free priors), two injection regimes (post-hoc / from-scratch), three synthetic physics domains, and two real-world video benchmarks — and find they consistently *hurt*. We trace the failure to a **load-bearing problem**: physical dimensions occupy a vanishing fraction of the latent and gradients, so prediction routes around them; a one-line loss reweighting (LBR) that makes the slot load-bearing flips it from harmful to helpful, but only within sharp boundary conditions (smooth dynamics, pixel-space evaluation). What robustly helps instead is the training protocol: autoregressive free-rollout, horizon matched to dynamics complexity, and domain-matched augmentation — though augmentation gains reverse catastrophically from synthetic to real data. Finally we show why prior evidence for physics priors may be illusory: cosine/probe metrics are *duals of the training loss* and systematically mislead. (数字往里填:三域 both-OOD −57~65%、Physion++ h64 3.2×、cos→nMSE 100× 反转。)
 
-**标题候选**(58d756a6 已有 + 新增,禁用 "PIWM"/"Physically Interpretable World Models" 字样):
-1. **Decodable but Not Load-Bearing: Why Physical Inductive Biases Fail in Latent World Models**(推荐——点出机制)
-2. Toward Physics-Consistent World Models: Diagnosing and Improving Long-Horizon OOD Prediction(58d756a6 定的 CV 版,稳)
-3. Training Beats Structure: An Anatomy of Physical Robustness in Latent World Models
-4. Presence Is Not Use: Physical State in World Models Is Decodable but Not Compliant
+**主标题**:**Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does**
+- 备选:*Training Beats Structure: An Anatomy of Physical Robustness in Latent World Models* / *Presence Is Not Use: Physical State Is Decodable but Not Compliant*
+- 约束:禁用 "PIWM"/"Physically Interpretable World Models" 字样;不放 LeWM(泛化 scope、避免单-backbone limitation 上标题,LeWM 放 abstract/setup)。
 
 ## 4. 相关工作对比(novelty 台账)
 

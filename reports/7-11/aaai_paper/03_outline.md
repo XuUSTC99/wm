@@ -1,6 +1,6 @@
 # 论文骨架(AAAI-27,正文页数以 CFP 为准,按 7 页正文规划)
 
-标题(工作稿):**Decodable but Not Load-Bearing: Why Physical Inductive Biases Fail in Latent World Models**
+标题:**Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does**
 
 主张编号 C1~C7 对应 [01_results_ledger.md](01_results_ledger.md)。
 

@@ -1,8 +1,10 @@
 # 论据:真实数据(Physion++)—— zero-shot 死路、直训活路
 
+> # 🎯 一句话结论
+> **合成里学的物理搬不到真实(zero-shot 封顶=random 架构先验 0.607,无配置能超);但直接在真实仿真上训,free-rollout+长 rollout 能把长程 nMSE 打到基线的 1/19,且泛化分层——刚体动力学可迁、形变不可。**
+
 **对应主张**:[01_results_ledger.md](../01_results_ledger.md) **C7**（+ C1/C2 真实侧）/ [06_storyline.md](../06_storyline.md) 发现二 & 结论
 **配图**:[../figures/fig7_realdata_num_preds.png](../figures/fig7_realdata_num_preds.png)、[../figures/fig2_free_rollout.png](../figures/fig2_free_rollout.png)（真实侧一列）、[../figures/fig6_transfer_ceiling.png](../figures/fig6_transfer_ceiling.png)
-**一句话**:合成里学的物理搬不到真实（zero-shot 封顶 = random 先验）;但**直接在真实仿真上训**,free-rollout + 长 rollout 能把长程 nMSE 打到基线的 1/19,泛化还分层（刚体可迁、形变不可）。
 
 > **术语**:Physion++ = 照片级物理仿真视频（球碰撞/多米诺/布料/斜面…,带 3D 位置+速度标注）。zero-shot = phyworld 训好直接搬去 Physion 评（测合成→真实,结论:不能）。直训 = 直接喂 Physion++ 从头训（测真实上限,结论:很好）。
 

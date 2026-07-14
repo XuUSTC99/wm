@@ -1,5 +1,8 @@
 # 故事线配图库（PPT 用）
 
+> # 🎯 一句话结论
+> **故事线 9 张图的「一句话主旨(可直接当 slide 标题)+ 数据表 + 原始数据源」;时间紧只讲前 3 张(钩子 → 正面 free-rollout → 负面物理+机制)即可立住主线。**
+
 **用途**:给导师汇报故事线的 9 张图,每张配「一句话主旨（可直接当 slide 标题）+ 数据表 + 原始数据源」。图文件在 [../figures/](../figures/)（`.png` 投影用、`.pdf` 矢量插 PPT 用），一键重画脚本 [../figures/storyline_figures.py](../figures/storyline_figures.py)（所有数字内嵌+源注释）。配色 Okabe-Ito（色盲安全）。
 
 对应关系:图 → [06_storyline.md](../06_storyline.md) 逻辑步 → [01_results_ledger.md](../01_results_ledger.md) 主张。

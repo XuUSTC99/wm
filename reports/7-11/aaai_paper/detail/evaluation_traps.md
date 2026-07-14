@@ -1,8 +1,10 @@
 # 论据:四个评测陷阱(方法论贡献)
 
+> # 🎯 一句话结论
+> **既有文献"看起来"物理结构有效,大半是用了 cos/probe 这类"训练目标的对偶量"(加了对应 loss 必然涨,不代表预测变好);我们给出四个系统性评测陷阱 + 一份修正协议,回收"别人为什么被骗"。**
+
 **对应主张**:[01_results_ledger.md](../01_results_ledger.md) **C6** / [06_storyline.md](../06_storyline.md) 发现三
 **配图**:[../figures/fig5_cos_trap.png](../figures/fig5_cos_trap.png)（陷阱1）、[../figures/fig6_transfer_ceiling.png](../figures/fig6_transfer_ceiling.png)（陷阱2）
-**一句话**:既有文献"看起来"物理结构有效,大半是因为用了 cos/probe 这类**训练目标的对偶量**;我们给出四个系统性陷阱 + 修正协议,并用它们回收"别人为什么被骗"。
 
 ![](../figures/fig5_cos_trap.png)
 
