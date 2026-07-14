@@ -335,4 +335,28 @@ fig.suptitle("Real data (Physion++): free-rollout holds long-horizon while teach
              fontsize=10.5, y=1.0, color=INK)
 save(fig, "fig14_physionpp_free_rollout"); plt.close(fig)
 
+# ============================================================================
+# FIG 15 — the BYPASS, measured (probe-190): black-box 190 dims alone decode
+# position ~ as well as the full latent -> prediction can route around any slot.
+# Source: why_physics_structure_fails.md 层2② table (probe_dim_subset.py), both-OOD pos rho.
+# ============================================================================
+bdoms = ["uniform", "parabola", "collision"]
+full192 = [0.92, 0.85, 0.78]      # decode position from all 192 dims (baseline)
+blackbox190 = [0.92, 0.85, 0.79]  # decode from black-box [2:192] only (baseline, no slot)
+fig, ax = plt.subplots(figsize=(7.8, 4.5))
+x = np.arange(len(bdoms)); w = 0.36
+ax.axhspan(0.2, 0.5, color=VERM, alpha=0.08, lw=0)
+ax.text(2.48, 0.35, "random 2 dims (control):\ncan't decode (0.2–0.5)", color=VERM, fontsize=8.5, ha="right", va="center")
+b1 = ax.bar(x - w/2, full192, w, color=INK, label="all 192 dims")
+b2 = ax.bar(x + w/2, blackbox190, w, color=SKY, label="black-box 190 dims only (slot removed)")
+for xi in range(len(bdoms)):
+    ax.text(xi - w/2, full192[xi] + 0.015, f"{full192[xi]:.2f}", ha="center", va="bottom", fontsize=9, color=INK)
+    ax.text(xi + w/2, blackbox190[xi] + 0.015, f"{blackbox190[xi]:.2f}", ha="center", va="bottom", fontsize=9, color="#1f6f9b", fontweight="bold")
+ax.set_xticks(x); ax.set_xticklabels(bdoms, fontsize=10.5)
+ax.set_ylabel("position decodable  (probe $\\rho$, ↑)"); ax.set_ylim(0, 1.05)
+ax.set_title("The bypass, measured: the black-box 190 dims ALONE decode position\nas well as the full latent → prediction can route around any physics slot", fontsize=10.5)
+ax.legend(frameon=False, fontsize=9.5, loc="lower left")
+ax.grid(True, axis="y", color=GRID, lw=0.6, alpha=0.6); ax.set_axisbelow(True)
+save(fig, "fig15_bypass_probe190"); plt.close(fig)
+
 print("ALL storyline figures done ->", OUT)

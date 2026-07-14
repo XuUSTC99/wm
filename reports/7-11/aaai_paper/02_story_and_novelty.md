@@ -14,7 +14,7 @@
 | free-rollout 修 teacher forcing(三域+真实通用) | ★★(作为方法 **2/10**,lewm 会话 novelty check 已定) | **不行**——= Scheduled Sampling(Bengio 2015);只能当"训练协议压倒结构先验"论断的证据 |
 | pos_weight 加权 niche + 四条件边界 | ★★ | 不行——边际收益;但作为"机制解释的可证伪验证"价值很高 |
 | horizon-complexity matching(num_preds 律) | ★★ | 不行——但是干净的实证规律,做小节 |
-| Physion++ 直训 np20sc(h64 nMSE 3.2×) | ★★ | 不行——工程性;当真实数据验证章 |
+| Physion++ 直训:FR/TF 8.3×(h64,3 种子)+ 顶配 np28sc h64 19×(0.280→0.014) | ★★ | 不行——工程性;当真实数据验证章 |
 
 **novelty check 既有结论(lewm 会话 7-08/7-09,勿重复劳动)**:free-rollout 2/10、增广 2/10;竞品 SPARK(2510.24216,物理引导增广)、PIAug(2311.00815)、Augmented World Models(2104.05632);[UNVERIFIED] Persistent Robot WM 2603.25685、Sword 2605.07288、Train-Short-Infer-Long 2602.14027(写作前须 citation audit)。
 
@@ -34,7 +34,7 @@
 
 | 尺子 | 定义 | 量什么 | 坑(对应 C6) |
 |---|---|---|---|
-| cos | 预测 latent 与真值 latent 的余弦 `ẑ·z/(\|ẑ\|\|z\|)` | 方向一致性 | 尺度盲:真值(1,0) 预测(5,0) 也得满分;幅度过冲/崩塌看不见(friction cos 0.99 而 nMSE 24.6) |
+| cos | 预测 latent 与真值 latent 的余弦 `ẑ·z/(\|ẑ\|\|z\|)` | 方向一致性 | 尺度盲:真值(1,0) 预测(5,0) 也得满分;实锤=app 增广 deform cos 升 +0.30 而 nMSE 0.77→3.69 崩、h64 cos 升而整体 nMSE 退化(⚠️旧例 "friction cos0.99/nMSE24.6" 是 per-scene 分母 artifact,physionpp §3.6 已降级,勿引) |
 | probe-ρ | 线性头从 latent 解码物理量,与真值的 Pearson 相关(K=4 = 堆 4 帧,速度可差分) | 信息**存在**(可读出) | 是 probe/structured 训练目标的对偶量,加了该 loss 必然涨,不代表预测变好 |
 | **nMSE** | `‖预测−真值‖²/真值方差`,0=完美、≈1=瞎猜均值 | 预测真误差(方向+尺度) | 分母退化除零爆炸(parabola h28 球出框→方差→0→nMSE 飙百万);先查 by-horizon 再引用 |
 | **pixel PSNR** | 预测 latent 解码成图 vs 真实帧,`10·log10(MAX²/MSE)` dB,+3dB≈像素误差减半 | 端到端画面(位置权重天然高) | 依赖 decoder(collision decoder-limited,只用 latent 尺) |
@@ -67,7 +67,7 @@
 
 ## 3. 推荐定位(一段话,可直接改成 abstract 骨架)
 
-> Latent world models can *decode* physical state, yet fail to *obey* physical law over long-horizon rollout and under OOD physics. We systematically inject physical inductive biases into a JEPA-style world model (LeWM) across five mechanisms (fixed slots, kinematic dynamics, deep-supervision probes, consistency losses, label-free priors), two injection regimes (post-hoc / from-scratch), three synthetic physics domains, and two photorealistic-simulation video benchmarks — and find they consistently *hurt*. We trace the failure to a **load-bearing problem**: physical dimensions occupy a vanishing fraction of the latent and gradients, so prediction routes around them; a one-line loss reweighting (LBR) that makes the slot load-bearing flips it from harmful to helpful, but only within sharp boundary conditions (smooth dynamics, pixel-space evaluation). What robustly helps instead is the training protocol: autoregressive free-rollout, horizon matched to dynamics complexity, and domain-matched augmentation — though augmentation gains reverse catastrophically from synthetic to real data. Finally we show why cosine/probe-based evidence for physics priors can mislead: these metrics are *duals of the training loss* and systematically overestimate structure, so judgment must rest on prediction-error and pixel metrics. (数字往里填:三域 both-OOD −57~65%、Physion++ h64 3.2×、cos→nMSE 100× 反转。)
+> Latent world models can *decode* physical state, yet fail to *obey* physical law over long-horizon rollout and under OOD physics. We systematically inject physical inductive biases into a JEPA-style world model (LeWM) across five mechanisms (fixed slots, kinematic dynamics, deep-supervision probes, consistency losses, label-free priors), two injection regimes (post-hoc / from-scratch), three synthetic physics domains, and two photorealistic-simulation video benchmarks — and find they consistently *hurt*. We trace the failure to a **load-bearing problem**: physical dimensions occupy a vanishing fraction of the latent and gradients, so prediction routes around them; re-weighting the loss to make slots load-bearing (LBR) restores parity in only 2 of 4 domain-partition cells and never yields net gains — r/m-OOD and impulsive-domain harm persists at every weight. What robustly helps instead is the training protocol: autoregressive free-rollout, horizon matched to dynamics complexity, and domain-matched augmentation — though augmentation gains reverse catastrophically from synthetic to real data. Finally we show why cosine/probe-based evidence for physics priors can mislead: these metrics are *duals of the training loss* and systematically overestimate structure, so judgment must rest on prediction-error and pixel metrics. (数字往里填:FR 合成 2.2–3.6×/真实 Physion++ 8.3×(均三种子);np28+scale h64 19×(0.280→0.014);增广真实反转 friction ~100×(幅度 per-scene 分母敏感,方向由 cos 降 + h16 整体 2.5× 支撑);cos 陷阱 deform +0.30↑/nMSE 4.8×↓。)
 
 **主标题**:**Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does**
 - 备选:*Training Beats Structure: An Anatomy of Physical Robustness in Latent World Models* / *Presence Is Not Use: Physical State Is Decodable but Not Compliant*

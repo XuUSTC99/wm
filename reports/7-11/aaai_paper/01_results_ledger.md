@@ -47,7 +47,7 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 - **时序增广证伪**:temporal stride 治不了 v-OOD(0.556 还不如 app 的 0.376)→ v-OOD 是增广啃不动的硬骨头。
 
 **真实域反转(论文的关键警示)**:
-- Physion++ 直训:appearance 0.5 把 friction_collision nMSE 从 0.062 崩到 **6.44(100×)**,cos 却在涨(cos 陷阱实例)。
+- Physion++ 直训:appearance 0.5 把 friction_collision nMSE 从 0.062 崩到 **6.44(~100×)**。⚠️ 两个精度点(2026-07-14 审计修正):① **friction 的 cos 是同步下降的(0.978→0.894),方向真实——它不是 cos 陷阱实例**;真正的 cos 陷阱是 **deform_clothhit(cos 0.610→0.913 升 +0.30 而 nMSE 0.772→3.69 崩)与 h64 整体(cos 0.794→0.870 升而 nMSE 0.280→0.311 退化)**,归 C6。② 100× 的幅度来自 per-scene nMSE(分母敏感,physionpp §3.6 已降级为参考);**方向坚实**:cos 降 + horizon 整体 h16 nMSE 2.5×(0.016→0.041)同向退化。出处:`physionpp/eval_pp_fr{,_app05}_e20.log`。
 - Physion zero-shot 迁移:增广无用(0.597 < random 0.607)。
 出处:[general_augmentation.md](../../6-24/final/general_augmentation.md)、physionpp 报告、[cross_dataset_ledger.md](../../6-24/final/cross_dataset_ledger.md)。
 

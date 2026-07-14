@@ -18,7 +18,7 @@
 | P3 概念先定义清楚 | latent WM/JEPA、rollout、teacher forcing、OOD 分区、nMSE/PSNR(**导师反馈:别让读者带着未定义概念读下去;"换言之"类词删掉**) | — |
 | P4 缺口 | 既有正面证据依赖 cos/probe-ρ 这类**监督对偶量**;注入方式、init、域覆盖零散;无"结构 vs 训练协议"的受控对比 | — |
 | P5 我们做什么 | 系统解剖(5×2×3+真实)+ 机制假说(物理 slot 占比低+被旁路绕过)+ 最小修复验证(LBR)+ 协议侧对照(free-rollout/horizon/增广) | — |
-| P6 效果 | 结构全伤(严格重力形式也伤);LBR 翻正但窄;协议侧 −57~65%、真实 h64 3.2×;cos 三次反转 | — |
+| P6 效果 | 结构全伤(严格重力形式也伤);LBR 只回持平(2/4 判决格,无净增益);协议侧 FR 2.2–3.6×(合成)/8.3×(真实 h64);顶配 np28+scale h64 19×;cos 反转实锤 | — |
 | P7 贡献 | 四条:①解剖+机制 ②LBR+边界条件 ③协议配方+增广反转 ④评测陷阱与修正协议 | — |
 
 ## 2. Related Work(半页~2/3 页,导师反馈"related 相当于没写"→ 必须实写)
@@ -33,16 +33,16 @@
 - 4.1 注入方式扫描表(Table 2:5 机制 × 3 域,全红)。五种机制的定义/差异表见 [02 名词表](02_story_and_novelty.md)——正文开头用 2-3 句把"钉状态(structpos/probe) vs 钉演化(dynamics/consistency) vs 无标签(label-free)"的谱系交代清楚(琨哥八股:概念先定义后使用)。
 - 4.2 pretrain vs post-hoc 2×2(排除"要从头训"辩护;注明 scratch 基线欠拟合 caveat 或用 P0 补跑的干净版)。
 - 4.3 机制:物理 slot 被旁路绕过(2/192 稀释、黑盒冗余编码、梯度比 15–125×、intrinsic-dim 塌方)。Fig.4 机制示意 + 证据面板。
-- 4.4 LBR 最小修复:pos_weight 甜点 30 翻正(0.183→0.114);四条件边界(光滑域 ✓ / 冲量域 ✗ / pixel 尺才可见 / 伤迁移)。**框架:机制的可证伪验证,不是 SOTA 方法。**
+- 4.4 LBR:pos_weight 全曲线(1→300)——uniform·both 从 harm(0.183)回**持平**(0.132±0.014 三种子;⚠️单种子 0.114 的"净超"是种子噪声,勿引);仅 2/4 判决格达持平,uniform·r/m 与 collision 任何权重救不回(collision 越加越差 0.59→0.69)。**框架:机制的可证伪验证,不是修复方法。**
 
 ## 5. What Actually Helps: Training and Data(C1+C2+C3,~1.5 页)
-- 5.1 free-rollout:三域 −57~65%(Table 1)+ 真实数据同向;定位为 exposure-bias 修复的受控证据。Fig.2 by-horizon 曲线。
+- 5.1 free-rollout:三域 2.2–3.6×(both-OOD/r-m nMSE,三种子零重叠,Table 1)+ 真实 Physion++ 8.3×(h64,三种子);全 4 分区含 ID 均 2.0–4.6×(不是 OOD 补丁);定位为 exposure-bias 修复的受控证据。Fig.2 by-horizon 曲线。
 - 5.2 horizon-complexity matching:collision np≈20 vs 光滑域 np8(加长反害);Physion++ np20 中程 4×。Fig.3。
 - 5.3 增广:合成域配方与交互矩阵(app×np20 冲突/scale×np20 协同);**合成→真实反转**(friction nMSE 100×)。Fig.6。
-- 5.4 真实数据上限验证(C7):np20+scale h64 nMSE 0.087(3.2×);deform 共同短板留 limitation。
+- 5.4 真实数据上限验证(C7):顶配 np28+scale h64 nMSE **0.014(19×,0.280→)**,num_preds 16→28 单调无拐点;deform 共同短板留 limitation。
 
 ## 6. Evaluation Traps(C6,~0.75 页,特色小节)
-- cos 是监督对偶量(数学论证一段)+ 三个实锤反转(probe 长程、app 增广 100×、发散时 cos=0.95/nMSE=4.7e4)。
+- cos 是监督对偶量(数学论证一段)+ 实锤反转(probe 长程 pixel −0.71dB、app 增广 deform cos+0.30↑/nMSE 4.8×↓、h64 cos↑ 整体 nMSE↓);nMSE 反向陷阱另列(发散 cos=0.95/nMSE=4.7e4 分母爆点;⚠️friction 100× 是"增广伤真实"证据、非 cos 陷阱——其 cos 同步降)。
 - zero-shot 迁移天花板 = random 架构先验(0.607)。
 - 协议混淆假阴性(vx 0.166→0.939)。
 - 落点:给社区的评测 checklist(4 条)。

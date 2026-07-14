@@ -1,10 +1,43 @@
 # 论据:物理结构失效是真实且架构必然的(非实现 bug、非编码方式次优)
 
 > # 🎯 一句话结论
-> **"物理结构无效"是真的,不是实现 bug、也不是编码方式次优——① 用模型可观测行为证明约束真生效(只是有害地),② pos_weight 全曲线证明"注入量"不是问题,③ probe-190 三域实测证明"黑盒旁路"是失效的架构性充分条件。用来回击审稿人三连问:实现有 bug?注入量不够?换更优雅的编码会不会好?**
+> **"物理结构无效"是真的,不是实现 bug、也不是编码方式次优。⓪ 地基(必须先立):latent 本身(零物理注入)就已把物理状态编强——位置可从真实帧编码线性解出 ρ 0.6–0.98、且冗余铺在黑盒 190 维,所以"注入"= 往已有信息上再塞同一份冗余。在此之上三条堵审稿人:① 模型可观测行为证明约束真生效(只是有害地),② pos_weight 全曲线证明"注入量"不是问题,③ probe-190 三域实测证明"黑盒旁路"是失效的架构性充分条件。回击三连问:实现有 bug?注入量不够?换更优雅的编码会不会好?**
 
 **对应质疑**:审稿人看到纯负结果(物理结构没用),第一反应是"是不是你实现有 bug、物理 loss 根本没接进去、所以才看不出效果"。
 **对应主张**:[06_storyline.md](../06_storyline.md) 三发现互锁的第一环 / paper §4。
+
+---
+
+## 前提(整个论证的地基):latent 本身就编码了物理量——所以"注入"只是塞冗余
+
+在证明"注入无用/有害"之前,先立住一个**正面事实**——否则"注入是冗余"无从谈起:**未注入任何物理**的 baseline,编码器本身就把物理状态编进了 latent、可线性解出。
+
+**数据(baseline,零物理 loss;probe 从"真实帧编码出的 latent"解位置,Pearson ρ,pos0/pos1 两维,seed 1234;全 4 分区、每域最强分区加粗):**
+
+| 域 | ID | r/m-OOD | v-OOD | both-OOD |
+|---|---|---|---|---|
+| uniform | 0.936 / 0.981 | **0.958 / 0.932** | 0.927 / 0.826 | 0.955 / 0.862 |
+| parabola | 0.700 / 0.777 | **0.890 / 0.950** | 0.830 / 0.824 | 0.831 / 0.893 |
+| collision | 0.748 / 0.598 | 0.806 / 0.726 | 0.811 / 0.482 | **0.889 / 0.796** |
+
+**坐标语义(pos0/pos1 = probe 解出的位置坐标)**:uniform/parabola = **单球的 x(水平)/ y(竖直)**;collision 是 **2 球 1D 水平碰撞**、竖直 y 每帧恒定,故 pos0/pos1 = **球1 / 球2 各自的 x**。
+**⚠️ collision 偏低的两格**(ID pos1 **0.598**、v-OOD pos1 **0.482**,均为**球2 的 x**):① range restriction——这两维位置方差恰是全表最小档(`check_pos_variance` 实测:collision v-OOD pos1.std 2.47、ID pos1.std 2.83);② 球2 在碰撞里的轨迹**依赖对撞细节**,比匀速/抛体的单球更难从单帧编码。**是真实域特性、非"信息缺失"**;collision 判读看方差大、最可靠的 both-OOD(0.80–0.89)即可。
+
+→ ID 与 OOD 全报:位置解码 ρ 覆盖 **0.60–0.98**,其中 OOD 分区 **0.80–0.96**(每域最强分区加粗;uniform/parabola 达 0.89–0.96、collision 0.80–0.89);ID 偏低(parabola 0.70、collision 0.60)是 range restriction 假象、非"信息少"(见下 ⚠️注)。位置信息**就在 baseline latent 里、可线性读出**——这是 "presence"。
+
+**⏱ 关于 horizon(重要区分)**:上表 REAL-emb 是**真实帧编码**、与 rollout 走几步无关——每帧独立编码,故按分区聚合(涵盖轨迹全帧 t≈1–28)、**不随 horizon 衰减,无需 by-horizon 写全**。真正随 horizon 衰减的是 **rollout 预测的 PRED-emb**(presence→not use):同 both-OOD,REAL **0.889** → rollout PRED **0.326**;rollout 保真 cos 亦 h1 0.99 → h28 0.48(采样 h=1/2/4/8/16/28)。"写全 1–28" 针对的是 rollout 这条衰减线,不是这张 presence 表。(ID 分区更低——parabola 0.70/0.78、collision 0.75/0.60——但被 range restriction 低估、非"信息少",见下注;故上表以方差大、样本多、更可靠的 OOD 分区为准。)
+
+> **⚠️ ID 分区 ρ 反而更低(parabola 0.70/0.78、collision 0.75/0.60,故未列入上表)**:这是统计 artifact,**不是"ID 信息少"**——①**range restriction**:ID 球速慢、位置方差小,OOD 位置 std 实测是 ID 的 **1.3–2.25×**,而 Pearson ρ 分母含真值 std,方差小则 ρ 被系统压低;②**样本量**:ID 分区帧数最少(collision ID 3680 vs both-OOD 28992)→ ρ 估计不稳(ID 分区 seed 间波动 ±0.1,OOD 仅 ±0.02)。**判读"信息在不在"应看方差大、样本多的 OOD 分区(0.83–0.96),ID 那几个 0.6 是被压低的假象**。这本身是 probe-ρ 的又一条陷阱(分区间不可直接比)。验证:三 seed 复现 + `check_pos_variance` 方差实测。(pos0/pos1 语义:parabola/uniform = 单球 x/y;collision 是 **1D 水平碰撞**、竖直 y 每条轨迹恒定,取两球各自的水平位置,故 pos0/pos1 = 球1/球2 的 x——这也是为何 parabola pos1=y 方差不随水平速度 OOD 变、那维 ρ 差异归 seed 噪声。)
+
+**这份可解码性怎么来的(probe 协议,防"过拟合/模型来源"质疑)**:模型 = LeWM ViT-tiny(192-D,**PushT backbone init → 该域 ID-1k free-rollout finetune 20ep,全程无任何物理 loss**);probe = 在 projector 空间(predictor 工作空间)训 **Ridge(α=1)**,**train/test 轨迹 80/20 分开**(仅在训练轨迹 fit、测试轨迹报 ρ,**非 in-sample**),K=1 单帧,真值取数据集 proprio/state 位置。两点:①train/test 分开 → ρ 高不是过拟合;②可解码性主要来自**域内 finetune**(为预测下一帧自然编码位置)而非 PushT 白送 → **世界模型训练本身就把物理状态编进 latent,无需额外注入**。出处 `aaai_p0/rollout_{域}_baseline_fr_s1234.log` 段 `probe applied to REAL embs`,脚本 [rollout_eval_id1k.py](../../../phyworld/scripts/rollout_eval_id1k.py)。
+
+**而且是冗余、分布式的**(不是稀疏在某几维):见下方 [层2② probe-190],baseline 把 latent 拆成"随机 2 维 / 黑盒 190 维",**黑盒 190 维单独**就解出位置(both-OOD uniform 0.92 / parabola 0.85 / collision 0.79),与全 192 维几乎一致 → 位置**冗余铺在黑盒里**。
+
+**这个地基撑起后面全部论证**:
+- latent 已有这份状态 → 再注入**同一份** = 冗余 → 不带新信号 → **不提升**;还占容量分梯度 → **有害**。
+- 黑盒已冗余编码位置 → 预测有**旁路**可走、绕过你注入的 slot → 注入的结构 *not load-bearing*。
+
+**presence 的另一半 = not use**:同一 latent,一旦进 rollout(probe 作用在**预测出的** latent 上),可解码性就崩——collision both-OOD pos0ρ **0.889(REAL)→ 0.326(PRED)**。**信息在编码里(0.89),预测却滚不住它(0.33)**——这就是 *decodable but not load-bearing*,也是主线 [06 现象步](../06_storyline.md) 的数据根。
 
 ---
 
@@ -67,7 +100,7 @@
 
 上面六条堵的是"约束**没接上**"。更强的质疑是:**约束是生效了,但"固定切 2 维 slot"这种编码方式本身笨,换一种更好的方式把物理编进 latent 也许就有用了。** 分三层回应,并诚实标注证据强弱。
 
-**层1(实证覆盖度 —— 已有,强)**:我们不是只测一种编码方式。7 种注入方式沿三个正交轴铺开,**21 个方式×域格里 20 个明确比纯 free-rollout(baseline)差,唯一"更低"的 probe·parabola(0.115)落在基线三种子区间下沿=噪声**——没有一种带来 seed-robust 改善(both-OOD nMSE↓;parabola 判决用 r/m-OOD):
+**层1(实证覆盖度 —— 已有,强)**:我们不是只测一种编码方式。7 种注入方式沿三个正交轴铺开,**21 个方式×域格里 20 个明确比纯 free-rollout(baseline)差,唯一"更低"的 probe·parabola(0.115)落在基线三种子区间下沿=噪声**——没有一种带来 seed-robust 改善(both-OOD nMSE↓;parabola 判决用 r/m-OOD)。(口径对齐:此表 7 种**代表方式**=21 格;ledger C4 与 storyline 的 **30 格**=再加组合/slot-内容/加权变体 3 臂(probe+structpos、posvel、structpos+pw30)×3 域,总账见 [ledger C4](../01_results_ledger.md)。)
 
 | 注入方式 | 轴定位(硬软·状态演化·标签) | uniform | parabola r/m | collision | vs baseline |
 |---|---|---|---|---|---|
@@ -76,11 +109,12 @@
 | probe 深监督 | 软 · 状态 · 有标签 | 0.167 | 0.115ⁿ | 0.647 | ❌ |
 | 运动学头(自由 MLP) | 硬 · 演化 · 有标签 | 0.155 | 0.178 | 0.560 | ❌ |
 | 运动学头(严格 a=g,正确物理形式) | 硬 · 演化 · 有标签 | 0.206 | 0.173 | 0.559 | ❌ |
-| consistency loss(cons1.0) | 软 · 演化 · 有标签 | 0.151 | 0.147 | 0.606 | ❌ |
+| consistency loss(cons 族)ᶜ | 软 · 演化 · 有标签 | 0.151 | 0.147 | 0.640 | ❌ |
 | label-free 无标签先验 | 软 · 演化 · **无标签** | 0.171 | 0.172 | 0.653 | ❌ |
 | grounded(label-free 的有标签对照) | 硬 · 演化 · 有标签 | 0.166 | 0.156 | 0.524 | ❌ |
 
 ⁿ probe·parabola r/m 0.115 < baseline 0.127,但 0.115 在 baseline 三种子区间(0.115–0.127)**下沿 = 种子噪声**,非真改善(同 C4 主表口径)。数字均单种子(3072),出处 [ledger C4](../01_results_ledger.md) + `runs/{structdyn_eval,aaai_p0}/rollout_*`。
+ᶜ cons 行三格来自 cons 族内变体(uniform=cons_B_v1、parabola=cons1p0acc r/m、collision=**cons1.0 0.640**,2026-07-14 审计修正:旧值 0.606 实为 cons1p0**acc** 臂);collision 上 cons 全族 0.549–0.653(cons0.3 0.567/cons1.0 0.640/+acc 0.606/+areg 0.549)**全部 > 基线 0.393**,结论不因变体而变。源:`structdyn_eval/rollout_collision_structpos_cons*_id1k.log`。
 
 **三个轴 = 覆盖了"往共享 latent 注入物理"的整个设计空间**:
 - **硬 vs 软**:硬 = 强制 latent 某几维**就是**位置(structpos/运动学头);软 = 只要求"能读出/能对上",不固定维度(probe/consistency)。
@@ -93,6 +127,10 @@
 
 **层2(机制必然性 —— 核心,但目前偏演绎)**:失效根因是三个**架构事实**——① 物理占共享 192 维的一小块 → ~1% 梯度;② 黑盒维度**冗余编码了同样的位置**;③ 存在"绕开物理块走黑盒"的旁路。**这三条对任何"在共享 latent 里给物理切一小块"的 intrinsic 方式都成立**,与切哪几维/软硬无关 → 是"intrinsic 共享 latent 范式"的问题,不是编码方式 A/B/C 的问题。这是**演绎不是归纳**:谁要说某种 intrinsic 编码能突破,得先说明它怎么让物理**不**占极小梯度、**不**被黑盒冗余覆盖——只要还是共享 latent 切一块就做不到。
 - ✅ **已实测(2026-07-13,probe-190,三域一致)**:对 `structpos_fr_pw30`(前 2 维强制=位置)单独 probe **后 190 个非-slot 维**,位置仍高精度可解,与全 192 维几乎一致——**即便把位置钉进 slot,黑盒仍独立冗余编码同一份位置,预测可绕开 slot**。`baseline_fr`(无 slot)后 190 维同样解出。位置解码 ρ(both-OOD):
+
+  ![](../figures/fig15_bypass_probe190.png)
+
+  *(一眼看图:黑柱=全 192 维、蓝柱=去掉 slot 只用黑盒 190 维——两者几乎等高,黑盒单独就能解出位置;随机 2 维落在红色控制带 0.2–0.5 里解不出 → 位置是分布式冗余、藏在黑盒里,任何物理 slot 都能被绕过。)*
 
   | 域 | baseline:全192 / 黑盒[2:192] | structpos:slot[0:2] / 黑盒[2:192] |
   |---|---|---|
