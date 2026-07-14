@@ -52,7 +52,7 @@
 
 - **主张 1(反直觉核心)**:在共享 latent 的 JEPA 世界模型上,物理结构先验(固定 slot / 运动学方程 / 深监督 probe / consistency / 无标签先验)**系统性失败**——无论嫁接还是 from-scratch、有无标签、软硬约束、正确与否的物理形式(严格重力形式也伤)。机制:**预测不依赖物理通道**(2/192 维被平均 loss 稀释,黑盒通道冗余编码位置、预测走会漂的黑盒路)+ 梯度冲突(probe/pred 梯度比 15–125×,intrinsic dim 塌方)。
 - **主张 2(建设性)**:真正有效的是训练与数据侧:free-rollout(唯一跨合成/真实通用)、rollout horizon 匹配动力学复杂度、域匹配增广(附反转警示)。
-- **主张 3(方法论)**:评测三陷阱——先前文献看到"物理结构有效"很可能是 cos/probe-ρ 这类**监督对偶量**造成的假象(我们多处用 nMSE/pixel 反转)。
+- **主张 3(方法论)**:评测陷阱——cos/probe-ρ 是**监督对偶量**(加了对应 loss 必然涨),当主指标会系统性高估;我们多处用 nMSE/pixel 反转,且自己早期 sweep 盯 K=4 ρ 得"λ=50 胜出"、改用 pred_loss 后翻案(λ=1 最优)→ **以此类指标为主的正面报告可能是假象**(给机制+实锤+自身踩坑复盘,不宣称文献比例。deep-sup 2504.03861 本身用可信指标 pred_loss、结论正确,不在此列)。
 - **优点**:数据全在手、诚实、有攻击性(直接对话 PIWM/2504.03861)、三主张互锁成完整故事。
 - **风险**:AAAI 评审偏好新方法;需要用"发现支配变量"的正面框架而非"负结果"框架来写。
 
@@ -67,7 +67,7 @@
 
 ## 3. 推荐定位(一段话,可直接改成 abstract 骨架)
 
-> Latent world models can *decode* physical state, yet fail to *obey* physical law over long-horizon rollout and under OOD physics. We systematically inject physical inductive biases into a JEPA-style world model (LeWM) across five mechanisms (fixed slots, kinematic dynamics, deep-supervision probes, consistency losses, label-free priors), two injection regimes (post-hoc / from-scratch), three synthetic physics domains, and two real-world video benchmarks — and find they consistently *hurt*. We trace the failure to a **load-bearing problem**: physical dimensions occupy a vanishing fraction of the latent and gradients, so prediction routes around them; a one-line loss reweighting (LBR) that makes the slot load-bearing flips it from harmful to helpful, but only within sharp boundary conditions (smooth dynamics, pixel-space evaluation). What robustly helps instead is the training protocol: autoregressive free-rollout, horizon matched to dynamics complexity, and domain-matched augmentation — though augmentation gains reverse catastrophically from synthetic to real data. Finally we show why prior evidence for physics priors may be illusory: cosine/probe metrics are *duals of the training loss* and systematically mislead. (数字往里填:三域 both-OOD −57~65%、Physion++ h64 3.2×、cos→nMSE 100× 反转。)
+> Latent world models can *decode* physical state, yet fail to *obey* physical law over long-horizon rollout and under OOD physics. We systematically inject physical inductive biases into a JEPA-style world model (LeWM) across five mechanisms (fixed slots, kinematic dynamics, deep-supervision probes, consistency losses, label-free priors), two injection regimes (post-hoc / from-scratch), three synthetic physics domains, and two photorealistic-simulation video benchmarks — and find they consistently *hurt*. We trace the failure to a **load-bearing problem**: physical dimensions occupy a vanishing fraction of the latent and gradients, so prediction routes around them; a one-line loss reweighting (LBR) that makes the slot load-bearing flips it from harmful to helpful, but only within sharp boundary conditions (smooth dynamics, pixel-space evaluation). What robustly helps instead is the training protocol: autoregressive free-rollout, horizon matched to dynamics complexity, and domain-matched augmentation — though augmentation gains reverse catastrophically from synthetic to real data. Finally we show why cosine/probe-based evidence for physics priors can mislead: these metrics are *duals of the training loss* and systematically overestimate structure, so judgment must rest on prediction-error and pixel metrics. (数字往里填:三域 both-OOD −57~65%、Physion++ h64 3.2×、cos→nMSE 100× 反转。)
 
 **主标题**:**Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does**
 - 备选:*Training Beats Structure: An Anatomy of Physical Robustness in Latent World Models* / *Presence Is Not Use: Physical State Is Decodable but Not Compliant*
@@ -79,7 +79,7 @@
 |---|---|---|
 | PhyWorld(Kang et al. 2024,数据来源) | video-gen(diffusion)靠 scaling 学不会物理规律,case-based 泛化 | 同一问题搬到 **latent/JEPA WM** + 追问"注入物理结构能不能救"→ 不能,并给机制;用他们的 OOD 协议,可比性天然 |
 | PIWM(2412.12870)+ Four Principles(2503.02143) | 物理结构化 latent + 固定形式动力学有效(from-scratch + extrinsic) | 在**共享 latent(intrinsic)**设定下系统证伪其可移植性:连严格重力形式、from-scratch 都伤;指出其成功依赖 extrinsic 架构整体而非物理方程本身(我们 pretrain 2×2 排除了"from-scratch 就行"的解释) |
-| Deep-supervision probes(2504.03861) | probe-in-loss 提升可解码性+减漂移 | 复现后在可信指标上反转(pixel h28 −0.71dB、both-OOD nMSE +0.036);其表面收益 = cos/ρ 对偶陷阱 |
+| Deep-supervision probes(2504.03861) | 低维状态 latent(Flappy Bird,8-D、probe 占 38%)上用**可信指标 pred_loss** 证明 deep-sup 有效——结论正确 | 同一 recipe 搬到高维视觉 latent(192-D、probe 占 2%)上 pred_loss 反升 57–156%:高维冗余通道被压塌(intrinsic-dim 塌方)。是**域/设置边界**,非论文指标问题——我们据此定位"结构被旁路稀释"机制 |
 | Scheduled Sampling / exposure bias(Bengio 2015 起) | 自回归训练要消 exposure bias | 不 claim 方法新;贡献是"**在物理 WM 上它压倒一切结构先验**"这一系统证据 + horizon-复杂度匹配律 |
 | SPARK(2510.24216)/ PIAug 等增广 | 增广治 dynamics OOD | 补上"合成→真实反转"的边界:appearance 增广真实数据 nMSE 崩 100×;增广收益是域特定的 |
 | Physion / Physion++(评测基准) | 真实物理理解基准 | 提供 zero-shot 天花板=random 先验(0.607)的负结果 + 直训可行的正结果 |

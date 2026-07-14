@@ -1,4 +1,4 @@
-# 论文故事线 —— Toward Physics-Consistent Latent World Models
+# 论文故事线 —— Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does
 
 **对应稿件**:[paper/main.pdf](paper/main.pdf)(AAAI-27,正文 6 页 + 附录,已编译)
 **日期**:2026-07-12
@@ -32,7 +32,7 @@
 
 7. **发现二(正,支配变量)**:真正**跨域不翻车**的杠杆都在训练和数据侧,有三个:① **free-rollout**(uniform/parabola/collision 2.2–3.6× + 真实 Physion++ **8.3×**,唯一跨合成/仿真都通用的主升力;📊 [Fig 2](figures/fig2_free_rollout.png),论据 [detail/free_rollout_evidence.md](detail/free_rollout_evidence.md));② **rollout horizon 匹配动力学复杂度**(碰撞吃长 rollout、光滑域不吃;真实数据 np8→28 长程 nMSE 单调降到 1/19、无拐点;📊 [Fig 7](figures/fig7_realdata_num_preds.png));③ **几何 scale 增广作长程稳定器**(和长 horizon 协同,仿真上拿到 19×,且不反转)。**增广必须拆开看,不能整体算正面**:appearance 增广只是**简单合成域专属**的最强杠杆(−48~63%),一到照片级仿真就**反转 100×**(因为 appearance 在照片级场景里携带物理信息——摩擦/质量/材质,不是可抹掉的 nuisance)——所以 appearance 是**反面边界警示,不是正面方法**(📊 [Fig 4](figures/fig4_aug_synthetic_vs_real.png),论据 [detail/augmentation_synthetic_vs_real.md](detail/augmentation_synthetic_vs_real.md))。正面框架 = 发现支配变量(free-rollout / horizon / scale),而非负结果堆;appearance 的反转本身也是一条贡献(合成→仿真的边界)。
 
-8. **发现三(方法论)**:四个评测陷阱——解释了为什么既有文献"看起来"物理结构有效(cos/probe 对偶陷阱:cos 升 1.50× 而真值崩到 0.21)、为什么合成→仿真的边界被忽略、zero-shot 迁移封顶=random 先验(0.607,无配置能超)。**顺手回收了别人被骗的原因。**(📊 [Fig 5 cos 陷阱](figures/fig5_cos_trap.png)、[Fig 6 迁移天花板](figures/fig6_transfer_ceiling.png),论据 [detail/evaluation_traps.md](detail/evaluation_traps.md)、[detail/real_data_physion.md](detail/real_data_physion.md))
+8. **发现三(方法论)**:四个评测陷阱——**cos/probe 是训练目标的对偶量**(加 loss 必涨,cos 升 1.50× 而真值崩到 0.21),当主指标会系统性高估物理结构;我们多处反转 + 自己早期 sweep 盯 K=4 ρ 得"λ=50 胜出"、改用 pred_loss 后翻案 → **以此类指标为主的报告可能看到假提升**(不宣称文献比例;deep-sup 2504.03861 本身用可信指标 pred_loss、结论正确,其 recipe 在我们高维视觉 latent 失效属塌方机制、非指标问题)。另两陷阱:合成→仿真边界被忽略、zero-shot 迁移封顶=random 先验(0.607,无配置能超)。(📊 [Fig 5 cos 陷阱](figures/fig5_cos_trap.png)、[Fig 6 迁移天花板](figures/fig6_transfer_ceiling.png),论据 [detail/evaluation_traps.md](detail/evaluation_traps.md)、[detail/real_data_physion.md](detail/real_data_physion.md))
 
 9. **结论(建设性,不自我否定)**:我们没否定物理结构本身,只否定"往共享 latent 上**嫁接**"。**extrinsic 架构**(低维物理态是预测唯一必经通道)才让预测天然依赖物理态——**我们把官方 PIWM 忠实移植到 phyworld 验证了这点:它学到正确物理、ID/v-OOD 比 LeWM 还准,但 size/mass-OOD 崩(ρ 0.33 vs 0.89)——PIWM 的红利来自它的架构而非方程,而其 VAE 编码器同样扛不住 OOD**。这既解释了别人的正结果、又和我们的负结果自洽,还指出了唯一出路(future work)。(📊 [Fig 9 PIWM 对照](figures/fig9_piwm_vs_lewm.png),论据 [detail/../piwm_baseline/PLAN.md](../piwm_baseline/PLAN.md))
 
@@ -99,7 +99,7 @@
 | Setup | 交代受控实验设计(为什么 1K、为什么单机制、指标为什么用 nMSE/pixel) |
 | §4 物理失效(心脏) | 发现一 + 机制(占比低+被旁路绕过) + LBR 可证伪验证 |
 | §5 什么有效 | 发现二(训练/数据支配变量 + 合成→仿真边界) |
-| §6 评测陷阱 | 发现三(回收"别人为什么被骗") |
+| §6 评测陷阱 | 发现三(为什么以 cos/probe 为主指标会高估物理结构) |
 | §7 结论 | 归因架构、指出 extrinsic 出路、诚实 limitation |
 
 ---

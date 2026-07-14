@@ -7,7 +7,7 @@
 ---
 
 ## Abstract(~180 词)
-骨架见 02 §3。结构:现象(可解码≠守规律)→ 做了什么(5 注入 × 2 init × 3 合成域 + 2 真实基准的系统检验)→ 发现 1(结构全线伤)→ 机制(物理 slot 占比低+被旁路绕过)+ 最小修复(LBR,带边界)→ 发现 2(有效的是训练协议;增广合成→真实反转)→ 发现 3(cos 对偶陷阱解释既有文献假象)。
+骨架见 02 §3。结构:现象(可解码≠守规律)→ 做了什么(5 注入 × 2 init × 3 合成域 + 2 真实基准的系统检验)→ 发现 1(结构全线伤)→ 机制(物理 slot 占比低+被旁路绕过)+ 最小修复(LBR,带边界)→ 发现 2(有效的是训练协议;增广合成→真实反转)→ 发现 3(cos 对偶陷阱:以 cos/probe 为主指标会高估物理结构)。
 
 ## 1. Introduction(七段八股,吸收 papers/mypaper/introduction.md 的导师反馈)
 
@@ -22,7 +22,7 @@
 | P7 贡献 | 四条:①解剖+机制 ②LBR+边界条件 ③协议配方+增广反转 ④评测陷阱与修正协议 | — |
 
 ## 2. Related Work(半页~2/3 页,导师反馈"related 相当于没写"→ 必须实写)
-分四小节:物理评测基准(PhyWorld/Physion/Physion++);物理结构化 WM(PIWM 2412.12870、2503.02143、deep-sup 2504.03861——**点名将被检验**);rollout 训练与 exposure bias(Bengio 2015 起,承认 free-rollout 不新);增广与 OOD(SPARK/PIAug,指出无人报告合成→真实反转)。
+分四小节:物理评测基准(PhyWorld/Physion/Physion++);物理结构化 WM(PIWM 2412.12870、2503.02143、deep-sup 2504.03861——**如实承认其低维状态 latent 上的成功,复核其 recipe 在高维视觉 latent 的适用边界**);rollout 训练与 exposure bias(Bengio 2015 起,承认 free-rollout 不新);增广与 OOD(SPARK/PIAug,指出无人报告合成→真实反转)。
 
 ## 3. Experimental Setup(~1 页)
 - LeWM 架构(5 组件、192-D、SIGReg)+ 两种 init(scratch/PushT)。

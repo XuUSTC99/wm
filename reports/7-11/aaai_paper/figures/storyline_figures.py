@@ -123,7 +123,7 @@ save(fig, "fig4_aug_synthetic_vs_real"); plt.close(fig)
 
 # ============================================================================
 # FIG 5 — C6 cos trap: cos says "better" while the metric that matters says "worse".
-# Source: probe (kinematics_exploration) ; physionpp/eval_pp_fr{,_app05}_e20.log (deform, h64)
+# Source: probe = 6-24/probe_vs_structpos_summary.md (uniform, h28: latent cos 0.843->0.882 UP, pixel PSNR 20.64->19.93 DOWN) ; physionpp/eval_pp_fr{,_app05}_e20.log (app-aug h64 & deform_clothhit)
 # ============================================================================
 cases = ["probe\n(latent cos vs pixel)", "app-aug\nh64 (cos vs nMSE)", "app-aug deform\n(cos vs nMSE)"]
 cos_good = [0.882/0.843, 0.870/0.794, 0.913/0.610]      # cosine "goodness" ratio (>1 = cos says better)

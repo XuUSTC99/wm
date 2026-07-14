@@ -53,10 +53,10 @@
 
 ![](../figures/fig5_cos_trap.png)
 
-> **cos 说"变好了"（>1）,而真正重要的指标（pixel/nMSE）说"更差了"（<1）——既有文献"物理结构有效"多半是这个假象。**
+> **cos 说"变好了"（>1）,而真正重要的指标（pixel/nMSE）说"更差了"（<1）——拿 cos 当主指标就会看到假的"物理结构有效"。**
 
 - 数据（goodness 比值,>1 更好）:probe cos 1.05 / pixel 0.97;app-aug h64 cos 1.10 / nMSE 0.90;**app-aug deform cos 1.50 / nMSE 0.21**。
-- 源:probe [kinematics_exploration.md](../../6-24/kinematics_exploration.md);真实 `physionpp/eval_pp_fr{,_app05}_e20.log`（deform_clothhit:cos 0.610→0.913 升,nMSE 0.772→3.69 崩）。
+- 源:probe（uniform h28）[probe_vs_structpos_summary.md](../../6-24/probe_vs_structpos_summary.md)（§2.2 cos 0.843→0.882、§3.2 pixel 20.64→19.93,probe 列）;真实 `physionpp/eval_pp_fr{,_app05}_e20.log`（deform_clothhit:cos 0.610→0.913 升,nMSE 0.772→3.69 崩）。
 - 支撑:第 8 步 / C6;detail [evaluation_traps.md](evaluation_traps.md)。
 
 ## Fig 6 — 迁移天花板:没有配置能超过 random 先验 `fig6_transfer_ceiling`

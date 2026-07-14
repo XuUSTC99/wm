@@ -51,6 +51,14 @@
 
 **两个合起来** = 约束真在主导参数更新(测量一)、后果是把表示压扁害了预测(测量二)= "梯度流了、且在有害地拔河"。这是"约束生效但方向有害(情况 B)"的直接证据,排除"没接上(情况 A)"。
 
+### 外部对照:deep-sup 2504.03861 = 同一 recipe 的**低维成功**(机制的跨设置佐证,非反例)
+
+这个 probe-in-loss recipe 源自 deep-sup 论文(Zahorodnii 2025,ICLR-25 WM Workshop,Flappy Bird)。**它的结论是对的、用的是可信指标**:在**低维状态 latent**(8-D、probe target 占 **38%**、MLP encoder、180-D LIDAR 输入)上,论文用 **pred_loss(next-state prediction loss,不是 probe-ρ)** 报告 deep-sup 有效——原文 §3.1:"training and test predictive losses **decreased** as λ was increased … through λ=64"。
+
+我们把**同一 recipe** 搬到**高维视觉 latent**(192-D、probe 占 **2%**、ViT encoder、RGB 输入),结果**相反**:pred_loss 随 λ **升 57–156%**(uniform λ0.1→50:0.0062→0.0159),encoder PR 塌方(uniform 41→4,如上测量二)。
+
+**同一方法、相反结果,差异恰在"物理占比"这一个机制变量**:低维时物理占 38%、没有可塌的冗余(塌到 <8 维连状态都装不下),结构自然承重;高维时物理占 2%、有 188 维冗余通道任 probe 压塌、被黑盒旁路(probe-190)绕过。→ **deep-sup 不是反例,是"物理占比低 → 被稀释/塌方/旁路"机制的跨设置佐证**;也说明我们的负结果不与它冲突,而是划出了它的适用边界(低维状态 latent ✓ / 高维共享视觉 latent ✗)。出处:[diagnostic_report.md §2.4/§7](../../6-24/diagnostic_report.md)、论文原文抽取 [_imported_session](../../6-2/detail/_imported_session_e8fa3867.md)(§6440–6480)。
+
 ## 一句话 rebuttal
 
 > 我们的物理约束不是"没接上"——它把 structured loss 从 2.53 压到 0.015、让 slot 的位置可解码性从 0.31 升到 0.96、按 pos_weight 甜点系统响应、在参数更新里压倒预测项(加权 loss 之比 15–125×,梯度大小代理)并把 encoder 有效维度压塌 39–90%、危害随注入强度单调放大。这一整套可预测、剂量-响应的效应只可能来自一个真正起作用的约束;它生效了,但不改善预测。

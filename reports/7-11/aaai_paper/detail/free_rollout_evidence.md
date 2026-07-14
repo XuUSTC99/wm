@@ -17,7 +17,7 @@
 - **Teacher forcing**(LeWM 原文默认):每步喂真值上下文,只预测下一步(`num_preds=1`)。
 - **Free-rollout**:预测器**自回归喂自己的预测**滚 8 步,监督整条 rollout(`num_preds=8`)。
 
-**headline(both-OOD nMSE↓,3 种子 3072/1234/42,mean±std;parabola 用 r/m-OOD 避 h28 爆点)**:
+**headline(both-OOD nMSE↓,3 种子 3072/1234/42,mean±std;parabola 用 r/m-OOD 避 h28 爆点——both-OOD 速度也 OOD 使球 h28 飞出框、nMSE 分母除零飙百万,详见 [evaluation_traps 陷阱4](evaluation_traps.md);FR>TF 在两分区方向一致,退 r/m-OOD 只为躲除零污染,非挑分区)**:
 
 | 域 | teacher-forced | free-rollout | 倍数 |
 |---|---|---|---|
@@ -44,7 +44,11 @@
 - **连 ID(分布内)都提升 2.5–3.0×** → free-rollout 不是"补 OOD 的洞",而是**从根上改善预测器**;OOD 提升是这个改善的自然结果,不是专门 patch。这堵住了"你只是过拟合了 OOD 测试"的质疑。
 - 出处:`aaai_p0/rollout_{域}_baseline_{tf,fr}_s1234.log`(⚠️ 本表单种子;headline §1 已 3 种子)。
 
-## 3. 优势随 horizon 单调放大 = exposure-bias 的因果签名
+## 3. 优势只在长程出现、随步数越滚越大——这个形状只有 exposure bias 才会有(坐实"是它造成的")
+
+> **📖 名词:exposure bias(暴露偏差)** —— 自回归序列模型的经典问题:**训练时**每步都喂**真值**上下文、模型从没见过自己的预测;**部署时**却要把**自己上一步(带误差)的预测**喂回去当输入,于是误差逐步累积、长程崩。根源是训练时"没被暴露"在自己的误差里(exposure=训练时被喂什么输入)、因而学不会纠错。这是序列建模的**标准术语**(命名一般归 Ranzato et al. 2016;Bengio et al. 2015 的 Scheduled Sampling 是解法。⚠️引文写作前核)。**free-rollout 就是它的解法**:训练时就喂模型自己的预测、暴露在累积误差里逼它纠偏。
+
+> **先解释标题**:我们不只想说"FR 更好",还想证明**好在哪、为什么好**。exposure bias 的理论预言一个**很具体的形状**——"单步预测没差别,但误差会随 rollout 步数累积、越滚越大"。如果我们观察到的正是这个形状(h1 处 TF≈FR、差距随 horizon 单调张大),那它就**只能**由 exposure bias 解释——别的原因(过拟合 / 单步建模更强 / bug)都给不出"单步为零、长程放大"这个特定形状。所以这个形状 = exposure bias 的"指纹",看到它就把"FR 有效"从**相关**坐实为**因果**。
 
 **单步几乎无差、越滚差距越大**——一眼看图:h1 处两线重合,之后 TF(红虚)崩、FR(蓝实)稳,中间阴影落差随 horizon 张大。
 
@@ -59,7 +63,8 @@
 | collision | 0.99/1.00 | 0.88/0.98 | 0.64/0.95 | 0.36/0.76 | 0.24/**0.48**(2×) |
 
 - **h1 处 TF≈FR(都近乎完美)** → 差距**不在**单步能力,**纯在长程累积**。
-- **差距随 horizon 单调张大**(parabola h28 差 +0.36 cos、collision h28 翻倍) → **这正是 exposure bias 的签名**:teacher forcing 训练时永不见自己的误差,部署多步 rollout 时误差滚雪球;free-rollout 训练时就暴露在累积误差里、逼它纠偏。**这条把"FR 提升"从相关升级为有机制的因果**(见 §6)。
+- **差距随 horizon 单调张大**(parabola h28 差 +0.36 cos、collision h28 翻倍) → **这正是 exposure bias 会留下的形状**:teacher forcing 训练时永不见自己的误差,部署多步 rollout 时误差滚雪球;free-rollout 训练时就暴露在累积误差里、逼它纠偏。所以"单步无差、长程放大"= 误差累积的直接观测,**把"FR 提升"从相关升级为有机制的因果**(见 §6)。
+- **为什么这里用 cos 不用 nMSE?**(不是打脸"判决用 nMSE")——**幅度 claim(§1/§2 的 2.2–4.6× 倍数)全用 nMSE;只有这张"长程漂移形状"图用 cos**,因为 **parabola 的 nMSE 在长 horizon 会除零爆点(飙几万~百万,陷阱4)**,画成曲线冲上天、没法看;cos 有界 [−1,1]、三域能同图、形状干净。凡是 nMSE 不爆的地方我们就直接用 nMSE by-horizon——**Physion++(fig14 右 panel,nMSE 0.002→0.14 有界)讲的就是同一个"越滚越差"故事**。这正合"逐 horizon 用该 horizon 可靠的指标"(evaluation_traps §0),不是选择性用 cos。
 - 出处:同 §2 log 的 `--- ... vs horizon ---` 段 `cos=`。
 
 > **两个真实数据集的分工(别混淆)**:**Physion++** 有 3D 位置/速度标注 → 可**直接训 + rollout 评估**(§4,FR vs TF 正面证据);**Physion**(原版 OCP)是"接触预测"benchmark、只有二分类标签、**无 rollout 连续状态标注** → 只能做**zero-shot 迁移评估**(§5,冻结 encoder + readout 分类)。所以 free-rollout 的"直训"只在 Physion++——不是漏了 Physion 直训,是 Physion 的任务形态不支持世界模型 rollout 直训。数据:Physion++ `/data1/.../runs/physionpp/`;Physion 原版 `/data1/likun-share/junjxu/physion_raw/`。
@@ -102,6 +107,6 @@ phyworld→Physion OCP(mean AUC↑,天花板=random 架构先验 0.607):**free-r
 
 - **"free-rollout = scheduled sampling"**:主动承认并引用(Bengio 2015 / Data-as-Demonstrator / professor forcing);claim 是**相对重要性**(协议 > 结构),不是方法新。
 - **"你只是过拟合 OOD"**:§2 显示 **ID 也提升 2.5–3.0×** → 不是 OOD-specific patch。
-- **"是相关不是因果"**:§3 显示优势在 h1 为零、随 horizon 单调放大 = exposure-bias 因果签名,非泛泛变好。
+- **"是相关不是因果"**:§3 显示优势在 h1 为零、随 horizon 单调放大——这个"单步无差、长程越滚越大"的形状正是误差累积(exposure bias)独有的,别的原因给不出,故是因果非泛泛变好。
 - **TF/FR 对照里 batch size 也变了**(np1=128、np8=64,为适配序列长度):2–8× 效应远超任何 batch size 能解释,且三域三种子一致。较真可补 batch 固定对照(P1 可选)。
 - **单 backbone(ViT-tiny)**:训练动力学结论建议更大 backbone 复验(conclusion limitations)。
