@@ -1,4 +1,4 @@
-# 论文故事线 —— Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does
+# 论文故事线 —— Physics Is Already There: Rethinking Physical Inductive Biases in Latent World Models
 
 **对应稿件**:[paper/main.pdf](paper/main.pdf)(AAAI-27)
 **日期**:2026-07-16(**五章重构版**:动机单线化、指标降级进 Setup、三/四章一一对应、留 DINO-WM 数据位)
@@ -6,11 +6,13 @@
 
 ---
 
-## 一句话主线(= 论文 thesis,直接对应标题两半)
+## 一句话主线(= 论文 thesis;标题 *Physics Is Already There* 说的就是①)
 
-> **Why injecting physics doesn't help**:latent **已经**把物理**状态**编强了——位置 probe ρ **0.80–0.96**(三域 both-OOD),且**冗余分布在黑盒 190 维**(probe-190 三域实证)。再往共享 latent 注入**同一份状态**只是塞冗余:**不带新信号 → 不提升**;**还占表示容量、分梯度、与预测目标打架 → 有害**;而预测大可绕过物理 slot、直接走黑盒那份(***not load-bearing***)。
+> **① 物理已经在里面了(= 标题;为什么注入没用)**:latent **已经**把物理**状态**编强了——位置 probe ρ **0.80–0.96**(三域 both-OOD),且**冗余分布在黑盒 190 维**(probe-190 三域实证)。再往共享 latent 注入**同一份状态**只是塞冗余:**不带新信号 → 不提升**;**还占表示容量、分梯度、与预测目标打架 → 有害**;而预测大可绕过物理 slot、直接走黑盒那份(***not load-bearing***)。
 >
-> **What does help**:真正的短板**不在"状态",而在预测器的长程 rollout 动力学**(状态可解码、但一自回归就漂)。修它靠**训练协议**——free-rollout 让预测器在训练时暴露于**自身累积误差**、学会纠偏(修 exposure bias)。它**不灌任何物理先验、不碰 latent 结构**,却比一切物理结构注入都管用。
+> **② 那什么才有用(论文的建设性落点,非动机)**:真正的短板**不在"状态",而在预测器的长程 rollout 动力学**(状态可解码、但一自回归就漂)。修它靠**训练协议**——free-rollout 让预测器在训练时暴露于**自身累积误差**、学会纠偏(修 exposure bias)。它**不灌任何物理先验、不碰 latent 结构**,却比一切物理结构注入都管用。
+
+**⚠️ ①② 不是并列的两半**(旧标题 "Why Doesn't Help, and What Does" 曾把它们抬成对偶,已废):① 是论文主体与标题,② 是**从 ① 的机制推出的落点 + 阳性对照**——写作时 ② 服务于 ①,别再写成两条并行主线。
 
 **核心概念**:***decodable but not load-bearing***(存在 ≠ 使用,presence ≠ use)——decodable = 信息在场,load-bearing = 预测真的靠它。全文发现都挂在这个落差上。
 

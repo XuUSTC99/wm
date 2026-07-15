@@ -1,6 +1,6 @@
 # 论文骨架(AAAI-27,五章版 2026-07-16;与 [06_storyline.md](06_storyline.md) 逐节对应)
 
-标题:**Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does**
+标题:**Physics Is Already There: Rethinking Physical Inductive Biases in Latent World Models**
 
 主张编号 C1~C7 对应 [01_results_ledger.md](01_results_ledger.md)。**全文五章;§3(方法)与 §4(实验)一一对应;指标讨论压进 §4.0 Setup 一段,不单开章。**
 

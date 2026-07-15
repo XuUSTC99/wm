@@ -1,5 +1,5 @@
-# Toward Physics-Consistent Latent World Models
-### Why Injecting Physics Doesn't Help, and What Does — 汇报精简版
+# Physics Is Already There
+### Rethinking Physical Inductive Biases in Latent World Models — 汇报精简版
 
 > **一句话**:物理信息**已经存在**于世界模型的 latent 里(可解码),但预测**不依赖你注入的那一份**——黑盒维度早已冗余编码了同一份位置,预测绕过注入的物理 slot。所以往共享 latent 上嫁接物理**状态**只是塞冗余(不提升、反有害);**真正让模型遵守物理的是训练协议,不是结构先验。**
 >
