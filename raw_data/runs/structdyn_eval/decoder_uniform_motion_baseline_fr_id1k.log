@@ -1,0 +1,33 @@
+[1/5] frozen encoder from /data1/likun-share/junjxu/.stable_worldmodel/uniform_motion_baseline_fr_id1k/uniform_motion_baseline_fr_id1k_epoch_20_object.ckpt (emb_source=proj)
+      emb_dim = 192
+[2/5] load eval set /data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_uniform_motion.h5 (all partitions)
+      36864 frames; per-partition frame counts: ID=5632, r/m-OOD=5632, v-OOD=10240, both-OOD=15360
+      train frames 29504 / test frames 7360 (test trajs=230)
+[3/5] precompute embeddings
+  embed 0/36864
+  embed 5120/36864
+  embed 10240/36864
+  embed 15360/36864
+  embed 20480/36864
+  embed 25600/36864
+  embed 30720/36864
+  embed 35840/36864
+[4/5] train universal decoder, 40 epochs
+  ep   5 | train 0.0087 | ID 29.49dB | r/m-OOD 27.23dB | v-OOD 30.16dB | both-OOD 27.69dB
+  ep  10 | train 0.0027 | ID 31.75dB | r/m-OOD 30.39dB | v-OOD 31.83dB | both-OOD 31.66dB
+  ep  15 | train 0.0022 | ID 31.53dB | r/m-OOD 30.26dB | v-OOD 32.05dB | both-OOD 31.44dB
+  ep  20 | train 0.0018 | ID 32.21dB | r/m-OOD 31.16dB | v-OOD 32.71dB | both-OOD 32.56dB
+  ep  25 | train 0.0016 | ID 33.06dB | r/m-OOD 31.69dB | v-OOD 32.60dB | both-OOD 32.89dB
+  ep  30 | train 0.0014 | ID 33.27dB | r/m-OOD 32.04dB | v-OOD 32.93dB | both-OOD 33.57dB
+  ep  35 | train 0.0013 | ID 33.45dB | r/m-OOD 32.75dB | v-OOD 33.06dB | both-OOD 33.95dB
+  ep  40 | train 0.0012 | ID 33.50dB | r/m-OOD 32.85dB | v-OOD 33.13dB | both-OOD 34.02dB
+[5/5] final per-partition PSNR (held-out)
+
+=== UNIVERSAL decoder | uniform_motion | tag=uniform_motion_baseline_fr_id1k | enc=uniform_motion_baseline_fr_id1k_epoch_20_object.ckpt ===
+partition       n  PSNR(dB)        MSE
+ID           1120     33.50    0.00045
+r/m-OOD      1120     32.85    0.00052
+v-OOD        2048     33.13    0.00049
+both-OOD     3072     34.02    0.00040
+[saved] upsnr_uniform_motion_baseline_fr_id1k.json in /data1/likun-share/junjxu/runs/decoder_viz/universal_proj
+[saved] grids in /data1/likun-share/junjxu/runs/decoder_viz/universal_proj

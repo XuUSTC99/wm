@@ -1,0 +1,21 @@
+/home/likun-share/junjxu/wm/PIWM/phyworld_port/eval_piwm.py:73: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  print(f"[model] {tag}  s={float(dyn.log_s.exp()):.4f} g={dyn.g.detach().cpu().numpy().round(4).tolist()}")
+[model] parabola_d0  s=0.9861 g=[0.004100000020116568, -0.02810000069439411]
+[eval] 500 trajs done
+
+--- position rho / nMSE by partition ---
+  ID        n=  2552  rho=['+0.971', '+0.992']  nMSE=0.0299
+  r/m-OOD   n=  1972  rho=['+0.590', '+0.536']  nMSE=2.3283
+  v-OOD     n=  3480  rho=['+0.988', '+0.965']  nMSE=0.0687
+  both-OOD  n=  6496  rho=['+0.520', '+0.354']  nMSE=5.0576
+
+--- position nMSE by horizon (aggregate) ---
+  h=1   rho=['+0.649', '-0.117']  nMSE=2.7192
+  h=2   rho=['+0.557', '-0.136']  nMSE=3.9080
+  h=4   rho=['+0.411', '-0.156']  nMSE=7.1960
+  h=8   rho=['+0.360', '-0.171']  nMSE=12.3538
+  h=16  rho=['+0.457', '-0.178']  nMSE=10.2912
+  h=28  rho=['+0.522', '-0.180']  nMSE=6.8067
+
+[saved] /data1/likun-share/junjxu/runs/piwm_baseline/eval_parabola_d0.json

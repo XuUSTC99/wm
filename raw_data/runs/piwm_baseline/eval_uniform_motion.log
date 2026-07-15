@@ -1,0 +1,21 @@
+/home/likun-share/junjxu/wm/PIWM/phyworld_port/eval_piwm.py:73: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  print(f"[model] {tag}  s={float(dyn.log_s.exp()):.4f} g={dyn.g.detach().cpu().numpy().round(4).tolist()}")
+[model] uniform_motion_d0  s=1.0006 g=[0.0, 0.0]
+[eval] 500 trajs done
+
+--- position rho / nMSE by partition ---
+  ID        n=  2349  rho=['+0.954', '+0.959']  nMSE=0.0959
+  r/m-OOD   n=  2262  rho=['+0.199', '+0.464']  nMSE=8.6056
+  v-OOD     n=  3480  rho=['+0.985', '+0.958']  nMSE=0.0409
+  both-OOD  n=  6409  rho=['+0.417', '+0.538']  nMSE=4.8609
+
+--- position nMSE by horizon (aggregate) ---
+  h=1   rho=['+0.678', '+0.970']  nMSE=0.4457
+  h=2   rho=['+0.616', '+0.960']  nMSE=0.5843
+  h=4   rho=['+0.501', '+0.931']  nMSE=1.0625
+  h=8   rho=['+0.409', '+0.842']  nMSE=2.5588
+  h=16  rho=['+0.402', '+0.646']  nMSE=4.7840
+  h=28  rho=['+0.418', '+0.443']  nMSE=5.3954
+
+[saved] /data1/likun-share/junjxu/runs/piwm_baseline/eval_uniform_motion_d0.json

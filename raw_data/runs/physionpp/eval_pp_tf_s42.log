@@ -1,0 +1,41 @@
+[ckpt] pp_tf_s42_epoch_20_object.ckpt  pp_tf_s42
+  100 trajs t=54s
+  200 trajs t=107s
+  300 trajs t=158s
+[data] 300 trajs, 32836 (frame,pred) pairs, dim=192
+
+=== Physion++ AR ROLLOUT  pp_tf_s42  (HS=3) ===
+--- latent fidelity vs HORIZON (long-horizon drift, test) ---
+  h=  1  n=   60  cos=+0.9996  nMSE=0.0007
+  h=  2  n=   60  cos=+0.9991  nMSE=0.0019
+  h=  4  n=   60  cos=+0.9977  nMSE=0.0049
+  h=  8  n=   60  cos=+0.9931  nMSE=0.0150
+  h= 16  n=   60  cos=+0.9317  nMSE=0.1426
+  h= 32  n=   60  cos=+0.7989  nMSE=0.3716
+  h= 64  n=   56  cos=+0.5182  nMSE=1.1390
+--- latent fidelity by SCENE (physical-property OOD, test) ---
+  bouncy_platform      n=  578  cos=+0.9076  nMSE=0.2566
+  bouncy_wall          n=  433  cos=+0.7072  nMSE=0.9913
+  deform_clothhang     n=  890  cos=+0.3044  nMSE=1.8058
+  deform_clothhit      n=  705  cos=+0.5107  nMSE=1.3451
+  friction_cloth       n=  980  cos=+0.7996  nMSE=0.5648
+  friction_collision   n=  752  cos=+0.7607  nMSE=0.6979
+  friction_platform    n=  315  cos=+0.7988  nMSE=0.9520
+  mass_collision       n=  678  cos=+0.4561  nMSE=1.4336
+  mass_dominoes        n=  525  cos=+0.6524  nMSE=1.1420
+  mass_waterpush       n=  452  cos=+0.7429  nMSE=0.7930
+--- decoded target pos/vel ρ from ROLLED-OUT latents (test, by scene) ---
+  PRED bouncy_platform   pos0ρ=-0.09 pos1ρ=-0.04 pos2ρ=+0.07 vel0ρ=+0.03 vel1ρ=+0.02 vel2ρ=+0.11
+  PRED bouncy_wall       pos0ρ=+0.32 pos1ρ=+0.25 pos2ρ=+0.50 vel0ρ=+0.23 vel1ρ=+0.27 vel2ρ=-0.05
+  PRED deform_clothhang  pos0ρ=+0.25 pos1ρ=+0.12 pos2ρ=+0.21 vel0ρ=+0.25 vel1ρ=-0.05 vel2ρ=+0.15
+/home/likun-share/junjxu/wm/phyworld/scripts/physion/rollout_eval_physionpp.py:130: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f" vel{d}ρ={pearsonr(vel_all[mask][:, d], pv[:, d])[0]:+.2f}"
+  PRED deform_clothhit   pos0ρ=+0.75 pos1ρ=+0.51 pos2ρ=-0.17 vel0ρ=+0.02 vel1ρ=+nan vel2ρ=-0.03
+  PRED friction_cloth    pos0ρ=+0.33 pos1ρ=+0.59 pos2ρ=-0.03 vel0ρ=-0.03 vel1ρ=+0.02 vel2ρ=-0.00
+  PRED friction_collision pos0ρ=+0.26 pos1ρ=+0.10 pos2ρ=+0.40 vel0ρ=-0.22 vel1ρ=-0.10 vel2ρ=-0.02
+  PRED friction_platform pos0ρ=+0.01 pos1ρ=+0.09 pos2ρ=+0.17 vel0ρ=-0.32 vel1ρ=+0.11 vel2ρ=+0.19
+  PRED mass_collision    pos0ρ=+0.18 pos1ρ=-0.09 pos2ρ=-0.29 vel0ρ=-0.02 vel1ρ=+0.08 vel2ρ=-0.17
+  PRED mass_dominoes     pos0ρ=+0.18 pos1ρ=+0.23 pos2ρ=+0.06 vel0ρ=+0.05 vel1ρ=+0.07 vel2ρ=-0.05
+/home/likun-share/junjxu/wm/phyworld/scripts/physion/rollout_eval_physionpp.py:130: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f" vel{d}ρ={pearsonr(vel_all[mask][:, d], pv[:, d])[0]:+.2f}"
+  PRED mass_waterpush    pos0ρ=+0.06 pos1ρ=+0.10 pos2ρ=-0.35 vel0ρ=-0.01 vel1ρ=+nan vel2ρ=+0.34

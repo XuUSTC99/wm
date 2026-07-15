@@ -1,0 +1,63 @@
+[1/5] frozen encoder from /data1/likun-share/junjxu/.stable_worldmodel/uniform_motion_paperinit_id1k/uniform_motion_paperinit_id1k_epoch_20_object.ckpt (emb_source=cls)
+      emb_dim = 192
+[2/5] load eval set /data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_uniform_motion.h5 (all partitions)
+      36864 frames; per-partition frame counts: ID=5632, r/m-OOD=5632, v-OOD=10240, both-OOD=15360
+      train frames 29504 / test frames 7360 (test trajs=230)
+[3/5] precompute embeddings
+  embed 0/36864
+  embed 5120/36864
+  embed 10240/36864
+  embed 15360/36864
+  embed 20480/36864
+  embed 25600/36864
+  embed 30720/36864
+  embed 35840/36864
+[4/5] train universal decoder, 40 epochs
+  ep   5 | train 0.0181 | ID 28.90dB | r/m-OOD 25.33dB | v-OOD 28.73dB | both-OOD 25.23dB
+  ep  10 | train 0.0042 | ID 30.12dB | r/m-OOD 28.60dB | v-OOD 30.26dB | both-OOD 29.07dB
+  ep  15 | train 0.0024 | ID 31.70dB | r/m-OOD 29.91dB | v-OOD 31.20dB | both-OOD 30.44dB
+  ep  20 | train 0.0018 | ID 32.87dB | r/m-OOD 31.83dB | v-OOD 32.62dB | both-OOD 32.71dB
+  ep  25 | train 0.0014 | ID 34.12dB | r/m-OOD 32.91dB | v-OOD 33.55dB | both-OOD 33.70dB
+  ep  30 | train 0.0012 | ID 34.57dB | r/m-OOD 33.20dB | v-OOD 33.97dB | both-OOD 34.25dB
+  ep  35 | train 0.0011 | ID 35.03dB | r/m-OOD 33.82dB | v-OOD 34.09dB | both-OOD 34.75dB
+  ep  40 | train 0.0010 | ID 35.14dB | r/m-OOD 33.87dB | v-OOD 34.24dB | both-OOD 34.84dB
+[5/5] final per-partition PSNR (held-out)
+
+=== UNIVERSAL decoder | uniform_motion | tag=paperinit | enc=uniform_motion_paperinit_id1k_epoch_20_object.ckpt ===
+partition       n  PSNR(dB)        MSE
+ID           1120     35.14    0.00031
+r/m-OOD      1120     33.87    0.00041
+v-OOD        2048     34.24    0.00038
+both-OOD     3072     34.84    0.00033
+22:56:00 | ERROR | richuru.py  | Exception:
+Traceback (most recent call last):
+
+> File "/home/likun-share/junjxu/wm/le-wm/decode_viz/train_universal_decoder.py", line 192, in <module>
+    main()
+    └ <function main at 0x7fe18692e710>
+
+  File "/home/likun-share/junjxu/wm/le-wm/decode_viz/train_universal_decoder.py", line 182, in main
+    save_grid(gt, pred, str(out / f"udec_{args.tag}_{NAMES[p].replace('/', '')}.png"))
+    │         │   │         └ PosixPath('/data1/likun-share/junjxu/runs/decoder_viz/universal')
+    │         │   └ array([[[[0.99971753, 0.9999938 , 0.9999939 , ..., 0.99998975,
+    │         │               0.9999908 , 0.9995844 ],
+    │         │              [0.99999225, 1.   ...
+    │         └ array([[[[1., 1., 1., ..., 1., 1., 1.],
+    │                    [1., 1., 1., ..., 1., 1., 1.],
+    │                    [1., 1., 1., ..., 1., 1., 1.],
+    │                ...
+    └ <function save_grid at 0x7fdfd2d81ea0>
+
+  File "/home/likun-share/junjxu/wm/le-wm/decode_viz/eval_decoder_ood.py", line 82, in save_grid
+    gt = gt01[:n]; rc = rc01[:n].clamp(0, 1)
+         │     │        │     └ 8
+         │     │        └ array([[[[0.99971753, 0.9999938 , 0.9999939 , ..., 0.99998975,
+         │     │                    0.9999908 , 0.9995844 ],
+         │     │                   [0.99999225, 1.   ...
+         │     └ 8
+         └ array([[[[1., 1., 1., ..., 1., 1., 1.],
+                    [1., 1., 1., ..., 1., 1., 1.],
+                    [1., 1., 1., ..., 1., 1., 1.],
+                ...
+
+AttributeError: 'numpy.ndarray' object has no attribute 'clamp'. Did you mean: 'clip'?

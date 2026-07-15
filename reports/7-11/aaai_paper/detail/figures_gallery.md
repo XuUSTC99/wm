@@ -16,7 +16,7 @@
 > **状态一直可从 latent 解码出来（ρ≈0.84），但自回归 rollout 崩到 0.24——预测没在用它编码的物理。**
 
 - 数据（collision,cos by horizon）:teacher-forced h1..h28 = 0.99/0.97/0.88/0.65/0.36/**0.24**;free-rollout = 0.997/0.99/0.98/0.95/0.76/**0.48**;可解码带 = both-OOD REAL-latent 位置 probe ρ≈0.84。
-- 源:`/data1/likun-share/junjxu/runs/aaai_p0/rollout_collision_baseline_{tf,fr}_s{3072,1234,42}.log`（段 `--- ... vs horizon ---` 的 `cos=`;probe ρ 段 `REAL both-OOD`）。
+- 源:seed 1234/42 → `raw_data/runs/aaai_p0/rollout_collision_baseline_{tf,fr}_s{1234,42}.log`;**seed 3072 无 `_s` 后缀、在另一目录** → `raw_data/runs/structdyn_eval/rollout_collision_baseline_{tf,fr}_id1k.log`（段 `--- ... vs horizon ---` 的 `cos=`;probe ρ 段 `REAL both-OOD`）。
 - 支撑:storyline 第 1 步 / 主线一句话。
 
 ## Fig 2 — 发现二①:free-rollout 是唯一跨域通用主升力 `fig2_free_rollout`
@@ -26,7 +26,7 @@
 > **只翻 teacher-forcing→free-rollout 一个开关,三合成域 + 真实仿真全大幅提升（2.2–8.3×）。**
 
 - 数据（nMSE↓;parabola 用 r/m-OOD）:uniform TF 0.300→FR 0.136（2.2×）、parabola 0.443→0.122（3.6×）、collision 1.153→0.479（2.4×）、**Physion++ h64 1.174→0.141（8.3×,3 种子）**。
-- 源:合成 `aaai_p0/rollout_{uniform,parabola,collision}_baseline_{tf,fr}_s*.log`;真实 `/data1/.../runs/physionpp/eval_pp_{tf,fr}_s{3072,1234,42}.log`。
+- 源:合成 seed1234/42 `raw_data/runs/aaai_p0/rollout_{uniform,parabola,collision}_baseline_{tf,fr}_s{1234,42}.log` + seed3072 `raw_data/runs/structdyn_eval/rollout_{uniform_motion,parabola,collision}_baseline_{tf,fr}_id1k.log`(⚠️ 3072 无后缀);真实 `raw_data/runs/physionpp/eval_pp_{tf,fr}_s{3072,1234,42}.log`(此处 3072 确有后缀)。逐种子表见 [free_rollout_evidence.md §1](free_rollout_evidence.md)。
 - 支撑:第 7 步发现二① / C1;detail [free_rollout_evidence.md](free_rollout_evidence.md)。
 
 ## Fig 3 — 发现一+机制:物理结构只在"匹配动力学"时才帮 `fig3_physics_signflip`

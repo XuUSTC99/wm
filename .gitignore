@@ -50,6 +50,22 @@ Thumbs.db
 # but track run logs we keep as evidence
 !artifacts/logs/*.log
 
+# raw_data/ = migrated evidence archive (server decommission 2026-07-15).
+# Must override the `runs/` and `*.log` rules above, otherwise the 1013 log/json
+# sources cited by reports/7-11/aaai_paper/ never reach the remote.
+# Un-ignore the directory chain first, then the files (git cannot re-include a
+# file if any parent directory is still excluded).
+!raw_data/
+!raw_data/**/
+!raw_data/**/*.log
+!raw_data/**/*.json
+!raw_data/**/*.jsonl
+!raw_data/**/*.yaml
+!raw_data/**/*.csv
+!raw_data/**/*.txt
+!raw_data/**/*.tsv
+!raw_data/**/*.md
+
 # Large embedding caches under artifacts (regenerable)
 artifacts/embeddings/*.npy
 artifacts/embeddings/*.pt

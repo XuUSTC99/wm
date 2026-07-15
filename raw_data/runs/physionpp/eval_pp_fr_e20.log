@@ -1,0 +1,42 @@
+[ckpt] pp_fr_epoch_20_object.ckpt  pp_fr_e20
+  100 trajs t=52s
+  200 trajs t=102s
+  300 trajs t=149s
+  400 trajs t=197s
+[data] 400 trajs, 44020 (frame,pred) pairs, dim=192
+/home/likun-share/junjxu/wm/phyworld/scripts/physion/rollout_eval_physionpp.py:129: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f" vel{d}ρ={pearsonr(vel_all[mask][:, d], pv[:, d])[0]:+.2f}"
+/home/likun-share/junjxu/wm/phyworld/scripts/physion/rollout_eval_physionpp.py:129: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f" vel{d}ρ={pearsonr(vel_all[mask][:, d], pv[:, d])[0]:+.2f}"
+
+=== Physion++ AR ROLLOUT  pp_fr_e20  (HS=3) ===
+--- latent fidelity vs HORIZON (long-horizon drift, test) ---
+  h=  1  n=   80  cos=+0.9994  nMSE=0.0013
+  h=  2  n=   80  cos=+0.9990  nMSE=0.0021
+  h=  4  n=   80  cos=+0.9984  nMSE=0.0034
+  h=  8  n=   80  cos=+0.9974  nMSE=0.0060
+  h= 16  n=   80  cos=+0.9936  nMSE=0.0164
+  h= 32  n=   80  cos=+0.9098  nMSE=0.1404
+  h= 64  n=   76  cos=+0.7937  nMSE=0.2797
+--- latent fidelity by SCENE (physical-property OOD, test) ---
+  bouncy_platform      n=  672  cos=+0.9842  nMSE=0.0407
+  bouncy_wall          n= 1196  cos=+0.9634  nMSE=0.0935
+  deform_clothhang     n= 1602  cos=+0.3665  nMSE=1.3754
+  deform_clothhit      n= 1833  cos=+0.6102  nMSE=0.7716
+  friction_cloth       n=  784  cos=+0.9746  nMSE=0.0707
+  friction_collision   n=  464  cos=+0.9781  nMSE=0.0621
+  friction_platform    n=  387  cos=+0.9863  nMSE=0.0410
+  mass_collision       n=  419  cos=+0.9727  nMSE=0.0829
+  mass_dominoes        n= 1435  cos=+0.9787  nMSE=0.0575
+  mass_waterpush       n=  226  cos=+0.9782  nMSE=0.1221
+--- decoded target pos/vel ρ from ROLLED-OUT latents (test, by scene) ---
+  PRED bouncy_platform   pos0ρ=-0.20 pos1ρ=+0.05 pos2ρ=+0.14 vel0ρ=+0.06 vel1ρ=+0.01 vel2ρ=-0.14
+  PRED bouncy_wall       pos0ρ=+0.04 pos1ρ=+0.41 pos2ρ=+0.27 vel0ρ=+0.01 vel1ρ=-0.02 vel2ρ=-0.03
+  PRED deform_clothhang  pos0ρ=+0.16 pos1ρ=-0.16 pos2ρ=-0.20 vel0ρ=-0.04 vel1ρ=-0.07 vel2ρ=+0.00
+  PRED deform_clothhit   pos0ρ=+0.55 pos1ρ=+0.23 pos2ρ=+0.28 vel0ρ=+0.41 vel1ρ=+nan vel2ρ=+0.45
+  PRED friction_cloth    pos0ρ=+0.11 pos1ρ=-0.09 pos2ρ=-0.01 vel0ρ=+0.08 vel1ρ=-0.09 vel2ρ=+0.16
+  PRED friction_collision pos0ρ=+0.61 pos1ρ=+0.64 pos2ρ=+0.65 vel0ρ=-0.02 vel1ρ=+0.02 vel2ρ=+0.04
+  PRED friction_platform pos0ρ=-0.28 pos1ρ=-0.09 pos2ρ=-0.48 vel0ρ=+0.23 vel1ρ=-0.02 vel2ρ=+0.40
+  PRED mass_collision    pos0ρ=+0.01 pos1ρ=+0.21 pos2ρ=-0.65 vel0ρ=+0.01 vel1ρ=-0.16 vel2ρ=-0.15
+  PRED mass_dominoes     pos0ρ=+0.22 pos1ρ=+0.36 pos2ρ=+0.54 vel0ρ=-0.21 vel1ρ=+0.22 vel2ρ=-0.05
+  PRED mass_waterpush    pos0ρ=-0.50 pos1ρ=+0.98 pos2ρ=+0.65 vel0ρ=+0.07 vel1ρ=+nan vel2ρ=-0.12

@@ -1,0 +1,35 @@
+START Fri Jul 3 00:14:13 CST 2026
+[1/5] frozen encoder from /data1/likun-share/junjxu/.stable_worldmodel/uniform_motion_structpos_id1k/uniform_motion_structpos_id1k_epoch_20_object.ckpt (emb_source=proj)
+      emb_dim = 192
+[2/5] load eval set /data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_uniform_motion.h5 (all partitions)
+      36864 frames; per-partition frame counts: ID=5632, r/m-OOD=5632, v-OOD=10240, both-OOD=15360
+      train frames 29504 / test frames 7360 (test trajs=230)
+[3/5] precompute embeddings
+  embed 0/36864
+  embed 5120/36864
+  embed 10240/36864
+  embed 15360/36864
+  embed 20480/36864
+  embed 25600/36864
+  embed 30720/36864
+  embed 35840/36864
+[4/5] train universal decoder, 40 epochs
+  ep   5 | train 0.0054 | ID 30.15dB | r/m-OOD 29.38dB | v-OOD 31.37dB | both-OOD 30.35dB
+  ep  10 | train 0.0023 | ID 32.37dB | r/m-OOD 30.73dB | v-OOD 33.23dB | both-OOD 31.80dB
+  ep  15 | train 0.0018 | ID 32.03dB | r/m-OOD 31.44dB | v-OOD 33.42dB | both-OOD 32.50dB
+  ep  20 | train 0.0014 | ID 32.80dB | r/m-OOD 32.03dB | v-OOD 33.67dB | both-OOD 33.26dB
+  ep  25 | train 0.0012 | ID 33.94dB | r/m-OOD 32.52dB | v-OOD 34.42dB | both-OOD 33.56dB
+  ep  30 | train 0.0011 | ID 34.33dB | r/m-OOD 33.09dB | v-OOD 34.90dB | both-OOD 34.32dB
+  ep  35 | train 0.0010 | ID 34.60dB | r/m-OOD 33.59dB | v-OOD 35.08dB | both-OOD 34.58dB
+  ep  40 | train 0.0009 | ID 34.61dB | r/m-OOD 33.76dB | v-OOD 35.12dB | both-OOD 34.75dB
+[5/5] final per-partition PSNR (held-out)
+
+=== UNIVERSAL decoder | uniform_motion | tag=structpos | enc=uniform_motion_structpos_id1k_epoch_20_object.ckpt ===
+partition       n  PSNR(dB)        MSE
+ID           1120     34.61    0.00035
+r/m-OOD      1120     33.76    0.00042
+v-OOD        2048     35.12    0.00031
+both-OOD     3072     34.75    0.00034
+[saved] upsnr_structpos.json in /data1/likun-share/junjxu/runs/decoder_viz/universal_proj
+[saved] grids in /data1/likun-share/junjxu/runs/decoder_viz/universal_proj
+END 0 Fri Jul 3 00:34:48 CST 2026

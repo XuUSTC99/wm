@@ -1,0 +1,68 @@
+[1/5] frozen encoder from /data1/likun-share/junjxu/.stable_worldmodel/lewm_paper_pusht/weights.pt (emb_source=cls)
+22:23:57 | INFO  | __init__.py | PyTorch version 2.9.1+cu128 available.
+22:23:57 | INFO  | __init__.py | JAX version 0.6.2 available.
+22:23:59 | INFO  | atomic_chec~| [atomic_save] installed crash-safe checkpoint plugin (write to sibling .tmp + fsync + atomic rename)
+22:23:59 | INFO  | utils.py    | Created ViT-tiny from scratch with config: {'hidden_size': 192, 'num_hidden_layers': 12, 'num_attention_heads': 3, 'intermediate_size': 768, 'image_size': 224, 'patch_size': 14}
+[encoder] loaded 198/198 encoder weights, missing=0 unexpected=0
+      emb_dim = 192
+[2/5] load eval set /data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_uniform_motion.h5 (all partitions)
+      36864 frames; per-partition frame counts: ID=5632, r/m-OOD=5632, v-OOD=10240, both-OOD=15360
+      train frames 29504 / test frames 7360 (test trajs=230)
+[3/5] precompute embeddings
+  embed 0/36864
+  embed 5120/36864
+  embed 10240/36864
+  embed 15360/36864
+  embed 20480/36864
+  embed 25600/36864
+  embed 30720/36864
+  embed 35840/36864
+[4/5] train universal decoder, 40 epochs
+  ep   5 | train 0.0072 | ID 29.08dB | r/m-OOD 27.78dB | v-OOD 29.71dB | both-OOD 28.92dB
+  ep  10 | train 0.0035 | ID 30.38dB | r/m-OOD 29.05dB | v-OOD 30.81dB | both-OOD 30.32dB
+  ep  15 | train 0.0026 | ID 30.58dB | r/m-OOD 29.27dB | v-OOD 31.11dB | both-OOD 30.29dB
+  ep  20 | train 0.0022 | ID 31.76dB | r/m-OOD 30.34dB | v-OOD 32.48dB | both-OOD 31.68dB
+  ep  25 | train 0.0018 | ID 32.11dB | r/m-OOD 30.98dB | v-OOD 32.82dB | both-OOD 32.26dB
+  ep  30 | train 0.0016 | ID 32.67dB | r/m-OOD 31.39dB | v-OOD 33.14dB | both-OOD 32.71dB
+  ep  35 | train 0.0014 | ID 32.93dB | r/m-OOD 31.54dB | v-OOD 33.54dB | both-OOD 32.91dB
+  ep  40 | train 0.0014 | ID 33.00dB | r/m-OOD 31.72dB | v-OOD 33.61dB | both-OOD 33.06dB
+[5/5] final per-partition PSNR (held-out)
+
+=== UNIVERSAL decoder | uniform_motion | tag=pusht | enc=weights.pt ===
+partition       n  PSNR(dB)        MSE
+ID           1120     33.00    0.00050
+r/m-OOD      1120     31.72    0.00067
+v-OOD        2048     33.61    0.00044
+both-OOD     3072     33.06    0.00049
+23:20:58 | ERROR | richuru.py  | Exception:
+Traceback (most recent call last):
+
+> File "/home/likun-share/junjxu/wm/le-wm/decode_viz/train_universal_decoder.py", line 192, in <module>
+    main()
+    └ <function main at 0x7f171c372710>
+
+  File "/home/likun-share/junjxu/wm/le-wm/decode_viz/train_universal_decoder.py", line 182, in main
+    save_grid(gt, pred, str(out / f"udec_{args.tag}_{NAMES[p].replace('/', '')}.png"))
+    │         │   │         └ PosixPath('/data1/likun-share/junjxu/runs/decoder_viz/universal')
+    │         │   └ array([[[[0.9997583 , 0.99999464, 0.9999926 , ..., 0.9999962 ,
+    │         │               0.9999937 , 0.99975497],
+    │         │              [0.999992  , 1.   ...
+    │         └ array([[[[1., 1., 1., ..., 1., 1., 1.],
+    │                    [1., 1., 1., ..., 1., 1., 1.],
+    │                    [1., 1., 1., ..., 1., 1., 1.],
+    │                ...
+    └ <function save_grid at 0x7f1568881ea0>
+
+  File "/home/likun-share/junjxu/wm/le-wm/decode_viz/eval_decoder_ood.py", line 82, in save_grid
+    gt = gt01[:n]; rc = rc01[:n].clamp(0, 1)
+         │     │        │     └ 8
+         │     │        └ array([[[[0.9997583 , 0.99999464, 0.9999926 , ..., 0.9999962 ,
+         │     │                    0.9999937 , 0.99975497],
+         │     │                   [0.999992  , 1.   ...
+         │     └ 8
+         └ array([[[[1., 1., 1., ..., 1., 1., 1.],
+                    [1., 1., 1., ..., 1., 1., 1.],
+                    [1., 1., 1., ..., 1., 1., 1.],
+                ...
+
+AttributeError: 'numpy.ndarray' object has no attribute 'clamp'. Did you mean: 'clip'?

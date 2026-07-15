@@ -1,0 +1,25 @@
+[ckpt] trained = /data1/likun-share/junjxu/.stable_worldmodel/parabola_rerun_w5p0_f2_id1k/parabola_rerun_w5p0_f2_id1k_epoch_20_object.ckpt
+[frozen] target encoder = /data1/likun-share/junjxu/.stable_worldmodel/lewm_paper_pusht/weights.pt
+  rolled out 100 trajs, t=15s
+  rolled out 200 trajs, t=31s
+  rolled out 300 trajs, t=46s
+
+[data] 300 trajs, 8700 pairs, emb dim=192
+
+=== cos by partition — TRAINED-target (original loop) vs FROZEN-target ===
+  partition  | trained-target | frozen-target |   Δ
+  -----------+----------------+---------------+--------
+  ID         | +0.9784        | +0.7074      | -0.2710
+  r/m-OOD    | +0.7335        | +0.6182      | -0.1153
+  v-OOD      | +0.9115        | +0.7332      | -0.1782
+  both-OOD   | +0.6571        | +0.6151      | -0.0420
+
+=== cos vs horizon — TRAINED-target vs FROZEN-target ===
+    h | trained-target | frozen-target |   Δ
+  ----+----------------+---------------+--------
+    1 | +0.9885        | +0.6895      | -0.2990
+    2 | +0.9786        | +0.6488      | -0.3298
+    4 | +0.9633        | +0.5926      | -0.3707
+    8 | +0.9279        | +0.7121      | -0.2157
+   16 | +0.8566        | +0.6622      | -0.1945
+   28 | +0.9697        | +0.9244      | -0.0452

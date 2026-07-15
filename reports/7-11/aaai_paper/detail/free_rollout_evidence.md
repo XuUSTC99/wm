@@ -25,7 +25,20 @@
 | parabola (r/m) | 0.443±0.048 | **0.122±0.007** | **3.6×** |
 | collision | 1.152±0.048 | **0.479±0.079** | **2.4×** |
 
-**三域三种子区间完全不重叠** → 排除种子噪声;除训练方式外一切相同 → 干净归因到这个开关。出处:`/data1/likun-share/junjxu/runs/aaai_p0/rollout_{uniform,parabola,collision}_baseline_{tf,fr}_s{3072,1234,42}.log`。
+**三域三种子区间完全不重叠** → 排除种子噪声;除训练方式外一切相同 → 干净归因到这个开关。出处(⚠️ **三个种子的文件命名不一致,别按 `_s3072` 找**):
+- **seed 1234 / 42** → `raw_data/runs/aaai_p0/rollout_{uniform,parabola,collision}_baseline_{tf,fr}_s{1234,42}.log`
+- **seed 3072(默认种子,文件名无 `_s` 后缀、且在另一个目录)** → `raw_data/runs/structdyn_eval/rollout_{uniform_motion,parabola,collision}_baseline_{tf,fr}_id1k.log`
+
+**逐种子实测值(2026-07-15 从上述 log 重建复核,与本节 headline 完全一致)**:
+
+| 域·协议 | s3072 | s1234 | s42 | mean±std |
+|---|---|---|---|---|
+| uniform TF (both) | 0.3077 | 0.2971 | 0.2947 | **0.300±0.006** |
+| uniform FR (both) | 0.1313 | 0.1457 | 0.1312 | **0.136±0.007** |
+| parabola TF (r/m) | 0.4201 | 0.4116 | 0.4978 | **0.443±0.039** |
+| parabola FR (r/m) | 0.1270 | 0.1254 | 0.1146 | **0.122±0.006** |
+| collision TF (both) | 1.1136 | 1.2067 | 1.1368 | **1.152±0.040** |
+| collision FR (both) | 0.3933 | 0.4947 | 0.5481 | **0.479±0.064** |
 
 ## 2. 覆盖度:每个分区 × 每个域都提升(含 ID)—— 不是 OOD 补丁
 
