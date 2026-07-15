@@ -1,14 +1,12 @@
 # 论文故事线 —— Toward Physics-Consistent Latent World Models: Why Injecting Physics Doesn't Help, and What Does
 
-**对应稿件**:[paper/main.pdf](paper/main.pdf)(AAAI-27,正文 6 页 + 附录,已编译)
-**日期**:2026-07-12
-**用途**:讲给导师/合作者、写 rebuttal、检验叙事是否闭环时随时调。
+**对应稿件**:[paper/main.pdf](paper/main.pdf)(AAAI-27)
+**日期**:2026-07-16(**五章重构版**:动机单线化、指标降级进 Setup、三/四章一一对应、留 DINO-WM 数据位)
+**用途**:**写论文的唯一蓝本**——章节、论点、数字、图表全按本文档落稿;每个数字的源见 [01_results_ledger.md](01_results_ledger.md) 与 [raw_data/](../../../raw_data/README.md)。
 
 ---
 
-## 一句话主线
-
-直接对应标题两半(*Why Doesn't* / *What Does*),也是全文唯一的机制表述:
+## 一句话主线(= 论文 thesis,直接对应标题两半)
 
 > **Why injecting physics doesn't help**:latent **已经**把物理**状态**编强了——位置 probe ρ **0.80–0.96**(三域 both-OOD),且**冗余分布在黑盒 190 维**(probe-190 三域实证)。再往共享 latent 注入**同一份状态**只是塞冗余:**不带新信号 → 不提升**;**还占表示容量、分梯度、与预测目标打架 → 有害**;而预测大可绕过物理 slot、直接走黑盒那份(***not load-bearing***)。
 >
@@ -16,74 +14,151 @@
 
 **核心概念**:***decodable but not load-bearing***(存在 ≠ 使用,presence ≠ use)——decodable = 信息在场,load-bearing = 预测真的靠它。全文发现都挂在这个落差上。
 
-**为什么这版表述值钱**(2026-07-13 收敛):① 它把"注入物理没用"和"修训练协议有用"**统一进同一个机制**(补 latent **已有的** vs 补 latent **真缺的**),不是两个孤立结论;② 它**免疫"换更高维 slot / 更好映射会不会好"的质疑**——那还是塞冗余状态、没堵旁路;要突破须**改架构堵旁路(extrinsic)**,不是换编码。详见 [detail/why_physics_structure_fails.md 层3](detail/why_physics_structure_fails.md)。
+**为什么这版表述值钱**:① 它把"注入物理没用"和"修训练协议有用"**统一进同一个机制**(补 latent **已有的** vs 补 latent **真缺的**),不是两个孤立结论;② 它**免疫"换更高维 slot / 更好映射会不会好"的质疑**——那还是塞冗余状态、没堵旁路;要突破须**改架构堵旁路(extrinsic)**,不是换编码。详见 [detail/why_physics_structure_fails.md 层3](detail/why_physics_structure_fails.md)。
 
-**三个不能混的精度点**(照这个对偶写作时必守,否则被审稿人捅穿):
-1. **free-rollout 不是"注入物理演化规则",它啥物理都不灌**——"学到演化"是效果、不是手段;手段是改采样协议消 exposure bias。what-helps 我们证明的是**训练协议**这个杠杆,不是"注入动力学"这种物理结构。
+**三个不能混的精度点**(写作时必守,否则被审稿人捅穿):
+1. **free-rollout 不是"注入物理演化规则",它啥物理都不灌**——手段是改采样协议消 exposure bias;它在论文里的身份是**受控析因变量 + 阳性对照**(§3.3),**不是动机、不是方法贡献**(= scheduled sampling,主动引用)。
 2. 物理注入**不是"作用不大",是系统性有害**(30 格 25 格变差、29/30 不优于 baseline、从头共训 Δ+0.558)——反直觉点就在"有害",别软化。
 3. 我们**否定的是注入"latent 已有的状态"**,不是所有物理注入;注入 latent **真缺的东西**(动力学/守恒量)或走 **extrinsic 架构**是**未证实的**开放出路(唯一疑似正例 parabola 速度 −0.026,不倚重,future work)。
 
 ---
 
-## 逻辑链(每一步承接上一步)
+## 全文五章骨架(写论文照此,§3 与 §4 一一对应)
 
-1. **现象**:**未注入任何物理**的 JEPA 世界模型,编码器本身就把位置编进了 latent——真实帧 probe 可解码 ρ(pos 两维,baseline REAL-emb,**判读取方差最大、样本最多的 both-OOD 分区**):uniform **0.86–0.96**、parabola 0.83–0.89、collision 0.80–0.89;单步预测也近乎完美(latent cos 0.98–0.99)。(全 4 分区全距 **0.48–0.98**;低端几格——uniform v-OOD 0.826、collision v-OOD 0.482——是 **range restriction** 造成的统计假象:该维真值方差恰是全表最小档、而 Pearson ρ 分母含真值 std,`check_pos_variance` 实测坐实;非"信息缺失",逐格表 + 方差实证见 [detail/why_physics_structure_fails.md 层0](detail/why_physics_structure_fails.md))但一自回归 rollout 就崩(latent collision h28 cos 掉到 **0.24**、OOD 更崩),而位置信息仍留在真实表示里(collision both-OOD REAL-emb ρ≈0.84,两维均)。→ **状态可解码,不代表物理可遵守。**(出处 `aaai_p0/rollout_{域}_baseline_fr_s1234.log` 的 `probe applied to REAL embs` 段)
+| 章 | 写什么 | 蓝本在下文 |
+|---|---|---|
+| **1 Introduction** | **动机单线**:物理注入对 latent WM 是否有效?(不掺 free-rollout) | §C1 |
+| **2 Related Work** | 物理注入 WM / latent WM / exposure bias 三条线 | §C2 |
+| **3 Method** | 我们尝试的各种注入方案 + **每个方案的设计目的** + 协议对照的设计 | §C3(3.1–3.4) |
+| **4 Experiments** | Setup(含指标,**一段带过**)+ 结果与分析,**逐小节对应 §3** | §C4(4.0–4.4) |
+| **5 Conclusion** | 结论 + limitation + future work | §C5 |
+
+---
+
+## C1 第一章 Introduction(动机,单线)
+
+**只沿一条线走:物理注入在 latent world model 上做得少、没被系统检验——我们来回答它是否有效。** ⚠️ free-rollout 不出现在动机里(它是 §3.3 的析因工具)。
+
+1. **背景现象(hook)**:JEPA 系 latent 世界模型短程预测近乎完美(单步 latent cos 0.98–0.99)、物理状态**可从 latent 线性解码**(位置 probe ρ,both-OOD 判读分区:uniform **0.86–0.96**、parabola 0.83–0.89、collision 0.80–0.89)——**但一自回归 rollout 就偏离动力学**(collision h28 cos 掉到 **0.24**,OOD 更崩),而位置信息仍留在真实表示里(collision both-OOD REAL-emb ρ≈0.84)。→ **状态可解码 ≠ 物理可遵守**。(全 4 分区全距 0.48–0.98,低端几格是 range restriction 统计假象,`check_pos_variance` 实测坐实 → [detail/why_physics_structure_fails.md 层0](detail/why_physics_structure_fails.md);出处 `raw_data/runs/aaai_p0/rollout_{域}_baseline_fr_s1234.log`)
 
    ![](figures/fig1_thesis_presence_not_use.png)
 
-   > **Fig 1 读图**(collision 域):横轴 = rollout 步数,纵轴 = 与真实的吻合度(0–1)。**绿虚线** = 从真实帧 latent 线性解出位置的 ρ≈0.84(位置一直在 latent 里、平线);**红线**(teacher-forced 原始训练)单步 0.99 → h28 **崩到 0.24**;**蓝线**(free-rollout)长程稳住 0.48。→ **信息在场 ≠ 预测用它(presence ≠ use)**,修它靠换训练协议(红→蓝)、不靠注入物理。
+   > **Fig 1 读图**(collision 域,论文 teaser):横轴 = rollout 步数,纵轴 = 与真实的吻合度(0–1)。**绿虚线** = 从真实帧 latent 线性解出位置的 ρ≈0.84(位置一直在 latent 里、平线);**红线**(teacher-forced 原始训练)单步 0.99 → h28 **崩到 0.24**;**蓝线**(free-rollout,§3.3 的协议对照)长程稳住 0.48。→ **信息在场 ≠ 预测用它(presence ≠ use)**。(写 Intro 时蓝线只作预览、不展开)
 
-2. **现状**:针对OOD和长程预测不准，学界两条药方——① 注入物理结构(PIWM / 深监督);② 堆数据(PhyWorld 已证 video 生成这条不行)。**但"物理结构能不能救 latent 世界模型"从没被系统测过。**
+2. **现状**:面对"rollout 违反物理",一条被寄予厚望的药方是**把物理注入模型**——它在**别的形态**上确有成功:PIWM 系用**专用 extrinsic 架构**(低维物理态是预测必经通道),deep-sup(2504.03861)在**低维状态 latent**(8-D、probe 占 38%)上有效。**但在共享高维 latent 的世界模型上,物理注入只有零散、各测各的尝试,从没被系统检验过。**
 
-3. **缺口(真正的那个)**:物理结构的注入方式、初始化、物理域都是**零散、各测各的**,**从没和"训练协议"这个最大混淆变量做过受控析因对比**——大家默认"训练那些是背景、物理结构是变量",却没人在同一 baseline 上把两者摆到一起比。→ **一个基本的析因问题没人回答:把训练协议先做对(free-rollout)之后,物理结构还有增量价值吗?**
-   - (**附带的方法论隐患**,当独立贡献不当主缺口):cos/probe 这类指标是**训练目标的对偶量**、加了对应 loss 必然涨,容易制造"物理有效"的假象——**我们自己早期 sweep 就被 K=4 ρ 带偏**、得"λ=50 胜出"、改用 pred_loss 后翻案。⚠️ **不宣称"前人都建在 cos/probe 上"**(deep-sup 2504.03861 恰用了可信的 pred_loss、结论也对);此隐患是"判决指标须用 nMSE/pixel"的普适警示,不是"别人指标错了"的指控。)
+3. **核心问题(全文唯一动机)**:**把物理注入 latent world model,能否让它物理一致?** 我们把注入的设计空间扫满(5 机制家族、含变体 10 臂、3 物理域 + 2 照片级仿真基准,~200 训练 run)来回答。
 
-4. **我们的做法**:一次把设计空间扫满——**5 个注入机制家族(含变体共 10 臂;10 臂 × 3 域 = 步5 的 30 格)× 2 种训练方案 × 3 个物理域 × 2 个照片级仿真基准**,种子受控,**~200 个训练 run**(实数 199 个训练日志:structdyn 118/aaai_p0 29/physionpp 31/pretrain 12/rerun 9;旧文 ">60" 系低估)。(5 家族 10 臂具体是啥、30 格全表 + 热力图 → [detail/physics_injection_full_scan.md](detail/physics_injection_full_scan.md))
+4. **答案预览 + 贡献**:①(负,主体)注入**系统性有害**——30 格 29/30 不优于 baseline,连正确物理形式(a=g)和从头共训都救不回;②(机制)因为 latent **已经**冗余编码了物理状态,注入 = 塞冗余 + 抢梯度,预测走黑盒旁路(decodable but not load-bearing),并给出可证伪验证;③(对照落点)同一代码同一指标下,**训练协议**(free-rollout/horizon)带来 2.2–8.3× 提升 → 短板在预测器长程动力学、不在状态;④ extrinsic 架构(PIWM 移植)解决承重但不解决编码器-OOD,必要非充分。
 
-5. **发现一(负,论文主体)**:**物理结构不是通用杠杆**。把各种物理量(位置/速度/加速度)固定编码进 slot,30 个"机制×域"格子里**对整体数据几乎都是损害或持平**(25 格明确变差、4 格持平、仅 1 格真小赢 → **29/30 不优于 baseline**;全表+热力图见 [detail/physics_injection_full_scan.md](detail/physics_injection_full_scan.md));唯一例外是 parabola 上把速度也编进 slot 有**一点点**提升(r/m 0.122→0.096,量级很小),**可能**因为速度在抛体里是随时间线性变化的驱动量、比二次位置好外推——但这点小提升不构成可用方法(同一编码在 uniform/collision 上反而变差 +0.071/+0.142)。从头共训比后训练嫁接**伤得更狠**(uniform Δ 从 +0.035 放大到 +0.558),堵死"要在预训练注入才行"的辩护。**一条独立于 nMSE 的旁证**:phyworld→Physion 的 zero-shot 迁移上,**物理结构(pos_weight)0.551 是全部配置里最差的**、比 free-rollout(0.603)还低,连 random 架构先验(0.607)都够不着——**换个数据集、换个指标(AUC)、换个任务(迁移),"物理结构越强越差"依然成立**(逐配置数据 → [detail/real_data_physion.md](detail/real_data_physion.md))。
+---
+
+## C2 第二章 Related Work(半页~2/3 页,三条线)
+
+- **物理注入的世界模型**:PIWM 2412.12870/2503.02143(extrinsic 专用架构,如实承认其成功、§4.4 移植检验)、deep-sup 2504.03861(**低维状态 latent 上结论正确、用的是可信指标 pred_loss**;我们复核其 recipe 在高维视觉 latent 的适用边界,§4.1)。
+- **latent 世界模型与物理评测**:JEPA/LeWM 系;PhyWorld(已证 video-gen 堆数据不行)、Physion/Physion++(**照片级仿真**,勿称 real-world)。
+- **rollout 训练与 exposure bias**:Bengio 2015(Scheduled Sampling)、Ranzato 2016(exposure bias)——**主动承认 free-rollout 不新**,我们的用法是把它当受控析因变量(§3.3)。
+
+---
+
+## C3 第三章 Method:注入方案设计(每个方案:是什么 + 为什么这么设计)
+
+### 3.1 物理注入设计空间:5 家族 → 10 臂(30 格的"方案侧")
+
+沿三条正交轴铺满"往共享 latent 注入物理"的设计空间——**硬/软 × 钉状态/钉演化 × 有/无标签**,每族的设计目的:
+
+| 家族 | 臂 | 一句话原理 | **设计目的(为什么设这个方案)** |
+|---|---|---|---|
+| ① 固定 slot | structpos | 硬钉前 2 维 = 真实位置(`emb[:,:2]≈proprio`) | 最直接的"状态注入":让指定维度承载物理量,检验**硬约束**是否有效 |
+| | +pw30(LBR) | structpos + pos_weight=30 承重加权 | **机制检验**:若失效因 slot 占比低(2/192),加权抬占比应能救——可证伪 |
+| | +velocity(posvel) | 位置**和速度**都进 slot(×pw30) | 检验"注入的量是否可外推"是否关键(速度在抛体线性可外推) |
+| ② 深监督 probe | probe | 线性头从 latent 读出位置(`probe_head(emb)≈proprio`) | 复现 deep-sup(文献最强竞品)recipe,检验**软约束**在高维视觉 latent 是否成立 |
+| | +structpos | 软 probe + 硬 structpos 组合 | 检验软硬互补假设 |
+| ③ 运动学头 dyn | free MLP | 位置 slot 挂显式方程 `z+v+a`,a=自由小网络 | 从"钉状态"升级到"钉**演化**":给 slot 装动力学 |
+| | strict a=g | 同上但 a=可学重力常数 | **严格 PIWM 形式**——堵"你物理形式不对"的质疑 |
+| ④ consistency | consistency | 只要求 rollout 位置的差分速度=真值速度 | 不假设 a 的形式,为 collision 冲量(不连续)设计 |
+| ⑤ label-free | label-free | 不钉真值,只要求 slot 按二阶动力学平滑演化 | **无标签**自组织——纯视频没有 proprio 时唯一可行的注入 |
+| | grounded | label-free 同结构 + 钉真值 | label-free 的有标签对照(隔离"标签有无"变量) |
+
+**轴闭合**:硬(①③)↔软(②④);状态(①②)↔演化(③④⑤);有标签(9 臂)↔无标签(⑤)。→ 任何"换个注入方式会不会好"都落在已测的轴上。另设**从头共训 vs 后训练嫁接**两种训练方案(2×2),堵"要在预训练注入才行"。(全表 → [detail/physics_injection_full_scan.md](detail/physics_injection_full_scan.md))
+
+### 3.2 机制假设与可证伪检验的设计
+
+**假设(load-bearing problem)**:物理 slot 只占 2/192 维、~1% 梯度;黑盒 190 维**冗余**编码了同一份位置 → 预测绕过 slot 走黑盒。为它设计两个检验:
+- **probe-190(旁路直接实证)**:把 latent 拆成"slot 2 维 / 黑盒 190 维",分别解位置——若黑盒单独就能解出,旁路存在。
+- **LBR 全曲线(剂量-反应)**:pos_weight 1→300 扫满——若机制方向对,危害应随权重系统响应;若加权也救不回,证明旁路是架构性的、非"注入量不够"。
+
+### 3.3 训练协议对照:free-rollout(+ horizon 匹配)
+
+**设计目的(两重身份,都不是"新方法")**:
+- **受控析因变量**:物理结构从没和"训练协议"这个最大混淆变量做过受控对比——大家默认协议是背景、结构是变量。我们在**同一 baseline** 上把两者摆到一起:把协议先做对(free-rollout),再问结构还有没有增量价值。
+- **阳性对照(positive control)**:负结果最怕"你实现有 bug/指标失效"——free-rollout 证明**同一套代码、同一批指标下,别的干预能大幅提升**,把矛头钉死在结构本身。
+
+**分析**:teacher-forcing 训练每步喂真值、模型从没见过自己的误差,部署时却要把带误差的预测喂回去 → 误差累积、长程崩(**exposure bias**,经典问题)。free-rollout(`num_preds=8` 自回归)让模型在训练时就暴露于自身累积误差、学会纠偏——**不灌任何物理**。辅以 **rollout horizon 匹配动力学复杂度**(碰撞/真实数据吃长 rollout,光滑域不吃)。
+
+### 3.4 外部对照与跨 backbone 泛化的设计
+
+- **PIWM 忠实移植**(extrinsic 对照):回应"没有外部方法 baseline"——官方 3-stage(VAE 128-D → 提取器 → 已知方程动力学)搬到 phyworld,检验"extrinsic 架构是否就是答案"。
+- **DINO-WM 复制**(跨 backbone 对照,⏳ 另一 session 在跑):同一协议(TF vs FR + 注入臂)搬到另一个 JEPA 系 latent WM,检验结论**不依赖 LeWM 单一实现**。
+
+---
+
+## C4 第四章 Experiments(逐小节对应 §3;图表全在此)
+
+### 4.0 Setup(~0.75 页,指标只一段带过)
+
+- **模型**:LeWM(ViT-tiny,192-D latent,SIGReg);init = PushT backbone → 域内 ID-1k finetune(附 scratch 对照);种子 3072/1234/42(标明哪些 3 种子)。
+- **数据**:PhyWorld 三域(uniform/parabola/collision)+ OOD 四分区(ID / r/m-OOD / v-OOD / both-OOD);Physion++(照片级仿真,直训 h64);Physion(zero-shot OCP,仅作旁证)。
+- **指标(一段带过,不展开——非主线)**:判决用 **rollout nMSE + pixel PSNR**(外部指标、直接量"预测对不对";两者所有案例同向);**cos/probe-ρ 只作诊断**——它们是训练目标的对偶量,加对应 loss 必涨,当主指标会高估物理结构(实测反转:cos 升 1.50× 而 nMSE 崩到 0.21;我们早期 sweep 亦被带偏后翻案,Fig 5 置附录)。**判读规则**:uniform/collision 取 both-OOD;**parabola 取 r/m-OOD**(both-OOD 有 h28 nMSE 除零爆点)。四把尺子对照与逐案例 → [detail/evaluation_traps.md](detail/evaluation_traps.md)。
+
+### 4.1 注入全扫结果(↔ 3.1):29/30 不优于 baseline
+
+30 格(10 臂 × 3 域)判决:**25 格明确变差、4 格持平、仅 1 格真小赢**;整列 collision(1.33–1.66×)最狠;**严格 a=g 也伤**(uniform 1.57×)、**从头共训伤得更狠**(uniform Δ +0.035 → +0.558)——3.1 里每条设计动机都被数据否定。唯一例外 posvel·parabola(0.122→0.096,三种子零重叠):速度在抛体里线性可外推——**是"结构既承重又匹配该域动力学才有用"的机制签名,不是可用方法**(同一编码 uniform +0.076 / collision +0.228 反而更差)。**独立于 nMSE 的旁证**:phyworld→Physion zero-shot 迁移上 **pos_weight 0.551 全配置最差**、低于 free-rollout 0.603、连 random 架构先验 0.607 都够不着——换数据集、换指标(AUC)、换任务,"物理结构越强越差"依然成立([detail/real_data_physion.md](detail/real_data_physion.md))。**Physion++ 上同样成立**:structpos/cons/consacc 的逐场景 rollout nMSE 全部差于纯 FR(如 mass_dominoes 0.058 → 0.45/0.59/0.60,3–10×;单种子但差距远超种子噪声带;口径 = per-scenario 聚合,源 `raw_data/runs/physionpp/eval_pp_{struct,cons,consacc}_e20.log`)。
 
    ![](figures/fig16_physics_injection_scan.png)
 
-   > **Fig 16 读图**:10 行 = 10 个注入臂(按 5 家族分组:`[slot]`固定编码/`[probe]`深监督/`[dyn]`运动学头/`[cons]`一致性/`[free]`无标签);3 列 = 三域判决分区。每格 = **nMSE/baseline 倍数**(括号内原始 nMSE);**颜色 = 判决:红更差、白持平、绿更好**;`†` = 三种子均值(其余单种子),`✓` = 唯一真提升。→ **几乎全红**;整列 collision(1.33–1.66×)最狠;30 格 **25 差 / 4 平 / 仅 posvel·parabola 0.76× 真降 = 29/30 不优于 baseline**。
+   > **Fig 16 读图**(主表):10 行 = 10 个注入臂(按 5 家族分组:`[slot]`固定编码/`[probe]`深监督/`[dyn]`运动学头/`[cons]`一致性/`[free]`无标签);3 列 = 三域判决分区。每格 = **nMSE/baseline 倍数**(括号内原始 nMSE);**颜色 = 判决:红更差、白持平、绿更好**;`†` = 三种子均值(其余单种子),`✓` = 唯一真提升。→ **几乎全红**;30 格 **25 差 / 4 平 / 仅 posvel·parabola 0.76× 真降 = 29/30 不优于 baseline**。
 
-6. **机制(回答"为什么全废")**:**物理 slot 占比低、被预测绕过(load-bearing problem)**([论据详见 detail/load_bearing_reweighting.md](detail/load_bearing_reweighting.md))——物理 slot 只占 2/192 维、~1% 梯度,黑盒 190 维还冗余编码了位置,预测绕开 slot 走黑盒;物理梯度和预测梯度打架(比值 15–125×)。**可证伪验证(LBR 全曲线消融,pw1→300)**:加权到头,4 个域×分区只有 2 个救回持平(uniform·both、parabola 高权 r/m),uniform·r/m 和 collision 全程救不回、collision 还越加越差——**加权只在 slot 占主导那格消掉危害,多数格子仍有害、无净增益**,证明了机制方向对但修不了根本(旁路在)。**这一步把"负结果"变成"有机制解释的科学发现"。**
+### 4.2 机制结果(↔ 3.2):旁路实证 + 可证伪验证通过(但救不了)
+
+- **probe-190**:黑盒 190 维单独解位置 ρ 0.78–0.92,与全 192 维几乎等高;随机 2 维对照 0.2–0.5 解不出 → **位置冗余铺在黑盒里,旁路存在**。
+- **梯度打架**:(λ·probe_loss)/pred_loss = **15–125×**(加权 loss 值作梯度大小代理,非实测梯度范数);encoder 有效维度(PR)塌 39–90%(uniform 41→4)。
+- **LBR 全曲线**:危害确实随 pos_weight 系统响应(机制方向对),但 4 个域×分区只有 2 个救回**持平**、从不净增益;collision 任何权重都救不回、越加越差 → **旁路是架构性的,加权修不了根本**。
 
    ![](figures/fig15_bypass_probe190.png)
 
-   > **Fig 15 读图**(旁路的直接实证):三个域,每域两根柱——**黑柱 = 用全部 192 维解位置**、**蓝柱 = 去掉物理 slot、只用黑盒 190 维解位置**(probe ρ↑)。两柱几乎等高(0.78–0.92)= **黑盒单独就把位置编了进去**;底部红带 = 随机 2 维对照(0.2–0.5,解不出)。→ **位置冗余铺在黑盒里,预测可绕过任何物理 slot**。
+   > **Fig 15 读图**(旁路直接实证):三个域,每域两根柱——**黑柱 = 全部 192 维解位置**、**蓝柱 = 去掉物理 slot、只用黑盒 190 维解位置**(probe ρ↑)。两柱几乎等高(0.78–0.92)= **黑盒单独就把位置编了进去**;底部红带 = 随机 2 维对照(0.2–0.5)。
 
    ![](figures/fig8_lbr_ablation.png)
 
-   > **Fig 8 读图**(承重加权 LBR 的边界):左 = uniform 上 pos_weight 1→300 的曲线(蓝 both-OOD / 橙 r/m-OOD,虚线带 = 各自 baseline);右 = 三域 nMSE/baseline 比值随 pos_weight。→ 加权只把 **uniform·both 拉回持平**(r/m 全程救不回)、**collision 任何权重都在 baseline 之上且越加越差**。→ 承重是**机制验证**(方向对)、**不是修复方法**(2/4 判决格持平、从不净增益)。
+   > **Fig 8 读图**(LBR 剂量-反应):左 = uniform 上 pos_weight 1→300(蓝 both-OOD / 橙 r/m-OOD,虚线带 = baseline);右 = 三域 nMSE/baseline 比值随 pos_weight。→ 加权只把 **uniform·both 拉回持平**(r/m 救不回)、**collision 越加越差**。→ 承重是**机制验证**、**不是修复方法**。
 
-7. **发现二(正,支配变量)**:真正**跨域不翻车**的杠杆**不在结构侧、而在训练协议侧**,有两个:① **free-rollout**——只翻一个开关、不灌任何物理,uniform/parabola/collision **2.2–3.6×** + 真实 Physion++ **8.3×**,**唯一跨合成/仿真都通用的主升力**(论据 [detail/free_rollout_evidence.md](detail/free_rollout_evidence.md));② **rollout horizon 匹配动力学复杂度**——碰撞吃长 rollout、光滑域不吃;真实数据 np8→28 长程 nMSE 单调降到 **1/19**、无拐点。→ 两者都**只动"怎么训"、不动"latent 里放什么"**,却双双碾压 30 格物理注入 → 正面落点 = **支配变量在训练协议**,而非负结果堆。
+### 4.3 协议对照结果(↔ 3.3):同一代码下 2.2–8.3×
+
+free-rollout 单开关:合成三域 **2.2–3.6×**、真实 Physion++ **8.3×**(均三种子、区间零重叠),**全 4 分区含 ID 都提升**(2.0–4.6×,不是 OOD 补丁);horizon 匹配:np8→28 把 Physion++ h64 nMSE 单调打到 **1/19**(0.280→0.014)、未见拐点。→ **阳性对照成立**(排除实现/指标失效),且**支配变量在训练协议**——只动"怎么训"、不动"latent 里放什么",却碾压 30 格注入。(论据 [detail/free_rollout_evidence.md](detail/free_rollout_evidence.md))
 
    ![](figures/fig2_free_rollout.png)
 
-   > **Fig 2 读图**(① free-rollout):每域两根柱 = teacher-forced vs free-rollout 的 rollout 误差(nMSE↓),柱顶 = 下降倍数。**只翻一个开关、不灌任何物理**,合成三域 + 真实全部大降,**真实数据反而更猛**:
+   > **Fig 2 读图**:每域两根柱 = teacher-forced vs free-rollout 的 rollout 误差(nMSE↓),柱顶 = 下降倍数:
    >
    > | 域 | TF | FR | 倍数 |
    > |---|---|---|---|
    > | uniform | 0.300 | 0.136 | 2.2× |
    > | parabola(r/m) | 0.443 | 0.122 | 3.6× |
    > | collision | 1.153 | 0.479 | 2.4× |
-   > | **Physion++(真实,h64)** | 1.174 | 0.141 | **8.3×** |
+   > | **Physion++(仿真,h64)** | 1.174 | 0.141 | **8.3×** |
 
    ![](figures/fig7_realdata_num_preds.png)
 
-   > **Fig 7 读图**(② horizon 匹配动力学):Physion++ 直训,不同 num_preds 配置的 **by-horizon nMSE(log 轴,↓)**。np8 → np20 → np20+scale → **np28+scale**,长程单调下降、**h64 从 0.280 打到 0.014(1/19)、未见拐点**。→ 真实动力学比合成域**更吃长 rollout**。
+   > **Fig 7 读图**(horizon 匹配):Physion++ 直训,不同 num_preds 的 **by-horizon nMSE(log 轴,↓)**。np8 → np20 → np20+scale → **np28+scale** 长程单调下降,**h64 0.280 → 0.014(1/19)、未见拐点**。→ 真实动力学比合成域更吃长 rollout。
 
-8. **发现三(方法论):判决指标不能用 cos/probe**——它们是**训练目标的对偶量**:加了对应 loss 必然涨,而**涨的是"信息在不在 / 方向对不对",不是"预测对不对"**。当主指标会**系统性高估物理结构**(实测多处反转:cos 升 1.50× 而真值 nMSE 崩到 0.21;我们自己早期 sweep 盯 K=4 ρ 得"λ=50 胜出",改用 pred_loss 后翻案)。**但没有单一完美指标**:nMSE 带尺度、方向偏和幅度偏都罚,可它**分母是真值方差 → 方差→0 时除零引爆**(parabola 长 horizon 飙到 197 万,故该域判决改走 r/m-OOD)——**方向恰与 cos 陷阱相反:cos 尺度盲会漏报、nMSE 分母退化会虚报**,这正是必须交叉验证的理由。**pixel PSNR 是最难作弊的锚**(端到端逐像素,改 latent 分布骗不过去),而 **nMSE 的可信度正来自它与 pixel 始终同向**——所有反转案例里,分歧的都是 cos vs (nMSE/pixel)。→ **判决 = nMSE + pixel 为主、cos/probe 只当诊断、逐分区逐 horizon 交叉验证。**(不宣称文献比例;deep-sup 2504.03861 本身用可信指标 pred_loss、结论正确,其 recipe 在我们高维视觉 latent 失效属塌方机制、非指标问题。四把尺子优劣对照表 + 两条判据 + 逐案例数据 → [detail/evaluation_traps.md](detail/evaluation_traps.md))
+### 4.4 外部对照与跨 backbone 泛化(↔ 3.4)
 
-   ![](figures/fig5_cos_trap.png)
-
-   > **Fig 5 读图**(cos 陷阱):三个真实案例,每个两根柱——**蓝 = cos 指标怎么说、红 = 真值指标(pixel/nMSE)怎么说**(相对 baseline 的"好坏比值",>1 更好,log 轴)。**每例都是蓝在 1.0 上(cos 说变好)、红在 1.0 下(真值说变差)** → 只看 cos 会得出**相反**结论;判决必须用 nMSE/pixel、cos 只当诊断。
-
-9. **结论(建设性,不自我否定)**:我们没否定物理结构本身,只否定"往共享 latent 上**嫁接**"。**extrinsic 架构**(低维物理态是预测唯一必经通道)才让预测天然依赖物理态——**我们把官方 PIWM 忠实移植到 phyworld 验证了这点:它学到正确物理、ID/v-OOD 比 LeWM 还准,但 size/mass-OOD 崩(ρ 0.33 vs 0.89)——PIWM 的红利来自它的架构而非方程,而其 VAE 编码器同样扛不住 OOD**。这既解释了别人的正结果、又和我们的负结果自洽,还指出了唯一出路(future work)。(论据 [piwm_baseline/PLAN.md](../piwm_baseline/PLAN.md))
+**PIWM(extrinsic)**:移植后学到正确物理、ID/v-OOD 比 LeWM 还准,**但 size/mass-OOD 崩**(ρ 0.33 vs 0.89)——**PIWM 的红利来自架构而非方程,而其 VAE 编码器同样扛不住 OOD** → extrinsic 解决"承重/旁路",不解决"编码器-OOD",**必要非充分**。这同时解释了别人的正结果为何与我们的负结果不矛盾。
 
    ![](figures/fig9_piwm_vs_lewm.png)
 
-   > **Fig 9 读图**:官方 PIWM(紫,extrinsic 架构)vs LeWM free-rollout(蓝)的 rolled-out 位置 ρ(↑),分 4 个 OOD 分区。**PIWM 学到正确物理、ID/v-OOD 甚至更准,但阴影的 size/mass-OOD 崩**(VAE 编码器扛不住没见过的球尺寸):
+   > **Fig 9 读图**:官方 PIWM(紫,extrinsic)vs LeWM free-rollout(蓝)的 rolled-out 位置 ρ(↑),4 个 OOD 分区:
    >
    > | 分区 | PIWM | LeWM |
    > |---|---|---|
@@ -91,65 +166,66 @@
    > | **r/m-OOD** | 0.33 ⚠️ | **0.89** |
    > | v-OOD | **0.97** | 0.87 |
    > | **both-OOD** | 0.48 ⚠️ | **0.87** |
-   >
-   > → extrinsic 解决了"承重/旁路",但**没解决"编码器扛不住 OOD"**——是必要条件、非充分条件。
 
----
-
-## 三个发现如何互锁(故事的精髓)
-
-不是三块拼盘,是**一个论证**:
-
-- 发现一说"结构没用" → 立刻有人问"是不是你实现有 bug / 指标不对"
-- 发现二(训练协议大赢)证明**同一套代码、同一批指标下别的干预能大幅提升** → 排除"实现/指标失效",反衬出是结构本身没用
-- 发现三(评测陷阱)解释**为什么别人以为结构有用** → 补上"那前人的正结果哪来的"这个缺口
-- 机制(占比低+被旁路绕过)+ LBR 验证把这三者**统一**到一个可证伪的解释下
-
-关于 parabola 那点小提升(−0.026 nMSE):**不当卖点、不当证据支柱**。它量级很小、只在一个域一个分区出现、可能含随机成分——诚实说法就是"物理量进 slot 整体有害,parabola 偶尔小赢一点,可能因速度在抛体里可外推"。反驳"实现有 bug"不靠它(靠 probe-190 旁路 + structured_loss 降 + slot 可解码涨 + 梯度打架 + free-rollout 阳性对照,见下)。
-
-### 最致命的质疑:"发现一结构没用是不是你实现有 bug"
-
-负结果最容易被这样打发——"你物理 loss 没真接进去,所以才看不出效果"。反驳的关键是**不辩"检查过代码"(苍白),而用模型的可观测行为证明约束真生效了**,只是生效方向无益/有害(①bug 没接上→和 baseline 无异;②真生效→被改变但方向有害;证据全指向②)。行为证据 + free-rollout 阳性对照:structured_loss 在降、slot 可解码性大涨、**probe-190 实测黑盒旁路存在**、按 pos_weight 甜点系统响应、梯度层面与预测拔河、危害随强度单调。
-
-> 六证据的**逐条数字、剂量-反应曲线、"编码方式次优"升级质疑的反驳**(全带数据与出处)→ **[detail/why_physics_structure_fails.md](detail/why_physics_structure_fails.md)**。
-
----
-
-## 配图速查（做 PPT 用）
-
-**8 张图已内嵌在上方逻辑链对应步骤里**（点开即见，无需跳转）。这里只列取图索引：矢量 `.pdf`（插 PPT 用这个）在 [figures/](figures/)，脚本 [figures/storyline_figures.py](figures/storyline_figures.py) 一键重画，每张图的**数据表 + 原始数据源**见 [detail/figures_gallery.md](detail/figures_gallery.md)。
-
-> **时间紧只讲 3 张**：**Fig 1**（钩子：可解码≠预测用它）→ **Fig 16**（物理注入 30 格全废，主体）→ **Fig 2**（训练协议才是杠杆，正面落点）。
-
-| 图 | 讲什么 | 在哪一步 | 文件 |
-|---|---|---|---|
-| **Fig 1** | 可解码 ≠ 预测依赖它（钩子） | 步1 | `fig1_thesis_presence_not_use.pdf` |
-| **Fig 16** | 物理注入 30 格全扫，29/30 不优于 baseline | 步5 | `fig16_physics_injection_scan.pdf` |
-| **Fig 15** | 旁路实证：位置冗余在黑盒 190 维里 | 步6 | `fig15_bypass_probe190.pdf` |
-| **Fig 8** | LBR 边界条件（机制的可证伪验证） | 步6 | `fig8_lbr_ablation.pdf` |
-| **Fig 2** | free-rollout 跨域通用 2.2–8.3×（正面地基） | 步7① | `fig2_free_rollout.pdf` |
-| **Fig 7** | 真实数据长 rollout 单调好、无拐点 | 步7② | `fig7_realdata_num_preds.pdf` |
-| **Fig 5** | cos 陷阱（方法论） | 步8 | `fig5_cos_trap.pdf` |
-| **Fig 9** | PIWM 外部 baseline 也崩 OOD | 步9 | `fig9_piwm_vs_lewm.pdf` |
-
-## 每节在故事里的角色
-
-| 节 | 角色 |
+**⏳ DINO-WM(跨 backbone,数据位——另一 session 在跑,回来填)**:同一协议搬到 DINO-WM,证明结论不依赖 LeWM 单一实现。**待填三格**:
+| 待填 | 预期形态 |
 |---|---|
-| Intro | 抛出"可解码≠遵守" + 缺口(析因没人做) |
-| Related | 定位三条线(基准 / 物理结构 / exposure bias),点名将被检验的对象 |
-| Setup | 交代受控实验设计(为什么 1K、为什么单机制、指标为什么用 nMSE/pixel) |
-| §4 物理失效(心脏) | 发现一 + 机制(占比低+被旁路绕过) + LBR 可证伪验证 |
-| §5 什么有效 | 发现二(支配变量在训练协议:free-rollout + horizon 匹配) |
-| §6 评测方法论 | 发现三(判决指标为什么必须是 nMSE/pixel、cos/probe 只当诊断) |
-| §7 结论 | 归因架构、指出 extrinsic 出路、诚实 limitation |
+| ① TF vs FR(至少 1 域) | nMSE 对照 + 倍数(对应 Fig 2 加一行/一组柱) |
+| ② structpos 一臂 vs FR baseline | nMSE 判决格(对应 Fig 16 补一行注记) |
+| ③(可选)probe REAL-emb ρ | presence 是否同样成立 |
+> 填入后 4.4 的措辞从"LeWM 上的发现"升级为"JEPA 系 latent WM 的共性";若 DINO-WM 结果**不同向**,如实写成边界条件(哪类 backbone 逃过 load-bearing problem)——也是有价值的发现,勿硬凹。
+
+### 4.5 小结(一段,呼应 thesis)
+
+同一 latent、同一代码、同一指标:注入"已有的状态"29/30 无效且有害(4.1),因为旁路(4.2);修"真缺的长程动力学"2.2–8.3×(4.3);堵旁路的 extrinsic 必要非充分(4.4)。→ *decodable but not load-bearing*。
+
+---
+
+## C5 第五章 Conclusion(~0.5 页)
+
+1. **结论**:物理状态在 latent 世界模型里**可解码但不承重**;往共享 latent 注入已有状态系统性有害(29/30);真正的杠杆是训练协议(修长程动力学);extrinsic 架构必要非充分。
+2. **建设性出路(future work)**:注入 latent **真缺的东西**(动力学/守恒量而非状态)、extrinsic 承重通道 + 鲁棒编码器。
+3. **Limitations(诚实列)**:主判决在单 backbone(LeWM ViT-tiny;**DINO-WM 验证 ⏳ 填入后此条可弱化**);Physion++ 物理臂单种子(差距 3–10× 远超噪声带,但如实标注);Physion/Physion++ 是**照片级仿真**、非真实视频;30 格中 26 格单种子(高出 baseline 5–20× 种子 std,4 个贴近格已补三种子);posvel·parabola 例外提示"匹配动力学的注入"可能有效但未系统探索。
+
+---
+
+## 论证互锁(写作自检:为什么审稿人拆不散)
+
+- **4.1 负结果**孤立时会被问"实现有 bug?指标不对?" → **4.3 阳性对照**证明同一套代码/指标下别的干预大赢,堵死实现质疑;**4.0 的判决指标选择**(nMSE+pixel,拒绝 cos/probe)堵死指标质疑。
+- **4.2 机制**把负结果变成可证伪的科学发现(probe-190 旁路 + LBR 剂量-反应),并预言了 4.4:堵旁路(extrinsic)才可能有效。
+- **4.4 PIWM** 验证预言的同时划出边界(编码器-OOD 未解决),让结论**建设性收尾**而非负结果堆。
+
+关于 parabola 小提升(−0.026):**不当卖点、不当证据支柱**,诚实说法是"整体有害,parabola 偶尔小赢,可能因速度可外推"。
+
+### 最致命的质疑:"结构没用是不是你实现有 bug"
+
+反驳不靠"检查过代码"(苍白),靠**模型可观测行为证明约束真生效了、只是方向有害**:structured_loss 在降、slot 可解码性大涨(0.31→0.96)、probe-190 实测旁路、pos_weight 剂量-反应、加权 loss 比 15–125×、危害随强度单调 + free-rollout 阳性对照。六证据逐条数字 → [detail/why_physics_structure_fails.md](detail/why_physics_structure_fails.md)。
+
+---
+
+## 配图速查(做 PPT / 写论文取图)
+
+矢量 `.pdf` 在 [figures/](figures/),脚本 [figures/storyline_figures.py](figures/storyline_figures.py) 一键重画;每张图的数据表+源 → [detail/figures_gallery.md](detail/figures_gallery.md)。
+
+> **时间紧只讲 3 张**:**Fig 1**(钩子)→ **Fig 16**(30 格全废,主体)→ **Fig 2**(协议才是杠杆)。
+
+| 图 | 讲什么 | 论文位置 | 文件 |
+|---|---|---|---|
+| **Fig 1** | 可解码 ≠ 预测依赖它(teaser) | §1 Intro | `fig1_thesis_presence_not_use.pdf` |
+| **Fig 16** | 注入 30 格全扫,29/30 不优于 baseline | §4.1 主表 | `fig16_physics_injection_scan.pdf` |
+| **Fig 15** | 旁路实证:位置冗余在黑盒 190 维 | §4.2 | `fig15_bypass_probe190.pdf` |
+| **Fig 8** | LBR 剂量-反应(可证伪验证) | §4.2 | `fig8_lbr_ablation.pdf` |
+| **Fig 2** | free-rollout 跨域 2.2–8.3×(+DINO-WM 待填行) | §4.3 | `fig2_free_rollout.pdf` |
+| **Fig 7** | 长 rollout 单调好、无拐点 | §4.3 | `fig7_realdata_num_preds.pdf` |
+| **Fig 9** | PIWM extrinsic 对照:必要非充分 | §4.4 | `fig9_piwm_vs_lewm.pdf` |
+| **Fig 5** | cos 陷阱(指标为何这么选) | §4.0 Setup/附录 | `fig5_cos_trap.pdf` |
 
 ---
 
 ## 为什么这个故事能投 AAAI
 
-不靠"新方法"(free-rollout = Scheduled Sampling,本就不新),靠**一个反直觉、有机制、跨机制×域×数据集系统验证的科学发现**:
+不靠"新方法"(free-rollout = Scheduled Sampling,主动引用;它是我们的**析因变量与阳性对照**,不是贡献),靠**一个反直觉、有机制、跨机制×域×基准系统验证的科学发现**:
 
 > *物理归纳偏置在共享 latent 世界模型上系统性失效,因为信息可解码但预测不依赖它;真正的杠杆在训练协议。*
 
-加上评测方法论(cos 陷阱)和对 PIWM 的架构性归因,这是一篇诚实、完整、有解释力的实证论文——审稿人挑不出"证据不足"或"叙事不闭环"。详细创新性评估与审稿人反对意见预案见 [02_story_and_novelty.md](02_story_and_novelty.md);数字总账见 [01_results_ledger.md](01_results_ledger.md)。
+加上 PIWM 的架构性归因(必要非充分)与(⏳)DINO-WM 跨 backbone 复核,这是一篇诚实、完整、有解释力的实证论文。创新性评估与审稿预案 → [02_story_and_novelty.md](02_story_and_novelty.md);数字总账 → [01_results_ledger.md](01_results_ledger.md)。

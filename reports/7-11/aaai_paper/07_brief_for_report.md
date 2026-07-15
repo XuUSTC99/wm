@@ -28,6 +28,7 @@
 
 - **25 格明确变差、4 格持平(3 格三种子后回落 = 种子噪声)、仅 1 格真小赢** → **29/30 不优于 baseline**(唯一赢的 posvel·parabola,是"① slot 占比高到不被旁路绕过 + ② 编的速度在抛体里可外推"两条同时撞上的机制签名、非通用方法)。
 - 连**正确的物理形式**(严格重力 a=g)、**从头共训**(Δ 从 +0.035 放大到 +0.558)都救不回 → 堵死"要在预训练注入才行"的辩护。
+- **两条独立旁证**:① phyworld→Physion zero-shot 迁移上 **pos_weight 0.551 全配置最差**、低于 free-rollout 0.603、连 random 架构先验 0.607 都够不着——换数据集/指标(AUC)/任务仍是"结构越强越差";② **Physion++(照片级仿真)上同样成立**:structpos/cons/consacc 的逐场景 rollout nMSE 全部 3–10× 差于纯 FR(如 mass_dominoes 0.058 → 0.45/0.59/0.60)。
 
 ![](figures/fig16_physics_injection_scan.png)
 
@@ -51,40 +52,32 @@
 
 ---
 
-## 2. 发现二(正,支配变量):真正有效的在训练/数据侧
+## 2. 发现二(正,支配变量):同一代码下,训练协议 2.2–8.3×
 
-**① free-rollout —— 唯一跨合成/真实都通用的主升力**。只把 teacher-forcing 换成自回归 free-rollout 这**一个开关**(修 exposure bias、不灌任何物理):合成三域 **2.2–3.6×**、真实 Physion++ **8.3×**(均三种子、区间零重叠),**每个 OOD 分区连 ID 都提升**。
+**① free-rollout(受控析因变量 + 阳性对照,不 claim 方法新颖性)**。只把 teacher-forcing 换成自回归 free-rollout 这**一个开关**(修 exposure bias、不灌任何物理):合成三域 **2.2–3.6×**、照片级仿真 Physion++ **8.3×**(均三种子、区间零重叠),**每个 OOD 分区连 ID 都提升**。→ 它同时**堵死"你实现有 bug/指标失效"**:同一套代码、同一批指标下别的干预能大赢,矛头钉死在结构本身。
 
 ![](figures/fig2_free_rollout.png)
 
-> **图说明**:每域两根柱 = teacher-forced(原始)vs free-rollout(我们)的 rollout 误差(nMSE↓),柱顶数字 = 下降倍数。合成三域 + 真实 Physion++ 全部大幅下降,**真实数据反而更猛(8.3×)**:
+> **图说明**:每域两根柱 = teacher-forced(原始)vs free-rollout(我们)的 rollout 误差(nMSE↓),柱顶数字 = 下降倍数。合成三域 + 照片级仿真 Physion++ 全部大幅下降,**仿真数据反而更猛(8.3×)**:
 
 | 域 | teacher-forced | free-rollout | 倍数 |
 |---|---|---|---|
 | uniform | 0.300 | 0.136 | 2.2× |
 | parabola(r/m) | 0.443 | 0.122 | 3.6× |
 | collision | 1.153 | 0.479 | 2.4× |
-| **Physion++(真实,h64)** | 1.174 | 0.141 | **8.3×** |
+| **Physion++(照片级仿真,h64)** | 1.174 | 0.141 | **8.3×** |
 
-**② rollout horizon 匹配动力学复杂度**:碰撞吃长 rollout、光滑域不吃;真实数据顶配 np28+scale 把 h64 nMSE 打到基线的 **1/19**(0.280→0.014)、无拐点。
-
-**③ 增广是域特定杠杆,不是通用方法**:appearance 增广在简单合成域最强(−48~63%),**一到照片级仿真就反转 ~100×**——因为真实场景里外观携带物理(摩擦/质量/材质)。**这条"合成→真实反转"本身是一条贡献(边界警示)。**
-
-![](figures/fig4_aug_synthetic_vs_real.png)
-
-> **图说明**:纵轴 = 增广后 nMSE / baseline 的**比值(log 轴)**,虚线 1.0 = 无变化。**绿柱(合成三域)落在 1.0 以下 = 增广有效(降 48~63%)**;**红柱(真实 Physion++ friction)冲到 ~100× = 增广灾难性反转**——因真实场景里外观携带物理(摩擦/质量/材质),不是可抹掉的噪声。→ 同一个增广,合成有效、真实有害。(⚠️ 100× 幅度 per-scene 分母敏感,方向由 cos 同步降 + 短程整体 2.5× 佐证。)
+**② rollout horizon 匹配动力学复杂度**:碰撞吃长 rollout、光滑域不吃;Physion++ 顶配 np28+scale 把 h64 nMSE 打到基线的 **1/19**(0.280→0.014)、无拐点。
 
 ---
 
-## 3. 发现三(方法论):为什么以前"看起来"物理有效
+## 3. 评测口径(Setup 级,一页带过——不是主线发现)
 
-**cos/probe 是训练目标的对偶量**——加了对应 loss 必然涨,不代表预测变好。多处实锤反转(下图:cos 说变好↑、真值指标 pixel/nMSE 说变差↓)。**我们自己早期 sweep 就被 K=4 ρ 带偏、得"λ=50 胜出"、改用 pred_loss 后翻案**。→ 判决必须用 nMSE/pixel。(不宣称文献普遍如此;deep-sup 恰用了可信的 pred_loss、结论也对。)
+判决指标 = **nMSE + pixel PSNR**(外部指标、所有案例同向);**cos/probe 只当诊断**——它们是训练目标的对偶量,加对应 loss 必涨,当主指标会高估物理结构(实测反转:cos 升 1.50× 而真值 nMSE 崩到 0.21;我们早期 sweep 亦被带偏后翻案)。parabola 判决走 r/m-OOD(nMSE 除零爆点)。**论文里放 Setup 一段 + 附录,不单开章。**
 
 ![](figures/fig5_cos_trap.png)
 
-> **图说明**:三个真实案例,每个两根柱——**蓝=cos 指标怎么说、红=真值指标(pixel/nMSE)怎么说**(相对 baseline 的"好坏比值",>1=更好、log 轴)。**每例都是蓝在 1.0 之上(cos 说"变好了")、红在 1.0 之下(真值说"变差了")** → 只看 cos 会得出和事实相反的结论。所以判决必须用 nMSE/pixel、cos 只当诊断。
-
-另:zero-shot 迁移**封顶 = random 架构先验(0.607)**,没有任何训练配置能超过。
+> **图说明**(备询问用):三案例中每例 **蓝柱(cos)>1 说"变好"、红柱(pixel/nMSE)<1 说"变差"** → 只看 cos 结论相反;判决必须 nMSE/pixel。详 → [detail/evaluation_traps.md](detail/evaluation_traps.md)。
 
 ---
 
@@ -105,18 +98,20 @@
 
 > → extrinsic 架构解决了"承重/旁路",但**没解决"编码器扛不住 OOD"**——是通向物理一致的必要条件、非充分条件。
 
+**⏳ 跨 backbone 泛化(DINO-WM,另一 session 在跑、回来填)**:同一协议(TF vs FR + structpos 臂)搬到 DINO-WM——填入后"LeWM 上的发现"升级为"JEPA 系 latent WM 的共性";若不同向则如实写为边界条件。
+
 ---
 
 ## 贡献一览(可当 slide 尾页)
 
 | # | 贡献 | 一句话 |
 |---|---|---|
-| 1 | **系统解剖 + 机制** | 30 格全扫证明物理结构不是通用杠杆;根因 = 物理占比低 + 黑盒旁路(load-bearing problem) |
-| 2 | **支配变量** | 真正有效的是训练协议:free-rollout(跨域通用 2.2–8.3×)、horizon 匹配、域匹配增广 |
-| 3 | **合成→真实边界** | 增广收益从合成到照片级仿真**反转 ~100×** |
-| 4 | **评测方法论** | cos/probe 是训练目标对偶量、系统性高估物理;判决须用 nMSE/pixel + 逐 horizon 交叉验证 |
+| 1 | **系统解剖 + 机制** | 30 格全扫:注入 29/30 不优于 baseline;根因 = latent 已冗余编码状态 + 黑盒旁路(*decodable but not load-bearing*),probe-190/LBR 可证伪验证 |
+| 2 | **支配变量 = 训练协议** | 同一代码同一指标下 free-rollout 2.2–8.3× + horizon 匹配 1/19 → 短板在长程动力学、不在状态 |
+| 3 | **extrinsic 归因** | PIWM 忠实移植:学到正确物理但 r/m-OOD 崩(0.33 vs 0.89)——必要非充分;⏳ DINO-WM 跨 backbone 复核待填 |
+| 4 | **评测协议**(Setup 级) | 判决用 nMSE/pixel,cos/probe 只诊断(训练目标对偶量) |
 
-**为什么能投 AAAI**:不靠"新方法"(free-rollout=scheduled sampling、增广有竞品),靠**一个反直觉、有机制、跨机制×域×合成/真实系统验证的科学发现**——诚实、完整、有解释力。
+**为什么能投 AAAI**:不靠"新方法"(free-rollout = scheduled sampling,主动引用;它是**析因变量与阳性对照**),靠**一个反直觉、有机制、跨机制×域×基准系统验证的科学发现**——诚实、完整、有解释力。
 
 ---
 
