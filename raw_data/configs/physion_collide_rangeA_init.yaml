@@ -1,0 +1,90 @@
+output_model_name: lewm_physion_init
+subdir: physion_collide_rangeA_init
+num_workers: 6
+train_split: 0.9
+seed: 3072
+img_size: 224
+patch_size: 14
+encoder_scale: tiny
+dump_object: true
+trainer:
+  max_epochs: 20
+  devices: auto
+  accelerator: gpu
+  precision: bf16
+  gradient_clip_val: 1.0
+loader:
+  batch_size: 64
+  num_workers: ${num_workers}
+  persistent_workers: true
+  prefetch_factor: 3
+  pin_memory: true
+optimizer:
+  type: AdamW
+  lr: 5.0e-05
+  weight_decay: 0.001
+wandb:
+  enabled: false
+  config:
+    entity: lewm
+    project: lewm
+    name: ${output_model_name}
+    id: ${subdir}
+    resume: allow
+    log_model: false
+tensorboard:
+  enabled: true
+  name: tb
+  save_dir: null
+wm:
+  type: lewm
+  history_size: 3
+  num_preds: 8
+  embed_dim: 192
+  free_rollout: true
+  action_dim: 2
+predictor:
+  depth: 6
+  heads: 16
+  mlp_dim: 2048
+  dim_head: 64
+  dropout: 0.1
+  emb_dropout: 0.0
+dynamics:
+  enabled: false
+  pos_dim: null
+  hidden: 64
+  learnable_accel: true
+  accel_reg: 0.0
+  use_action: false
+loss:
+  pos_weight: 1.0
+  sigreg:
+    weight: 0.09
+    kwargs:
+      knots: 17
+      num_proj: 1024
+  probe:
+    weight: 0.0
+    target: proprio
+    frames: 1
+  structured:
+    weight: 0.0
+    target: proprio
+    start_dim: 0
+  consistency:
+    weight: 0.0
+    target: proprio
+    start_dim: 0
+    accel_weight: 0.0
+data:
+  dataset:
+    num_steps: ${eval:'${wm.num_preds} + ${wm.history_size}'}
+    frameskip: 3
+    name: physion_collide_dyn
+    keys_to_load:
+    - pixels
+    - action
+    keys_to_cache:
+    - action
+init_from_ckpt: /data1/likun-share/junjxu/.stable_worldmodel/lewm_paper_pusht/weights.pt
