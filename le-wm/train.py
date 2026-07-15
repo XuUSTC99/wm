@@ -285,13 +285,26 @@ def run(cfg):
     ##       model / optim      ##
     ##############################
 
-    encoder = spt.backbone.utils.vit_hf(
-        cfg.encoder_scale,
-        patch_size=cfg.patch_size,
-        image_size=cfg.img_size,
-        pretrained=False,
-        use_mask_token=False,
-    )
+    # encoder_type=dinov2: DINO-WM / V-JEPA2-AC style JEPA variant — frozen
+    # pretrained SSL backbone (DINOv2-small, 384-d CLS), only the projector
+    # (384->192, acts as trainable adapter) + predictor stack train. Set
+    # freeze_encoder=true with this. Everything downstream (losses, FR/TF,
+    # injection arms, eval) is unchanged -> controlled cross-backbone ablation.
+    if cfg.get("encoder_type", "vit_hf") == "dinov2":
+        from transformers import Dinov2Model
+        _d2 = cfg.get("dinov2_path",
+                      "/data1/likun-share/junjxu/.stable_worldmodel/hf_dinov2_small")
+        encoder = Dinov2Model.from_pretrained(_d2)
+        print(f"[encoder_type=dinov2] frozen DINOv2 backbone from {_d2} "
+              f"(hidden={encoder.config.hidden_size})", flush=True)
+    else:
+        encoder = spt.backbone.utils.vit_hf(
+            cfg.encoder_scale,
+            patch_size=cfg.patch_size,
+            image_size=cfg.img_size,
+            pretrained=False,
+            use_mask_token=False,
+        )
 
     hidden_dim = encoder.config.hidden_size
     embed_dim = cfg.wm.get("embed_dim", hidden_dim)
