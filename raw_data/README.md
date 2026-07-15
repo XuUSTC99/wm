@@ -41,6 +41,7 @@
 | `configs/` | **每个 run 的权威超参** `config.yaml`,扁平化命名为 `<run名>.yaml` | `/data1/likun-share/junjxu/.stable_worldmodel/<run>/config.yaml` | 285 |
 | `physion_eval/` | Physion OCP 评估结果 json(含 `eval_random_baseline.json` = 0.607 天花板) | 仓内 `reports/physion/*.json` 的副本 | 13 |
 | `tb/` | **TensorBoard 逐 step 训练曲线** + `hparams.yaml`,按 `<run名>/` 分目录 | `/data1/likun-share/junjxu/.stable_worldmodel/<run>/tb/` | 229 |
+| `handoff/` | **三条 CC session 的完整对话记录**(方法探索 / 评估基础设施 / 论文写作,36 MB)+ [HANDOFF.md](handoff/HANDOFF.md) 交接文档(分工、逐 session 摘要、已订正的错误口径、结论速查) | `~/.claude-chester/projects/-home-likun-share-junjxu-wm/` | 4 |
 
 ### `runs/` 各子目录用途(按论文相关度排序)
 
