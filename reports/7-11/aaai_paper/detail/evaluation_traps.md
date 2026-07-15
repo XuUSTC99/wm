@@ -1,10 +1,10 @@
-# 论据:四个评测陷阱(方法论贡献)
+# 论据:判决指标怎么选 —— cos / probe-ρ / nMSE / pixel 的优劣与比较
 
 > # 🎯 一句话结论
-> **cos/probe 是"训练目标的对偶量"——加了对应 loss 必然涨、不代表预测变好(数学必然);拿它们当主指标会系统性**高估**物理结构。实锤有二:①我们实测多处 cos/probe 升而 nMSE/pixel 反转(下方三案例);②我们自己早期 sweep 踩过坑——盯 K=4 probe-ρ 得"λ=50 胜出",改用可信指标 pred_loss 后翻案(λ=1 最弱 probe 反而最优)。附四个系统性评测陷阱 + 修正协议。(不宣称"多少文献如此"。**注:deep-sup 2504.03861 本身用的就是可信指标 pred_loss、结论正确,不是本陷阱的例子;其 recipe 搬到我们高维视觉 latent 上失效属塌方/稀释机制,见 [why_physics_structure_fails.md](why_physics_structure_fails.md)。**)**
+> **cos/probe 是"训练目标的对偶量"——加了对应 loss 必然涨、不代表预测变好(数学必然);拿它们当主指标会系统性**高估**物理结构。实锤有二:①我们实测多处 cos/probe 升而 nMSE/pixel 反转(下方三案例);②我们自己早期 sweep 踩过坑——盯 K=4 probe-ρ 得"λ=50 胜出",改用可信指标 pred_loss 后翻案(λ=1 最弱 probe 反而最优)。**但也没有单一完美指标:nMSE 自己有除零爆点(方向与 cos 陷阱相反)。**故判决 = **nMSE + pixel 为主、cos/probe 只当诊断、逐分区逐 horizon 交叉验证**。(不宣称"多少文献如此"。**注:deep-sup 2504.03861 本身用的就是可信指标 pred_loss、结论正确,不是本陷阱的例子;其 recipe 搬到我们高维视觉 latent 上失效属塌方/稀释机制,见 [why_physics_structure_fails.md](why_physics_structure_fails.md)。**)**
 
 **对应主张**:[01_results_ledger.md](../01_results_ledger.md) **C6** / [06_storyline.md](../06_storyline.md) 发现三
-**配图**:[../figures/fig5_cos_trap.png](../figures/fig5_cos_trap.png)（陷阱1）、[../figures/fig6_transfer_ceiling.png](../figures/fig6_transfer_ceiling.png)（陷阱2）
+**配图**:[../figures/fig5_cos_trap.png](../figures/fig5_cos_trap.png)
 
 ![](../figures/fig5_cos_trap.png)
 
@@ -17,16 +17,20 @@
 
 ---
 
-## 0. 判决指标的判据(凭什么 nMSE/pixel,而非 cos/probe)
+## 0. 四把尺子:各自量什么、优劣在哪
 
-**四个指标先定义清楚**(详见 [02 名词表·四把尺子](../02_story_and_novelty.md)):
-- **cos** = 预测 latent 与真实未来 latent 的**方向**余弦(1=同向),**只量方向、尺度盲**。
-- **probe-ρ** = 另训一个小线性头从 latent 读出物理量,读出值与真值的 Pearson 相关,**量"信息在不在"**(可读出性)。
-- **nMSE** = `‖预测−真值‖²/真值方差`,量的是**差向量的长度**——展开 `‖p−t‖²=‖p‖²+‖t‖²−2‖p‖‖t‖cosθ`,里面**显式含 cosθ**,所以**方向偏或尺度偏都会把它顶大**(方向大小都罚;对比 cos 只罚方向、模长差只罚尺度)。
-- **pixel PSNR** = 预测 latent 解码成图 vs 真实帧的逐像素质量,**端到端**。
-- 上两个量"存在/方向",下两个量"预测对不对"。
+**先定义清楚**(详见 [02 名词表·四把尺子](../02_story_and_novelty.md)):
 
-**先讲清楚:没有单一完美指标——nMSE 自己也有坑(分母除零爆点,见陷阱4)。我们不是"信 nMSE 不信 cos",而是一个能当"判决"的指标要满足两个判据,cos/probe 违反、nMSE/pixel 满足:**
+| 尺子 | 量的是什么 | 优 | 劣 |
+|---|---|---|---|
+| **cos** | 预测 latent 与真实未来 latent 的**方向**余弦(1=同向) | 尺度无关、数值稳、不会被退化分母引爆 | **尺度盲**——幅度过冲/崩塌看不见;且是 structured/probe loss 的**对偶量**(加 loss 必涨) |
+| **probe-ρ** | 另训线性头从 latent 读出物理量,读出值 vs 真值的 Pearson 相关 | 直接量"信息**在不在**"(可读出性),是 presence 的唯一直接测量 | 只量存在、不量预测对不对;**被 probe loss 直接优化 = 自己给自己打分**;且受 **range restriction** 影响、分区间不可直接比 |
+| **nMSE** | `‖预测−真值‖²/真值方差`,即**差向量的长度** | 展开 `‖p−t‖²=‖p‖²+‖t‖²−2‖p‖‖t‖cosθ` **显式含 cosθ** → **方向偏或尺度偏都罚**;对物理注入是外部指标 | **分母是真值方差 → 方差→0 时除零引爆**(见 §2) |
+| **pixel PSNR** | 预测 latent 解码成图 vs 真实帧的逐像素质量 | **最强的锚**:端到端、可人眼验证、**最难作弊**(改 latent 分布骗不过逐像素比较,除非真预测对了球的位置) | 贵(要解码);受重建质量上限拖累 |
+
+**一句话对比**:**上两个量"存在/方向",下两个量"预测对不对"**。
+
+**先讲清楚:没有单一完美指标——nMSE 自己也有坑(除零爆点,见 §2)。我们不是"信 nMSE 不信 cos",而是一个能当"判决"的指标要满足两个判据,cos/probe 违反、nMSE/pixel 满足:**
 
 **判据①:独立于被检验的干预(不循环)。**
 - **probe-ρ 循环**:用 probe loss 训练,probe-ρ 就是被优化的那个量,加了 probe 必然涨——拿它评 probe 方法 = **自己给自己打分**;structured slot 可解码性同理。
@@ -36,15 +40,15 @@
 - 世界模型目标 = 预测未来状态准。nMSE 直接量"预测 latent 与真实未来 latent 差多少"(带尺度);pixel 量"解码画面 vs 真实画面"。
 - cos 只量**方向**(尺度盲);probe-ρ 只量"信息**在不在**"——都不直接量"预测**对不对**"。
 
-**pixel PSNR 是最强的锚**:端到端、可人眼验证、最难作弊(改 latent 分布骗不过逐像素比较,除非真预测对了球的位置)。**nMSE 的可信度部分来自"它和更难作弊的 pixel 同向"**——所有反转案例里,分歧的是 cos vs (nMSE/pixel),nMSE 与 pixel 始终一致。
+**为什么信 nMSE**:它的可信度部分来自"**和更难作弊的 pixel 同向**"——所有反转案例里,分歧的都是 cos vs (nMSE/pixel),**nMSE 与 pixel 始终一致**。
 
 **所以判决规则不是"只信 nMSE"**,而是:nMSE + pixel 为主(量"对不对")、cos/probe 为诊断(量"方向/存在")、**逐分区逐 horizon 交叉验证**,分歧时查清原因(cos 尺度盲?nMSE 分母退化?)——任何单一指标都不单独下结论。
 
 ---
 
-## 陷阱 1:cos 陷阱(cos 升而真值崩)
+## 1. 陷阱一:cos 陷阱(cos 升而真值崩)
 
-cos/K4-ρ 是 probe/structured loss 的对偶量,加对应 loss 必然涨,不代表预测变好。实锤反转（goodness 比值,>1 更好）:
+cos/K4-ρ 是 probe/structured loss 的对偶量,加对应 loss 必然涨,不代表预测变好。实锤反转(goodness 比值,>1 更好):
 
 | 案例 | cos 说 | 真值指标说 |
 |---|---|---|
@@ -54,20 +58,20 @@ cos/K4-ρ 是 probe/structured loss 的对偶量,加对应 loss 必然涨,不代
 
 **判决必须用 nMSE/pixel,cos 永不单用。** 源:probe [probe_vs_structpos_summary.md](../../6-24/probe_vs_structpos_summary.md)(uniform,§2.2/§3.2 probe 列);真实 `/data1/.../runs/physionpp/eval_pp_fr{,_app05}_e20.log`。
 
-## 陷阱 2:zero-shot 迁移天花板 = random 架构先验(0.607)
+## 2. 陷阱二:nMSE 自身的除零爆点(与陷阱一方向相反)
 
-训练只能恢复到接近、超不过。三条独立证据:① 所有物理方法 <random（pos_weight 0.551 最差）;② 增广不破（0.597）;③ epoch 越多越逼近（1→20:0.554→0.603）。**别把"接近 random"当成"学到了迁移能力"。** 源:[transfer_improvement_report.md](../../physion/transfer_improvement_report.md)、`reports/physion/eval_*.json`。
+parabola h28 附近个别轨迹球出框 → 目标 latent 方差→0 → **nMSE 除零飙 3 万~197 万**,而同 horizon 的 cos 仍 0.55~0.95 正常。both-OOD 聚合被这几条拉爆(六个 parabola 臂全中招)。**规则:引 nMSE 前先查 by-horizon 是否发散;parabola 判决走 r/m-OOD。** 源:[NOTE_from_lewm_pretrain_caveat.md](../NOTE_from_lewm_pretrain_caveat.md)。
 
-## 陷阱 3:协议混淆制造假阴性
+**两个陷阱方向相反,正是"必须交叉验证"的理由**:cos 尺度盲会**漏报**(真值崩了它看不见);nMSE 分母退化会**虚报**(预测没那么差它却爆表)。任何一把尺子单用都会翻车。
 
-random-init × 单帧 probe × with-projector 三个 confound 乘性叠加,uniform vx 从假阴性 0.166 修到 0.939（paper-init + K=4 + no-projector）。另有 init 静默丢 192 key 使 45-config sweep 全作废（⚠️ 6-2 sweep 数值不可引用）。源:5-26 negtive_result_report、diagnostic_report。
+---
 
-## 陷阱 4:nMSE 自身的除零爆点(与陷阱1方向相反)
+## 论文表述
 
-parabola h28 附近个别轨迹球出框 → 目标 latent 方差→0 → nMSE 除零飙 3 万~197 万,而同 horizon 的 cos 仍 0.55~0.95 正常。both-OOD 聚合被这几条拉爆（六个 parabola 臂全中招）。**规则:引 nMSE 前先查 by-horizon 是否发散;parabola 判决走 r/m-OOD。** 源:[NOTE_from_lewm_pretrain_caveat.md](../NOTE_from_lewm_pretrain_caveat.md)、[parabola-bothood-nmse-blowup memory]。
+> **cos 无尺度会漏报,nMSE 有尺度会被退化分母引爆——必须逐分区、逐 horizon 双指标交叉验证;pixel 是最难作弊的锚。** 附:训练 loss 收敛 ≠ rollout 泛化好(scratch 120ep pred_loss 收敛到与 pusht 同量级 0.008,rollout r/m-OOD 仍差 2.8×)。
 
-## 论文表述(两个方向合起来)
+**落点**:给社区的评测 checklist——**判决用 nMSE/pixel、cos/probe 只当诊断、逐 horizon 查除零爆点、probe-ρ 不跨分区比(range restriction)**。
 
-> **cos 无尺度会漏报,nMSE 有尺度会被退化分母引爆——必须逐分区、逐 horizon 双指标交叉验证。** 附:训练 loss 收敛 ≠ rollout 泛化好（scratch 120ep pred_loss 收敛到与 pusht 同量级 0.008,rollout r/m-OOD 仍差 2.8×）。
+---
 
-**落点**:给社区的评测 checklist（判决用 nMSE/pixel、逐 horizon 查爆点、probe 协议三件套、迁移看 random 天花板）。
+*本文档只管"指标本身怎么选"。另两条与指标无关的方法论坑各有归宿:**zero-shot 迁移天花板 = random 架构先验(0.607)** → [real_data_physion.md](real_data_physion.md);**协议混淆制造假阴性**(random-init × 单帧 probe × with-projector,vx 0.166→0.939)→ [01_results_ledger.md](../01_results_ledger.md) C6 段。*

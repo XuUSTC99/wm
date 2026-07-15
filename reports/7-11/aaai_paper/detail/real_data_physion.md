@@ -14,7 +14,23 @@
 
 ## 1. zero-shot 死路:封顶 = random 先验 0.607
 
-phyworld→Physion 所有配置 <0.607,仅 Support(+0.10)/Collide(+0.07)有真信号。见 [evaluation_traps.md](evaluation_traps.md) 陷阱2 + Fig 6。
+phyworld→Physion 所有配置 <0.607(random 架构先验),仅 Support(+0.10)/Collide(+0.07)有真信号。**别把"接近 random"当成"学到了迁移能力"。**
+
+**逐配置(Physion mean AUC↑)**:
+
+| 配置 | mean AUC |
+|---|---|
+| **random 架构先验(天花板)** | **0.607** |
+| free-rollout | 0.603 |
+| aug0.5 | 0.597 |
+| cons+accel | 0.582 |
+| aug0.3 | 0.579 |
+| cons | 0.566 |
+| **pos_weight(物理结构)** | **0.551 ← 最差** |
+
+三条独立读法:① **所有物理方法 < random**,且**物理结构最差**——这是"物理结构有害"在**另一个数据集 / 另一个指标(AUC) / 另一个任务(迁移)** 上的独立复现(故 [06_storyline 步5](../06_storyline.md) 引它当发现一的旁证);② 增广也不破(0.597);③ epoch 越多只是越逼近、超不过(1→20:0.554→0.603)。
+
+配图 [../figures/fig6_transfer_ceiling.png](../figures/fig6_transfer_ceiling.png)(未内嵌进 storyline,PPT 可取)。源:[transfer_improvement_report.md](../../physion/transfer_improvement_report.md) §1-2、`reports/physion/eval_*.json`(random_baseline / collision_baseline_fr / structpos_fr_pw30 / …)。
 
 ## 2. 直训活路①:free-rollout 是长程主力（8.3×）
 

@@ -1,7 +1,7 @@
 # 论据:物理结构失效是真实且架构必然的(非实现 bug、非编码方式次优)
 
 > # 🎯 一句话结论
-> **"物理结构无效"是真的,不是实现 bug、也不是编码方式次优。⓪ 地基(必须先立):latent 本身(零物理注入)就已把物理状态编强——位置可从真实帧编码线性解出 ρ 0.6–0.98、且冗余铺在黑盒 190 维,所以"注入"= 往已有信息上再塞同一份冗余。在此之上三条堵审稿人:① 模型可观测行为证明约束真生效(只是有害地),② pos_weight 全曲线证明"注入量"不是问题,③ probe-190 三域实测证明"黑盒旁路"是失效的架构性充分条件。回击三连问:实现有 bug?注入量不够?换更优雅的编码会不会好?**
+> **"物理结构无效"是真的,不是实现 bug、也不是编码方式次优。⓪ 地基(必须先立):latent 本身(零物理注入)就已把物理状态编强——位置可从真实帧编码线性解出 ρ **0.80–0.96**(判读分区 both-OOD;全 4 分区全距 0.48–0.98,低端系 range restriction 假象,见层0)、且冗余铺在黑盒 190 维,所以"注入"= 往已有信息上再塞同一份冗余。在此之上三条堵审稿人:① 模型可观测行为证明约束真生效(只是有害地),② pos_weight 全曲线证明"注入量"不是问题,③ probe-190 三域实测证明"黑盒旁路"是失效的架构性充分条件。回击三连问:实现有 bug?注入量不够?换更优雅的编码会不会好?**
 
 **对应质疑**:审稿人看到纯负结果(物理结构没用),第一反应是"是不是你实现有 bug、物理 loss 根本没接进去、所以才看不出效果"。
 **对应主张**:[06_storyline.md](../06_storyline.md) 三发现互锁的第一环 / paper §4。
@@ -27,7 +27,7 @@
 
 **⏱ 关于 horizon(重要区分)**:上表 REAL-emb 是**真实帧编码**、与 rollout 走几步无关——每帧独立编码,故按分区聚合(涵盖轨迹全帧 t≈1–28)、**不随 horizon 衰减,无需 by-horizon 写全**。真正随 horizon 衰减的是 **rollout 预测的 PRED-emb**(presence→not use):同 both-OOD,REAL **0.889** → rollout PRED **0.326**;rollout 保真 cos 亦 h1 0.99 → h28 0.48(采样 h=1/2/4/8/16/28)。"写全 1–28" 针对的是 rollout 这条衰减线,不是这张 presence 表。(ID 分区更低——parabola 0.70/0.78、collision 0.75/0.60——但被 range restriction 低估、非"信息少",见下注;故上表以方差大、样本多、更可靠的 OOD 分区为准。)
 
-> **⚠️ ID 分区 ρ 反而更低(parabola 0.70/0.78、collision 0.75/0.60,故未列入上表)**:这是统计 artifact,**不是"ID 信息少"**——①**range restriction**:ID 球速慢、位置方差小,OOD 位置 std 实测是 ID 的 **1.3–2.25×**,而 Pearson ρ 分母含真值 std,方差小则 ρ 被系统压低;②**样本量**:ID 分区帧数最少(collision ID 3680 vs both-OOD 28992)→ ρ 估计不稳(ID 分区 seed 间波动 ±0.1,OOD 仅 ±0.02)。**判读"信息在不在"应看方差大、样本多的 OOD 分区(0.83–0.96),ID 那几个 0.6 是被压低的假象**。这本身是 probe-ρ 的又一条陷阱(分区间不可直接比)。验证:三 seed 复现 + `check_pos_variance` 方差实测。(pos0/pos1 语义:parabola/uniform = 单球 x/y;collision 是 **1D 水平碰撞**、竖直 y 每条轨迹恒定,取两球各自的水平位置,故 pos0/pos1 = 球1/球2 的 x——这也是为何 parabola pos1=y 方差不随水平速度 OOD 变、那维 ρ 差异归 seed 噪声。)
+> **⚠️ ID 分区 ρ 反而更低(parabola 0.70/0.78、collision 0.75/0.60)**:这是统计 artifact,**不是"ID 信息少"**——①**range restriction**:ID 球速慢、位置方差小,OOD 位置 std 实测是 ID 的 **1.3–2.25×**,而 Pearson ρ 分母含真值 std,方差小则 ρ 被系统压低;②**样本量**:ID 分区帧数最少(collision ID 3680 vs both-OOD 28992)→ ρ 估计不稳(ID 分区 seed 间波动 ±0.1,OOD 仅 ±0.02)。**判读"信息在不在"应统一看方差最大、样本最多的 both-OOD 分区(全域 0.80–0.96),ID 那几个 0.6 是被压低的假象**(⚠️ v-OOD 也有被压低的格:uniform 0.826、collision 0.482,同属 range restriction——故判读口径固定在 both-OOD、勿用"OOD 三分区"混报)。这本身是 probe-ρ 的又一条陷阱(分区间不可直接比)。验证:三 seed 复现 + `check_pos_variance` 方差实测。(pos0/pos1 语义:parabola/uniform = 单球 x/y;collision 是 **1D 水平碰撞**、竖直 y 每条轨迹恒定,取两球各自的水平位置,故 pos0/pos1 = 球1/球2 的 x——这也是为何 parabola pos1=y 方差不随水平速度 OOD 变、那维 ρ 差异归 seed 噪声。)
 
 **这份可解码性怎么来的(probe 协议,防"过拟合/模型来源"质疑)**:模型 = LeWM ViT-tiny(192-D,**PushT backbone init → 该域 ID-1k free-rollout finetune 20ep,全程无任何物理 loss**);probe = 在 projector 空间(predictor 工作空间)训 **Ridge(α=1)**,**train/test 轨迹 80/20 分开**(仅在训练轨迹 fit、测试轨迹报 ρ,**非 in-sample**),K=1 单帧,真值取数据集 proprio/state 位置。两点:①train/test 分开 → ρ 高不是过拟合;②可解码性主要来自**域内 finetune**(为预测下一帧自然编码位置)而非 PushT 白送 → **世界模型训练本身就把物理状态编进 latent,无需额外注入**。出处 `aaai_p0/rollout_{域}_baseline_fr_s1234.log` 段 `probe applied to REAL embs`,脚本 [rollout_eval_id1k.py](../../../phyworld/scripts/rollout_eval_id1k.py)。
 
