@@ -35,18 +35,22 @@ DECODE = 0.84  # collision both-OOD REAL-latent probe pos rho (avg 2 dims) = pos
 fig, ax = plt.subplots(figsize=(7.4, 4.7))
 ax.axhspan(DECODE - 0.02, DECODE + 0.02, color=GREEN, alpha=0.15, lw=0)
 ax.axhline(DECODE, color=GREEN, lw=2, ls="--")
-ax.text(28, DECODE + 0.025, "position recoverable from latent (probe $\\rho\\approx0.84$, flat)",
-        color=GREEN, ha="right", va="bottom", fontsize=9.5, fontweight="bold")
+# 2 lines + right-aligned: keeps the label in the right-hand region where BOTH curves are
+# already low (blue < 0.73 for h >= 17), so nothing crosses the text.
+ax.text(28, DECODE + 0.03, "position recoverable from latent\n(probe $\\rho\\approx0.84$, flat)",
+        color=GREEN, ha="right", va="bottom", fontsize=9.5, fontweight="bold", linespacing=1.3)
 ax.plot(h, col_tf, color=VERM, marker="o", ms=7, lw=2.4, label="rollout: teacher-forced (original)")
 ax.plot(h, col_fr, color=BLUE, marker="s", ms=7, lw=2.4, label="rollout: free-rollout (ours)")
 ax.annotate("1 step:\n≈perfect (0.99)", (1, 0.991), (2.4, 0.60), fontsize=9, color=MUTED,
             arrowprops=dict(arrowstyle="->", color=MUTED))
-ax.annotate("28 steps:\ncollapses to 0.24", (28, 0.237), (16, 0.32), fontsize=9, color=VERM, ha="left",
-            arrowprops=dict(arrowstyle="->", color=VERM))
+# Annotation sits BELOW the orange curve (orange >= 0.29 for h <= 22), not on top of it.
+ax.annotate("28 steps:\ncollapses to 0.24", (28, 0.237), (20.5, 0.125), fontsize=9, color=VERM, ha="center",
+            va="center", arrowprops=dict(arrowstyle="->", color=VERM))
 ax.set_xlabel("rollout horizon (steps)")
 ax.set_ylabel("agreement w/ truth  (↑, 0–1)")
 ax.set_title("Physical state is encoded, yet the rollout drifts away from it (collision)", fontsize=11)
-ax.set_ylim(0.1, 1.02); ax.set_xticks(h); ax.legend(frameon=False, loc="lower left", fontsize=9, bbox_to_anchor=(0.0, 0.02))
+ax.set_ylim(0.05, 1.06); ax.set_xticks(h)
+ax.legend(frameon=False, loc="lower left", fontsize=9, bbox_to_anchor=(0.0, 0.02))
 ax.grid(True, color=GRID, lw=0.7, alpha=0.7); ax.set_axisbelow(True)
 save(fig, "fig1_thesis_presence_not_use"); plt.close(fig)
 
@@ -54,25 +58,31 @@ save(fig, "fig1_thesis_presence_not_use"); plt.close(fig)
 # FIG 2 — C1 free-rollout: THE universal lever. TF vs FR nMSE, 3 synthetic + real.
 # Source: aaai_p0/rollout_*_baseline_{tf,fr}_s*.log ; physionpp/eval_pp_{tf,fr}_s*.log
 # ============================================================================
-doms = ["uniform", "parabola\n(r/m-OOD)", "collision", "Physion++\n(real, h64)"]
+doms = ["uniform", "parabola\n(r/m-OOD)", "collision", "Physion++\n(sim, h64)"]
 tf = [0.300, 0.443, 1.153, 1.174]
 fr = [0.136, 0.122, 0.479, 0.141]
 mult = ["2.2×", "3.6×", "2.4×", "8.3×"]
-fig, ax = plt.subplots(figsize=(7.6, 4.4))
+fig, ax = plt.subplots(figsize=(7.8, 4.7))
 x = np.arange(len(doms)); w = 0.38
 b1 = ax.bar(x - w/2, tf, w, color=VERM, label="teacher-forced (original)")
 b2 = ax.bar(x + w/2, fr, w, color=BLUE, label="free-rollout (ours)")
 for xi, (t, f, m) in enumerate(zip(tf, fr, mult)):
-    ax.text(xi, max(t, f) + 0.03, m, ha="center", fontweight="bold", color=INK, fontsize=11)
-    ax.text(xi - w/2, t + 0.02, f"{t:.2f}", ha="center", va="bottom", fontsize=8, color=MUTED)
-    ax.text(xi + w/2, f + 0.02, f"{f:.2f}", ha="center", va="bottom", fontsize=8, color=BLUE)
+    # value labels hug their own bar; the fold-change sits well above BOTH so the
+    # two never collide (they used to be drawn at nearly the same height).
+    ax.text(xi - w/2, t + 0.02, f"{t:.2f}", ha="center", va="bottom", fontsize=8.5, color=MUTED)
+    ax.text(xi + w/2, f + 0.02, f"{f:.2f}", ha="center", va="bottom", fontsize=8.5, color=BLUE)
+    ax.text(xi, max(t, f) + 0.13, m, ha="center", fontweight="bold", color=INK, fontsize=11.5)
 ax.axvline(2.5, color=GRID, lw=1.2, ls="-")
-ax.text(1.0, 1.28, "synthetic (PhyWorld)", ha="center", color=MUTED, fontsize=9)
-ax.text(3.0, 1.28, "photorealistic sim", ha="center", color=MUTED, fontsize=9)
+ax.text(1.0, 1.53, "synthetic (PhyWorld)", ha="center", color=MUTED, fontsize=9)
+ax.text(3.0, 1.53, "photorealistic simulation", ha="center", color=MUTED, fontsize=9)
 ax.set_xticks(x); ax.set_xticklabels(doms, fontsize=9.5)
-ax.set_ylabel("rollout error  (nMSE, ↓)"); ax.set_ylim(0, 1.42)
-ax.set_title("Free-rollout: the only lever that transfers across every domain (2.2–8.3×)", fontsize=11)
-ax.legend(frameon=False, loc="upper left", fontsize=9.5); ax.grid(True, axis="y", color=GRID, lw=0.7, alpha=0.7); ax.set_axisbelow(True)
+ax.set_ylabel("rollout error  (nMSE, ↓)"); ax.set_ylim(0, 1.70)
+ax.set_title("Free-rollout: the only lever that transfers across every domain (2.2–8.3×)",
+             fontsize=11, pad=26)
+# Legend above the axes: the upper-left interior is needed for the "synthetic" band label.
+ax.legend(frameon=False, fontsize=9.5, loc="lower left", bbox_to_anchor=(0.0, 1.005), ncol=2,
+          borderaxespad=0, handlelength=1.6, columnspacing=1.6)
+ax.grid(True, axis="y", color=GRID, lw=0.7, alpha=0.7); ax.set_axisbelow(True)
 save(fig, "fig2_free_rollout"); plt.close(fig)
 
 # ============================================================================
@@ -176,15 +186,19 @@ series = {"np8 (baseline)": ([0.0164, 0.1404, 0.2797], VERM, "o"),
           "np20": ([0.0215, 0.0326, 0.2203], ORANGE, "s"),
           "np20 + scale": ([0.0115, 0.0236, 0.0866], SKY, "^"),
           "np28 + scale": ([0.0076, 0.0101, 0.0144], GREEN, "D")}
-fig, ax = plt.subplots(figsize=(7.2, 4.4))
+fig, ax = plt.subplots(figsize=(7.6, 4.5))
 for name, (vals, c, mk) in series.items():
     ax.plot(hz, vals, color=c, marker=mk, ms=7, lw=2.2, label=name)
 ax.set_yscale("log"); ax.set_xticks(hz)
+ax.set_xlim(12, 78)   # right-hand room so the legend never sits on the green line
 ax.set_xlabel("rollout horizon (steps)"); ax.set_ylabel("nMSE  (log, ↓)")
-ax.annotate("np28+scale h64 = 0.014\n(1/19 of baseline; no plateau)", (64, 0.0144), (30, 0.006),
-            fontsize=9, color=GREEN, arrowprops=dict(arrowstyle="->", color=GREEN))
-ax.set_title("Real data (Physion++): the longer the training rollout, the better the long horizon", fontsize=10.5)
-ax.legend(frameon=False, fontsize=9.5, loc="lower right"); ax.grid(True, color=GRID, lw=0.7, alpha=0.6, which="both"); ax.set_axisbelow(True)
+ax.annotate("np28+scale h64 = 0.014\n(1/19 of baseline; no plateau)", (64, 0.0144), (32, 0.0055),
+            fontsize=9, color=GREEN, ha="center", arrowprops=dict(arrowstyle="->", color=GREEN))
+# Physion/Physion++ are photorealistic SIMULATION (TDW/Unity), never "real data".
+ax.set_title("Physion++ (photorealistic simulation): longer training rollout → better long horizon",
+             fontsize=10.5, pad=10)
+ax.legend(frameon=False, fontsize=9.5, loc="upper left", bbox_to_anchor=(0.005, 0.99))
+ax.grid(True, color=GRID, lw=0.7, alpha=0.6, which="both"); ax.set_axisbelow(True)
 save(fig, "fig7_realdata_num_preds"); plt.close(fig)
 
 # ============================================================================
@@ -343,19 +357,26 @@ save(fig, "fig14_physionpp_free_rollout"); plt.close(fig)
 bdoms = ["uniform", "parabola", "collision"]
 full192 = [0.92, 0.85, 0.78]      # decode position from all 192 dims (baseline)
 blackbox190 = [0.92, 0.85, 0.79]  # decode from black-box [2:192] only (baseline, no slot)
-fig, ax = plt.subplots(figsize=(7.8, 4.5))
-x = np.arange(len(bdoms)); w = 0.36
+fig, ax = plt.subplots(figsize=(8.2, 4.6))
+x = np.arange(len(bdoms)); w = 0.34
+# Reserve empty space on the right for the control annotation so it never sits on a bar.
+ax.set_xlim(-0.62, 3.30)
 ax.axhspan(0.2, 0.5, color=VERM, alpha=0.08, lw=0)
-ax.text(2.48, 0.35, "random 2 dims (control):\ncan't decode (0.2–0.5)", color=VERM, fontsize=8.5, ha="right", va="center")
+ax.text(2.62, 0.35, "random 2 dims\n(control):\ncan't decode\n(0.2–0.5)", color=VERM, fontsize=8.5,
+        ha="left", va="center", linespacing=1.35)
 b1 = ax.bar(x - w/2, full192, w, color=INK, label="all 192 dims")
-b2 = ax.bar(x + w/2, blackbox190, w, color=SKY, label="black-box 190 dims only (slot removed)")
+b2 = ax.bar(x + w/2, blackbox190, w, color=SKY, label="black-box 190 dims only (physics slot removed)")
 for xi in range(len(bdoms)):
-    ax.text(xi - w/2, full192[xi] + 0.015, f"{full192[xi]:.2f}", ha="center", va="bottom", fontsize=9, color=INK)
-    ax.text(xi + w/2, blackbox190[xi] + 0.015, f"{blackbox190[xi]:.2f}", ha="center", va="bottom", fontsize=9, color="#1f6f9b", fontweight="bold")
-ax.set_xticks(x); ax.set_xticklabels(bdoms, fontsize=10.5)
-ax.set_ylabel("position decodable  (probe $\\rho$, ↑)"); ax.set_ylim(0, 1.05)
-ax.set_title("The bypass, measured: the black-box 190 dims ALONE decode position\nas well as the full latent → prediction can route around any physics slot", fontsize=10.5)
-ax.legend(frameon=False, fontsize=9.5, loc="lower left")
+    ax.text(xi - w/2, full192[xi] + 0.02, f"{full192[xi]:.2f}", ha="center", va="bottom", fontsize=9.5, color=INK)
+    ax.text(xi + w/2, blackbox190[xi] + 0.02, f"{blackbox190[xi]:.2f}", ha="center", va="bottom", fontsize=9.5,
+            color="#1f6f9b", fontweight="bold")
+ax.set_xticks(x); ax.set_xticklabels(bdoms, fontsize=11)
+ax.set_ylabel("position decodable  (probe $\\rho$, ↑)"); ax.set_ylim(0, 1.16)
+# Legend above the axes: the bars fill both the lower and upper interior, leaving no free spot inside.
+ax.legend(frameon=False, fontsize=9.5, loc="lower left", bbox_to_anchor=(0.0, 1.005), ncol=2,
+          borderaxespad=0, handlelength=1.6, columnspacing=1.4)
+ax.set_title("Black-box dims alone decode position as well as the full latent\n→ prediction can route around any physics slot",
+             fontsize=10.5, pad=30)
 ax.grid(True, axis="y", color=GRID, lw=0.6, alpha=0.6); ax.set_axisbelow(True)
 save(fig, "fig15_bypass_probe190"); plt.close(fig)
 
@@ -411,5 +432,26 @@ ax.set_title("Every physics-injection arm × domain vs baseline (nMSE ratio; num
 cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 cb.set_label("nMSE / baseline  (>1 worse, <1 better; 1.0 = baseline)", fontsize=9)
 save(fig, "fig16_physics_injection_scan"); plt.close(fig)
+
+# --- paper variant: same data, laid out for a single AAAI column ------------
+# The slide version (6.6x7.2in) shrinks to ~4pt text when dropped into a 3.3in
+# column. Here: no in-figure title (the LaTeX caption carries it), tall/narrow
+# geometry, so nothing is downscaled and the cells stay legible in print.
+fig, ax = plt.subplots(figsize=(3.45, 6.0))
+im = ax.imshow(ratio_c, cmap=cmap, norm=norm, aspect="auto")
+for i in range(len(arms)):
+    for j in range(3):
+        r = ratio[i, j]
+        mark = "†" if (i, j) in parity3 else ("†✓" if (i, j) in gain else "")
+        ax.text(j, i, f"{r:.2f}×\n({disp[i,j]:.3f}){mark}", ha="center", va="center",
+                fontsize=6.4, color=INK if 0.9 < ratio_c[i, j] < 1.3 else "white", fontweight="bold")
+ax.set_xticks(range(3)); ax.set_xticklabels(bcols, fontsize=6.6)
+ax.set_yticks(range(len(arms))); ax.set_yticklabels(arms, fontsize=6.6)
+ax.tick_params(length=2, pad=2)
+for y in [2.5, 4.5, 6.5, 7.5]:
+    ax.axhline(y, color="white", lw=1.6)
+cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.03)
+cb.set_label("nMSE / baseline", fontsize=6.6); cb.ax.tick_params(labelsize=6)
+save(fig, "fig16_scan_paper"); plt.close(fig)
 
 print("ALL storyline figures done ->", OUT)

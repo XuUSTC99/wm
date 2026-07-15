@@ -54,7 +54,11 @@ axL.set_xlabel("pos_weight $\\lambda$ (log)"); axL.set_ylabel("latent nMSE  (↓
 axL.set_title("(a) uniform: both-OOD → parity, r/m-OOD never", fontsize=10, color=INK)
 axL.legend(frameon=False, fontsize=9); axL.grid(True, color=GRID, lw=0.6, alpha=0.7); axL.set_axisbelow(True)
 axL.annotate("harm", (1, 0.162), (1.4, 0.20), color=MUTED, fontsize=8, arrowprops=dict(arrowstyle="->", color=MUTED))
-axL.annotate("parity", (30, 0.132), (30, 0.100), color=MUTED, fontsize=8, ha="center", arrowprops=dict(arrowstyle="->", color=MUTED))
+# Explicit ylim: autoscale only saw the data, so the "parity" callout below the
+# curve fell outside the axes and was clipped.
+axL.set_ylim(0.088, 0.325)
+axL.annotate("parity", (30, 0.132 - 0.017), (30, 0.101), color=MUTED, fontsize=8, ha="center",
+             va="top", arrowprops=dict(arrowstyle="->", color=MUTED))
 
 # -- Panel B: three-domain ratio-to-baseline (transition shifts right w/ difficulty) --
 axR.axhline(1.0, color=MUTED, ls="--", lw=1.2)
@@ -66,7 +70,10 @@ axR.set_xscale("log"); axR.set_xticks(pw); axR.set_xticklabels(pw)
 axR.set_xlabel("pos_weight $\\lambda$ (log)"); axR.set_ylabel("nMSE / baseline nMSE")
 axR.set_title("(b) recovery point shifts right with domain difficulty", fontsize=10, color=INK)
 axR.legend(frameon=False, fontsize=9, loc="upper left"); axR.grid(True, color=GRID, lw=0.6, alpha=0.7); axR.set_axisbelow(True)
-axR.text(300, 1.76, "collision:\nnever recovers", color=VERM, fontsize=8, ha="right", va="bottom")
+# Was drawn AT the last data point (1.76) with va="bottom", i.e. pushed off the top
+# of the axes. Park it in the empty band between the collision and parabola curves.
+axR.set_ylim(0.82, 1.88)
+axR.text(55, 1.40, "collision:\nnever recovers", color=VERM, fontsize=8, ha="center", va="center")
 
 fig.suptitle("LBR (pos_weight up-weighting) restores parity in smooth domains only — never a net gain",
              fontsize=11, y=1.02, color=INK)

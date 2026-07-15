@@ -13,6 +13,34 @@ Ridge regression ($\alpha{=}1$), trajectory-level 80/20 splits, probing the enco
 \section{Full Injection Results}
 \label{app:injection}
 
+Table~\ref{tab:injection} is the numeric form of Figure~\ref{fig:scan}, with the seed annotations spelled out.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & uniform & parabola & collision \\
+ & (both-OOD) & (\rmood) & (both-OOD) \\
+\midrule
+Free-rollout baseline & $0.131$ & $0.127$ & $0.393$ \\
+\midrule
+Fixed slot & $0.183$ & $0.156$ & $0.651$ \\
+\ $+$reweight ($w{=}30$) & $0.114^{\mathrm{s}}$ & $0.160$ & $0.596$ \\
+\ $+$velocity & $0.207$ & $\mathbf{0.096}^{\mathrm{m}}$ & $0.621$ \\
+Probe & $0.167$ & $0.115^{\mathrm{n}}$ & $0.647$ \\
+\ $+$slot$+$reweight & $0.125^{\mathrm{s}}$ & $0.127$ & $0.607$ \\
+Kinematic (free MLP) & $0.155$ & $0.178$ & $0.560$ \\
+Kinematic (strict $a{=}g$) & $0.206$ & $0.173$ & $0.559$ \\
+Consistency & $0.151$ & $0.147$ & $0.57$--$0.64$ \\
+Label-free prior & $0.171$ & $0.172$ & $0.653$ \\
+Grounded prior & $0.166$ & $0.156$ & $0.525$ \\
+\bottomrule
+\end{tabular}
+\caption{The $30$-cell scan (hardest clean split, latent nMSE $\downarrow$). $^{\mathrm{m}}$The one seed-robust gain: $0.096\pm0.007$ over three seeds vs.\ baseline $0.122\pm0.007$, non-overlapping. $^{\mathrm{n}}$Refuted by seeds: three-seed $0.137\pm0.034$ vs.\ baseline $0.122\pm0.007$---the single-seed low was seed luck. $^{\mathrm{s}}$Also refuted by seeds: reweighted slot $0.132\pm0.017$ and probe$+$slot $0.142\pm0.017$ vs.\ baseline $0.136\pm0.008$ (parity). Remaining cells are single-seed but sit $5$--$20$ seed-std above baseline.}
+\label{tab:injection}
+\end{table}
+
 \paragraph{Probe/slot factorial (uniform, free rollout).}
 Latent both-OOD nMSE / pixel both-OOD PSNR (dB): baseline $0.131$ / $20.41$; probe-only $0.167$ / $19.83$; slot$+$reweight $0.114$ / $21.30$; probe$+$slot$+$reweight $0.125$ / $20.02$. The combination underperforms the slot alone on both scales; the latent and pixel verdicts agree.
 

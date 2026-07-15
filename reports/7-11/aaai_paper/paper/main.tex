@@ -33,6 +33,22 @@
 % cross-references resolve; AAAI Press accepts numbered sections.
 \setcounter{secnumdepth}{2}
 
+% ---- float placement -------------------------------------------------------
+% This paper is float-dense (5 figures + 4 tables in ~6 pages of body). With the
+% LaTeX defaults, floats queue up and get flushed onto float-only pages (we hit a
+% page holding nothing but one table). Let more floats reach each page top, and
+% forbid a float page unless it is genuinely almost full.
+% Keep these moderate: pushing topfraction and dbltopfraction both to ~0.9 let a
+% full-width figure* and single-column [t] tables claim the same band and overlap.
+\setcounter{topnumber}{2}
+\setcounter{totalnumber}{3}
+\setcounter{dbltopnumber}{1}            % at most one full-width float per page top
+\renewcommand{\topfraction}{0.82}       % default 0.7
+\renewcommand{\dbltopfraction}{0.70}    % default 0.7 -- leave room under a figure*
+\renewcommand{\textfraction}{0.10}      % default 0.2
+\renewcommand{\floatpagefraction}{0.80} % default 0.5 -- a float page must be nearly full
+\renewcommand{\dblfloatpagefraction}{0.80}
+
 \pdfinfo{
 /TemplateVersion (2026.1)
 }

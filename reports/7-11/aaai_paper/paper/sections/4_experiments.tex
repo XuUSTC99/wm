@@ -20,45 +20,19 @@ Verdicts use two scale-aware, \emph{external} metrics: latent nMSE ($\|\hat{\lat
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig16_physics_injection_scan.pdf}
+\includegraphics[width=\linewidth]{figures/fig16_scan_paper.pdf}
 \caption{Every injection arm $\times$ domain against the free-rollout baseline (nMSE ratio; number = single-seed value, $\dagger$ = three-seed mean). Red = worse, white = parity, green = better. Injection is at or below baseline in $29$ of $30$ cells ($25$ worse, $4$ parity); the collision column ($1.33$--$1.66\times$) is uniformly worst; the sole real gain is velocity$+$slot on parabola ($0.76\times$, $\dagger\checkmark$).}
 \label{fig:scan}
 \end{figure}
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{@{}lccc@{}}
-\toprule
- & uniform & parabola & collision \\
- & (both-OOD) & (\rmood) & (both-OOD) \\
-\midrule
-Free-rollout baseline & $0.131$ & $0.127$ & $0.393$ \\
-\midrule
-Fixed slot & $0.183$ & $0.156$ & $0.651$ \\
-\ $+$reweight ($w{=}30$) & $0.114^{\mathrm{s}}$ & $0.160$ & $0.596$ \\
-\ $+$velocity & $0.207$ & $\mathbf{0.096}^{\mathrm{m}}$ & $0.621$ \\
-Probe & $0.167$ & $0.115^{\mathrm{n}}$ & $0.647$ \\
-\ $+$slot$+$reweight & $0.125^{\mathrm{s}}$ & $0.127$ & $0.607$ \\
-Kinematic (free MLP) & $0.155$ & $0.178$ & $0.560$ \\
-Kinematic (strict $a{=}g$) & $0.206$ & $0.173$ & $0.559$ \\
-Consistency & $0.151$ & $0.147$ & $0.57$--$0.64$ \\
-Label-free prior & $0.171$ & $0.172$ & $0.653$ \\
-Grounded prior & $0.166$ & $0.156$ & $0.525$ \\
-\bottomrule
-\end{tabular}
-\caption{The $30$-cell scan (hardest clean split, latent nMSE $\downarrow$). $^{\mathrm{m}}$The one seed-robust gain: $0.096\pm0.007$ over three seeds vs.\ baseline $0.122\pm0.007$, non-overlapping. $^{\mathrm{n}}$Refuted by seeds: three-seed $0.137\pm0.034$ vs.\ baseline $0.122\pm0.007$---the single-seed low was seed luck. $^{\mathrm{s}}$Also refuted by seeds: reweighted slot $0.132\pm0.017$ and probe$+$slot $0.142\pm0.017$ vs.\ baseline $0.136\pm0.008$ (parity). Remaining cells are single-seed but sit $5$--$20$ seed-std above baseline.}
-\label{tab:injection}
-\end{table}
-
-Figure~\ref{fig:scan} and Table~\ref{tab:injection} answer every design rationale of Table~\ref{tab:mechanisms}, family by family. \emph{Hard state injection}: the slot faithfully absorbs position (its supervision loss falls $2.53\!\to\!0.015$; slot decodability rises $0.31\!\to\!0.96$), yet prediction worsens in all three domains ($1.40\times$/$1.23\times$/$1.66\times$)---the constraint acts, harmfully. \emph{Soft injection}: the deep-supervision recipe, effective in a low-dimensional state latent where supervised quantities occupy ${\sim}38\%$ of the representation \citep{zahorodnii2025deepsup}, does not transfer to a $192$-D visual latent where they occupy $2\%$: all three domains degrade ($1.27\times$/parity-after-seeds/$1.65\times$), and combining soft with hard does not rescue ($1.54\times$ on collision). \emph{Correct physics does not help}: the strict $a{=}g$ head---the ground-truth functional form---degrades uniform by $1.57\times$ and parabola from $0.127$ to $0.173$, no better than an unconstrained MLP ($0.178$). \emph{The purpose-built design fails worst on its target}: the consistency loss, designed for collision impulses, is among the worst exactly there ($1.63\times$). \emph{Labels are not the issue}: the label-free prior and its perfectly labelled counterpart fail in the same direction (collision $1.66\times$ vs.\ $1.33\times$)---the failure is architectural, not informational.
+Figure~\ref{fig:scan}---whose cells carry the raw nMSE alongside the ratio, so it doubles as the full result table (reproduced with seed annotations in Appendix~\ref{app:injection})---answers every design rationale of Table~\ref{tab:mechanisms}, family by family. \emph{Hard state injection}: the slot faithfully absorbs position (its supervision loss falls $2.53\!\to\!0.015$; slot decodability rises $0.31\!\to\!0.96$), yet prediction worsens in all three domains ($1.40\times$/$1.23\times$/$1.66\times$)---the constraint acts, harmfully. \emph{Soft injection}: the deep-supervision recipe, effective in a low-dimensional state latent where supervised quantities occupy ${\sim}38\%$ of the representation \citep{zahorodnii2025deepsup}, does not transfer to a $192$-D visual latent where they occupy $2\%$: all three domains degrade ($1.27\times$/parity-after-seeds/$1.65\times$), and combining soft with hard does not rescue ($1.54\times$ on collision). \emph{Correct physics does not help}: the strict $a{=}g$ head---the ground-truth functional form---degrades uniform by $1.57\times$ and parabola from $0.127$ to $0.173$, no better than an unconstrained MLP ($0.178$). \emph{The purpose-built design fails worst on its target}: the consistency loss, designed for collision impulses, is among the worst exactly there ($1.63\times$). \emph{Labels are not the issue}: the label-free prior and its perfectly labelled counterpart fail in the same direction (collision $1.66\times$ vs.\ $1.33\times$)---the failure is architectural, not informational.
 
 The sole exception is the mechanism's signature, not a usable prior: adding \emph{velocity} to the re-weighted slot helps on parabola (\rmood{} $0.122{\pm}0.007\!\to\!0.096{\pm}0.007$, every seed lower) because there velocity is an extrapolable driving variable ($a{=}g$ makes it linear in time); the same encoding is the \emph{worst} arm on uniform ($+0.076$, velocity is a redundant constant) and clearly harmful on collision ($+0.025$ over the reweighted slot; velocity jumps discontinuously). A prior that requires knowing the domain's dynamics in advance, and reverses sign across domains, is a diagnostic, not a method---and its best case ($-0.026$ nMSE) is an order of magnitude below the protocol lever of \S\ref{sec:fr}.
 
 \paragraph{From-scratch co-training hurts more.}
 The remaining defense---structure must be baked in during pretraining---fails in the strongest way (Table~\ref{tab:scratch}): the physics penalty on uniform grows from $+0.035$ (post-hoc) to $+0.558$ (from-scratch); all six regime--domain cells are positive. The cleaner the baseline, the larger the harm.
 
-\begin{table}[t]
+\begin{table}[tb]
 \centering
 \small
 \begin{tabular}{@{}llccc@{}}
@@ -80,9 +54,9 @@ Domain & Regime & phys.\ off & phys.\ on & $\Delta$ \\
 \end{table}
 
 \paragraph{Two corroborations independent of PhyWorld nMSE.}
-First, \emph{zero-shot transfer} (different dataset, metric, and task): on Physion OCP, no synthetic-trained configuration exceeds the random-encoder prior ($0.607$ mean AUC); the physics-structured variant is the \emph{worst} of all ($0.551$), below free rollout ($0.603$)---``more structure, worse transfer'' (Appendix~\ref{app:metrics}). Second, \emph{photorealistic simulation}: trained directly on Physion++, every injection arm we ported (fixed slot, consistency, consistency$+$acceleration) degrades per-scenario rollout nMSE by $3$--$10\times$ against the identically trained free-rollout model (Table~\ref{tab:pp}); the gaps dwarf the three-seed noise band of the baseline. The probe family has not yet been run on Physion++, so this corroboration currently covers the slot and consistency families.
+First, \emph{zero-shot transfer} (different dataset, metric, and task): on Physion OCP, no synthetic-trained configuration exceeds the random-encoder prior ($0.607$ mean AUC); the physics-structured variant is the \emph{worst} of all ($0.551$), below free rollout ($0.603$)---``more structure, worse transfer'' (Appendix~\ref{app:traps}). Second, \emph{photorealistic simulation}: trained directly on Physion++, every injection arm we ported (fixed slot, consistency, consistency$+$acceleration) degrades per-scenario rollout nMSE by $3$--$10\times$ against the identically trained free-rollout model (Table~\ref{tab:pp}); the gaps dwarf the three-seed noise band of the baseline. The probe family has not yet been run on Physion++, so this corroboration currently covers the slot and consistency families.
 
-\begin{table}[t]
+\begin{table}[tb]
 \centering
 \small
 \begin{tabular}{@{}lcccc@{}}
@@ -156,7 +130,7 @@ The faithful extrinsic port learns the correct physics and, where its encoder is
 % ⏳ DINO-WM cross-backbone results go here when the parallel session lands
 % (three cells specified in sections/3_method.tex).
 
-\begin{table}[t]
+\begin{table}[tb]
 \centering
 \small
 \begin{tabular}{@{}lcc@{}}
