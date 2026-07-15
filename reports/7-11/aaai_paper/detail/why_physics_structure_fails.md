@@ -100,7 +100,7 @@
 
 上面六条堵的是"约束**没接上**"。更强的质疑是:**约束是生效了,但"固定切 2 维 slot"这种编码方式本身笨,换一种更好的方式把物理编进 latent 也许就有用了。** 分三层回应,并诚实标注证据强弱。
 
-**层1(实证覆盖度 —— 已有,强)**:我们不是只测一种编码方式。7 种注入方式沿三个正交轴铺开,**21 个方式×域格里 20 个明确比纯 free-rollout(baseline)差,唯一"更低"的 probe·parabola(0.115)落在基线三种子区间下沿=噪声**——没有一种带来 seed-robust 改善(both-OOD nMSE↓;parabola 判决用 r/m-OOD)。(口径对齐:此表 7 种**代表方式**=21 格;ledger C4 与 storyline 的 **30 格**=再加组合/slot-内容/加权变体 3 臂(probe+structpos、posvel、structpos+pw30)×3 域,总账见 [ledger C4](../01_results_ledger.md)。)
+**层1(实证覆盖度 —— 已有,强)**:我们不是只测一种编码方式。7 种注入方式沿三个正交轴铺开,**21 个方式×域格里 20 个明确比纯 free-rollout(baseline)差,唯一"更低"的 probe·parabola(单种子 0.115)已被三种子证伪:均值 **0.137±0.027 vs baseline 0.122±0.005 = 持平(均值反而略高)**,单种子低是抽到好种子**——没有一种带来 seed-robust 改善(both-OOD nMSE↓;parabola 判决用 r/m-OOD)。(口径对齐:此表 7 种**代表方式**=21 格;ledger C4 与 storyline 的 **30 格**=再加组合/slot-内容/加权变体 3 臂(probe+structpos、posvel、structpos+pw30)×3 域,总账见 [ledger C4](../01_results_ledger.md)。)
 
 | 注入方式 | 轴定位(硬软·状态演化·标签) | uniform | parabola r/m | collision | vs baseline |
 |---|---|---|---|---|---|

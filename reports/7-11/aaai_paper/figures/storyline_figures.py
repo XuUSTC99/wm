@@ -32,20 +32,20 @@ h = np.array([1, 2, 4, 8, 16, 28])
 col_tf = np.array([0.991, 0.970, 0.881, 0.645, 0.361, 0.237])
 col_fr = np.array([0.997, 0.993, 0.982, 0.948, 0.757, 0.476])
 DECODE = 0.84  # collision both-OOD REAL-latent probe pos rho (avg 2 dims) = position IS in the latent
-fig, ax = plt.subplots(figsize=(7.2, 4.6))
+fig, ax = plt.subplots(figsize=(7.4, 4.7))
 ax.axhspan(DECODE - 0.02, DECODE + 0.02, color=GREEN, alpha=0.15, lw=0)
 ax.axhline(DECODE, color=GREEN, lw=2, ls="--")
-ax.text(28, DECODE + 0.025, "position stays decodable from the latent (probe $\\rho\\approx0.84$)",
+ax.text(28, DECODE + 0.025, "position recoverable from latent (probe $\\rho\\approx0.84$, flat)",
         color=GREEN, ha="right", va="bottom", fontsize=9.5, fontweight="bold")
-ax.plot(h, col_tf, color=VERM, marker="o", ms=7, lw=2.4, label="teacher-forced (LeWM original)")
-ax.plot(h, col_fr, color=BLUE, marker="s", ms=7, lw=2.4, label="free-rollout (our default)")
-ax.annotate("single step:\nnear-perfect (0.99)", (1, 0.991), (2.2, 0.62), fontsize=9, color=MUTED,
+ax.plot(h, col_tf, color=VERM, marker="o", ms=7, lw=2.4, label="rollout: teacher-forced (original)")
+ax.plot(h, col_fr, color=BLUE, marker="s", ms=7, lw=2.4, label="rollout: free-rollout (ours)")
+ax.annotate("1 step:\n≈perfect (0.99)", (1, 0.991), (2.4, 0.60), fontsize=9, color=MUTED,
             arrowprops=dict(arrowstyle="->", color=MUTED))
-ax.annotate("28 steps: collapses to 0.24\n(prediction ignores the physics it encodes)",
-            (28, 0.237), (14.5, 0.30), fontsize=9, color=VERM, ha="left",
+ax.annotate("28 steps:\ncollapses to 0.24", (28, 0.237), (16, 0.32), fontsize=9, color=VERM, ha="left",
             arrowprops=dict(arrowstyle="->", color=VERM))
-ax.set_xlabel("rollout horizon (steps)"); ax.set_ylabel("prediction fidelity  (cosine, ↑)")
-ax.set_title("Decodable but not load-bearing: the state is present, the rollout doesn't use it", fontsize=11)
+ax.set_xlabel("rollout horizon (steps)")
+ax.set_ylabel("agreement w/ truth  (↑, 0–1)")
+ax.set_title("Physical state is encoded, yet the rollout drifts away from it (collision)", fontsize=11)
 ax.set_ylim(0.1, 1.02); ax.set_xticks(h); ax.legend(frameon=False, loc="lower left", fontsize=9, bbox_to_anchor=(0.0, 0.02))
 ax.grid(True, color=GRID, lw=0.7, alpha=0.7); ax.set_axisbelow(True)
 save(fig, "fig1_thesis_presence_not_use"); plt.close(fig)
@@ -358,5 +358,58 @@ ax.set_title("The bypass, measured: the black-box 190 dims ALONE decode position
 ax.legend(frameon=False, fontsize=9.5, loc="lower left")
 ax.grid(True, axis="y", color=GRID, lw=0.6, alpha=0.6); ax.set_axisbelow(True)
 save(fig, "fig15_bypass_probe190"); plt.close(fig)
+
+# ============================================================================
+# FIG 16 — full physics-injection scan: 10 arms x 3 domains (30 cells), ratio to baseline.
+# Source: runs/{aaai_p0,structdyn_eval,consistency_eval}/rollout_*.log (judged partition:
+#   uniform/collision both-OOD, parabola r/m-OOD). baseline u=0.131 p=0.127 c=0.393.
+# ============================================================================
+from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+arms = ["[slot] structpos", "[slot] +pw30 (LBR)", "[slot] +velocity",
+        "[probe] probe", "[probe] +structpos", "[dyn] free MLP", "[dyn] strict a=g",
+        "[cons] consistency", "[free] label-free", "[free] grounded"]
+bcols = ["uniform\n(both-OOD)", "parabola\n(r/m-OOD)", "collision\n(both-OOD)"]
+base = np.array([0.131, 0.127, 0.393])
+raw = np.array([
+    [0.183, 0.156, 0.651],   # structpos
+    [0.114, 0.160, 0.596],   # +pw30
+    [0.207, 0.093, 0.621],   # +velocity (posvel)
+    [0.167, 0.115, 0.647],   # probe
+    [0.125, 0.127, 0.607],   # probe+structpos
+    [0.155, 0.178, 0.560],   # dyn MLP
+    [0.206, 0.173, 0.559],   # dyn const a=g
+    [0.151, 0.147, 0.640],   # consistency
+    [0.171, 0.172, 0.653],   # label-free
+    [0.166, 0.156, 0.524],   # grounded
+])
+# 4 cells have 3-SEED data — display & color by the 3-seed MEAN (single-seed <1 was seed luck):
+disp = raw.copy()
+seed3 = {(1, 0): 0.132, (3, 1): 0.137, (4, 0): 0.141, (2, 1): 0.096}  # 3-seed means
+for (i, j), v in seed3.items():
+    disp[i, j] = v
+ratio = disp / base            # color by the real (best-estimate) ratio, no artificial override
+parity3 = {(1, 0), (3, 1), (4, 0)}  # 3-seed overlaps baseline (parity)
+gain = {(2, 1)}                     # posvel·parabola = only real 3-seed gain
+ratio_c = ratio
+cmap = LinearSegmentedColormap.from_list("gwv", [GREEN, "#f7f7f7", VERM])  # green<1 white=1 vermillion>1 (Okabe-Ito diverging)
+norm = TwoSlopeNorm(vmin=0.75, vcenter=1.0, vmax=1.7)
+fig, ax = plt.subplots(figsize=(6.6, 7.2))
+im = ax.imshow(ratio_c, cmap=cmap, norm=norm, aspect="auto")
+for i in range(len(arms)):
+    for j in range(3):
+        r = ratio[i, j]
+        mark = "†" if (i, j) in parity3 else ("†✓" if (i, j) in gain else "")
+        ax.text(j, i, f"{r:.2f}×\n({disp[i,j]:.3f}){mark}", ha="center", va="center",
+                fontsize=8, color=INK if 0.9 < ratio_c[i, j] < 1.3 else "white", fontweight="bold")
+ax.set_xticks(range(3)); ax.set_xticklabels(bcols, fontsize=9.5)
+ax.set_yticks(range(len(arms))); ax.set_yticklabels(arms, fontsize=9)
+for y in [2.5, 4.5, 6.5, 7.5]:   # family separators
+    ax.axhline(y, color="white", lw=2)
+ax.set_title("Every physics-injection arm × domain vs baseline (nMSE ratio; number = single-seed 3072, † = 3-seed mean)\n"
+             "physics ≥ baseline nearly everywhere (color: red worse / white parity / green better); †✓ posvel·parabola = only real gain",
+             fontsize=8.5)
+cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+cb.set_label("nMSE / baseline  (>1 worse, <1 better; 1.0 = baseline)", fontsize=9)
+save(fig, "fig16_physics_injection_scan"); plt.close(fig)
 
 print("ALL storyline figures done ->", OUT)
