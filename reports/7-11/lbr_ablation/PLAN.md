@@ -112,7 +112,7 @@
 |---|---|
 | uniform pw 曲线 + 种子 rollout | `/data1/likun-share/junjxu/runs/structdyn_eval/rollout_uniform_motion_structpos_fr_pw{1,3,10,30,100,300}*_id1k.log`（种子后缀 `_s{1234,42}`） |
 | parabola/collision pw 曲线 | `/data1/.../structdyn_eval/rollout_{parabola,collision}_structpos_fr_pw*_id1k.log` |
-| baseline_fr 3 种子 | `/data1/likun-share/junjxu/runs/aaai_p0/rollout_{uniform,parabola}_baseline_fr_s{3072,1234,42}.log` |
+| baseline_fr 3 种子 | ⚠️ **三种子文件名不一致**:seed 1234/42 → `raw_data/runs/aaai_p0/rollout_{uniform,parabola}_baseline_fr_s{1234,42}.log`;**seed 3072(默认种子)无 `_s` 后缀、且在另一目录、域名叫 `uniform_motion`** → `raw_data/runs/structdyn_eval/rollout_{uniform_motion,parabola}_baseline_fr_id1k.log`(不存在 `_s3072` 文件) |
 | 训练日志/ckpt | 同名 `train_*.log`；ckpt `$STABLEWM_HOME/{uniform_motion,parabola,collision}_structpos_fr_pw*` |
 | 判读指标提取 | 段 `latent fidelity (pred vs real emb) ... by partition` 里 `both-OOD`/`r/m-OOD` 的 `nMSE=`；⚠️ parabola 用 r/m-OOD（both-OOD h28 除零爆点） |
 | 图 | `reports/7-11/figures/fig1_lbr_ablation.{png,pdf}`、脚本 `make_figures.py`（原始值内嵌） |
