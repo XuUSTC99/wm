@@ -168,6 +168,12 @@ def lejepa_forward(self, batch, stage, cfg):
         tgt_cols = structured_cfg.get("target", "proprio")
         tgt_cols = [tgt_cols] if isinstance(tgt_cols, str) else list(tgt_cols)
         target = torch.cat([torch.nan_to_num(batch[c], 0.0) for c in tgt_cols], dim=-1)  # (B,T,P)
+        # CONTROL (2026-07-16): shuffle the target across the batch -> the slot is
+        # pinned to a same-distribution but PHYSICALLY MEANINGLESS target (another
+        # trial's position). If pos_weight's OOD gain survives this, the gain is
+        # capacity restriction / regularization, NOT physics knowledge.
+        if bool(structured_cfg.get("shuffle_control", False)):
+            target = target[torch.randperm(target.size(0), device=target.device)]
         start_dim = int(structured_cfg.get("start_dim", 0))
         end_dim = start_dim + target.size(-1)
         if start_dim < 0 or end_dim > emb.size(-1):

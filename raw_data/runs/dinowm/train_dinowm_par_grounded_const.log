@@ -1,0 +1,1384 @@
+00:40:30 | INFO  | __init__.py | PyTorch version 2.9.1+cu128 available.
+00:40:30 | INFO  | __init__.py | JAX version 0.6.2 available.
+00:40:40 | INFO  | atomic_chec~| [atomic_save] installed crash-safe checkpoint plugin (write to sibling .tmp + fsync + atomic rename)
+[2026-07-16 00:40:41,495][root][INFO] - Cached 'action' from '/data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_parabola_id1k.h5'
+[2026-07-16 00:40:41,496][root][INFO] - Cached 'proprio' from '/data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_parabola_id1k.h5'
+Loading weights:   0%|          | 0/223 [00:00<?, ?it/s]Loading weights: 100%|██████████| 223/223 [00:00<00:00, 7553.28it/s]
+[encoder_type=dinov2] frozen DINOv2 backbone from /data1/likun-share/junjxu/.stable_worldmodel/hf_dinov2_small (hidden=384)
+[dynamics] SecondOrderDynamics enabled: pos_dim=2 use_action=False act_dim=0 learnable_accel=True accel_form=const
+[freeze_encoder] froze 223 encoder param tensors (encoder kept at init)
+00:40:43 | INFO  | module.py   | Setting up DataModule
+00:40:43 | INFO  | utils.py    | ── Module ────────────────────────────────────────
+00:40:43 | WARN  | module.py   | ! No hyperparameters provided - hyperparameter logging is disabled.
+00:40:43 | INFO  | module.py   |   Setting custom forward method.
+00:40:43 | INFO  | module.py   |   Setting attribute: self.model = <class 'jepa.JEPA'>
+00:40:43 | INFO  | module.py   |   Setting attribute: self.sigreg = <class 'module.SIGReg'>
+00:40:43 | INFO  | module.py   |   Setting attribute: self.optim = <class 'dict'>
+00:40:43 | INFO  | module.py   |   No metrics configuration provided - automatic metric tracking is disabled.
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lightning/fabric/connector.py:571: `precision=bf16` is supported for historical reasons but its usage is discouraged. Please set your precision to bf16-mixed instead!
+Using bfloat16 Automatic Mixed Precision (AMP)
+00:40:43 | INFO  | env_info.py |   EnvironmentDumpCallback initialized (filename=environment.json, async=True)
+00:40:43 | INFO  | utils.py    | ── HuggingFaceCheckpoint ─────────────────────────
+00:40:43 | INFO  | hf_models.py|   save_dir: <cyan>hf_exports</cyan>
+00:40:43 | INFO  | hf_models.py|   per_step: <cyan>False</cyan>  (False ⇒ overwrite single 'last/' subdir; True ⇒ keep step_N/)
+Adding 14 callbacks from entry point 'stablepretraining_callbacks': PrintProgressBar, ModuleRegistryCallback, LoggingCallback, EnvironmentDumpCallback, TrainerInfo, SklearnCheckpoint, WandbCheckpoint, TrackioCheckpoint, SwanLabCheckpoint, ModuleSummary, SLURMInfo, LogUnusedParametersOnce, HuggingFaceCheckpointCallback, HardwareMonitor
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+00:40:43 | INFO  | utils.py    | ── SIGTERM preempt handler — install ─────────────
+00:40:43 | INFO  | manager.py  |   SLURM_JOB_ID         = None
+00:40:43 | INFO  | manager.py  |   SLURM_RESTART_COUNT  = '0'
+00:40:43 | INFO  | manager.py  |   SLURM_PROCID         = '?'
+00:40:43 | INFO  | manager.py  |   SLURM_NODEID         = '?'
+00:40:43 | INFO  | manager.py  |   → not under SLURM (SLURM_JOB_ID unset); leaving SIGTERM handler as-is. Forwarding to submitit's USR signal would be a no-op since submitit isn't running upstream.
+00:40:43 | WARN  | manager.py  | User didn't specify seed, runs won't be exactly reproducible!
+00:40:43 | INFO  | manager.py  |   Manager init: ckpt_path=None, weights_only=True
+00:40:43 | INFO  | utils.py    | ── WorkingDirectory ──────────────────────────────
+00:40:43 | INFO  | manager.py  |   cwd: /home/likun-share/junjxu/wm/le-wm
+00:40:43 | INFO  | utils.py    | ── Seed ──────────────────────────────────────────
+00:40:43 | INFO  | manager.py  |   seed: None
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lightning/fabric/utilities/seed.py:44: No seed found, seed set to 0
+Seed set to 0
+00:40:43 | INFO  | utils.py    | ── RunDirectory ──────────────────────────────────
+00:40:43 | INFO  | manager.py  |   cache_dir = /data1/likun-share/junjxu/.cache_stable-pretraining
+00:40:43 | INFO  | manager.py  |   ddp: launch_key=(single-process) rank=0 is_rank_zero=True
+00:40:43 | INFO  | utils.py    | ── RunDirectory: requeue probe ───────────────────
+00:40:43 | INFO  | manager.py  |   SLURM session key   = (no SLURM)
+00:40:43 | INFO  | manager.py  |   SLURM_RESTART_COUNT = 0
+00:40:43 | INFO  | manager.py  |   in_requeue          = False
+00:40:43 | INFO  | utils.py    | ── RunDirectory: fresh ───────────────────────────
+00:40:43 | INFO  | manager.py  |   no user ckpt_path — training from scratch / pretrained backbone.
+00:40:43 | INFO  | manager.py  |   created run_dir = /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda
+00:40:43 | INFO  | manager.py  |   wrote run_meta.json with run_id=7bceef8cfdda
+00:40:43 | INFO  | manager.py  |   SLURM index = (no SLURM, skipped)
+00:40:43 | WARN  | manager.py  | ! cache_dir is set but the Trainer was passed as an already-instantiated object. Cannot override default_root_dir cleanly. Consider passing the trainer as a config dict instead.
+00:40:43 | WARN  | manager.py  | ! Hydra run.dir='outputs/2026-07-16/00-40-41' will be ignored for trainer outputs (cache_dir takes precedence).
+00:40:43 | WARN  | manager.py  | ! Hydra sweep.dir='multirun/2026-07-16/00-40-41' will be ignored for trainer outputs (cache_dir takes precedence).
+00:40:43 | INFO  | logger.py   | [RegistryLogger] run_id=7bceef8cfdda run_dir=/data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda — sidecar.json + summary.json + metrics.csv will live here
+00:40:43 | INFO  | utils.py    | ── RegistryLogger ────────────────────────────────
+00:40:43 | INFO  | manager.py  |   run_dir: /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda
+00:40:43 | INFO  | manager.py  |   run_id:  7bceef8cfdda
+00:40:43 | INFO  | utils.py    | ── CSVLogger ─────────────────────────────────────
+00:40:43 | INFO  | manager.py  |   root_dir: /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/
+00:40:43 | INFO  | manager.py  |   save_dir: /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda
+00:40:43 | INFO  | manager.py  |   log_dir: /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/
+00:40:43 | INFO  | utils.py    | ── SignalHandlers (after submitit setup (spt SIGTERM installed in __init__)) ──
+00:40:43 | INFO  | manager.py  |   SIGUSR1  → SIG_IGN (ignored)
+00:40:43 | INFO  | manager.py  |   SIGUSR2  → SIG_IGN (ignored)
+00:40:43 | INFO  | manager.py  |   SIGCONT  → SIG_DFL (default OS action — terminate process)
+00:40:43 | INFO  | manager.py  |   SIGTERM  → SIG_DFL (default OS action — terminate process)
+00:40:43 | INFO  | utils.py    | ── Callbacks ─────────────────────────────────────
+00:40:43 | INFO  | manager.py  |   count: 19
+00:40:43 | INFO  | utils.py    | ── CacheDirCheckpointing ─────────────────────────
+00:40:43 | INFO  | manager.py  |   Saving checkpoints to: /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints
+00:40:43 | WARN  | manager.py  |   Redirecting HuggingFaceCheckpointCallback from 'hf_exports' to '/data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/hf_exports' (cache_dir is active — prevents races on a shared cache)
+00:40:43 | INFO  | manager.py  |   Added requeue checkpoint (filename='last')
+00:40:43 | INFO  | utils.py    | ── LoadPath resolution ───────────────────────────
+00:40:43 | INFO  | manager.py  |   in_requeue = False
+00:40:43 | INFO  | manager.py  |   user ckpt_path = None
+00:40:43 | INFO  | manager.py  |   user weights_only = True
+00:40:43 | INFO  | manager.py  |   → no ckpt_path; training from scratch.
+00:40:43 | INFO  | utils.py    | ── TrainerFit ────────────────────────────────────
+00:40:43 | INFO  | manager.py  |   ckpt_path:     None
+00:40:43 | INFO  | manager.py  |   weights_only:  None
+00:40:43 | INFO  | utils.py    | ── SignalHandlers (before Trainer.fit() (handler installed in __init__)) ──
+00:40:43 | INFO  | manager.py  |   SIGUSR1  → SIG_IGN (ignored)
+00:40:43 | INFO  | manager.py  |   SIGUSR2  → SIG_IGN (ignored)
+00:40:43 | INFO  | manager.py  |   SIGCONT  → SIG_DFL (default OS action — terminate process)
+00:40:43 | INFO  | manager.py  |   SIGTERM  → SIG_DFL (default OS action — terminate process)
+00:40:43 | INFO  | manager.py  |   → entering Trainer.fit(); lightning's _SignalConnector will now register its own handlers. SIGTERM will become _HandlersCompose([_sigterm_notifier_fn, _sigterm_handler_fn, spt._handler]); USR-sig binding from submitit is preserved (lightning skips USR registration when one already exists).
+💡 Tip: For seamless cloud uploads and versioning, try installing [litmodels](https://pypi.org/project/litmodels/) to enable LitModelCheckpoint, which syncs automatically with the Lightning model registry.
+You are using a CUDA device ('NVIDIA A800-SXM4-80GB') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+00:40:46 | OK    | module.py   | ✓ dataset for fit loaded
+00:40:46 | INFO  | module.py   |   setup was done by user
+00:40:46 | INFO  | utils.py    | ── EnvironmentDump ───────────────────────────────
+00:40:46 | INFO  | env_info.py |   log_dir: /home/likun-share/.cache/stable-pretraining
+00:40:46 | INFO  | env_info.py |   Running environment dump in background thread (non-blocking)
+00:40:46 | INFO  | env_info.py |   Collecting environment information...
+00:40:46 | OK    | env_info.py | ✓ Background thread started successfully
+00:40:46 | OK    | env_info.py | ✓ Python 3.10.12
+00:40:46 | INFO  | trainer_inf~|   linking trainer to DataModule
+00:40:46 | OK    | env_info.py | ✓ System: Linux 5.15.0-113-generic (x86_64)
+00:40:46 | INFO  | utils.py    | ── Callbacks (in order) ──────────────────────────
+00:40:46 | INFO  | env_info.py |   Hostname: 10-116-90-13
+00:40:46 | INFO  | utils.py    |     [ 0] ModelObjectCallBack
+00:40:46 | INFO  | utils.py    |     [ 1] RichProgressBar
+00:40:46 | INFO  | utils.py    |     [ 2] RichModelSummary
+00:40:46 | INFO  | utils.py    |     [ 3] PrintProgressBar
+00:40:46 | INFO  | utils.py    |     [ 4] ModuleRegistryCallback
+00:40:46 | INFO  | utils.py    |     [ 5] LoggingCallback
+00:40:46 | INFO  | utils.py    |     [ 6] EnvironmentDumpCallback
+00:40:46 | INFO  | utils.py    |     [ 7] TrainerInfo
+00:40:46 | INFO  | utils.py    |     [ 8] SklearnCheckpoint
+00:40:46 | INFO  | utils.py    |     [ 9] WandbCheckpoint
+00:40:46 | INFO  | utils.py    |     [10] TrackioCheckpoint
+00:40:46 | INFO  | utils.py    |     [11] SwanLabCheckpoint
+00:40:46 | INFO  | utils.py    |     [12] ModuleSummary
+00:40:46 | INFO  | utils.py    |     [13] SLURMInfo
+00:40:46 | INFO  | utils.py    |     [14] LogUnusedParametersOnce
+00:40:46 | INFO  | utils.py    |     [15] HuggingFaceCheckpointCallback
+00:40:46 | INFO  | utils.py    |     [16] HardwareMonitor
+00:40:46 | INFO  | utils.py    |     [17] ModelCheckpoint
+00:40:46 | INFO  | utils.py    |     [18] _RunDirCallback
+00:40:46 | INFO  | utils.py    |     [19] ModelCheckpoint
+00:40:46 | INFO  | utils.py    |   ⚑ marks order-sensitive callbacks; see AGENTS.md → Callback ordering for the full rules.
+00:40:46 | INFO  | utils.py    | ── SklearnCheckpoint ─────────────────────────────
+00:40:46 | INFO  | checkpoint_~|   Sklearn Modules:
+00:40:46 | INFO  | checkpoint_~| 
+┏━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+┃ Module   ┃ Name   ┃ Type   ┃
+┣━━━━━━━━━━╋━━━━━━━━╋━━━━━━━━┫
+┗━━━━━━━━━━┻━━━━━━━━┻━━━━━━━━┛
+00:40:46 | INFO  | utils.py    | ── WandbCheckpoint ───────────────────────────────
+00:40:46 | INFO  | utils.py    | ── TrackioCheckpoint ─────────────────────────────
+00:40:46 | INFO  | utils.py    | ── SwanLabCheckpoint ─────────────────────────────
+00:40:46 | INFO  | utils.py    | ── PyTorch Modules ───────────────────────────────
+00:40:46 | WARN  | module.py   | ! You are calling self.parameters which also gives callbacks parameters, to remove them, pass `with_callbacks=False`
+00:40:46 | INFO  | trainer_inf~| \n+----------------------------------------------------------+----------------------+--------------------------+--------------------------+---------+
+| Module                                                   | Trainable parameters | Non Trainable parameters | Uninitialized parameters | Buffers |
++----------------------------------------------------------+----------------------+--------------------------+--------------------------+---------+
+|                                                          |             26900770 |                 22056576 |                        0 |    8245 |
+| callbacks_modules                                        |                    0 |                        0 |                        0 |       0 |
+| callbacks_metrics                                        |                    0 |                        0 |                        0 |       0 |
+| model                                                    |             26900770 |                 22056576 |                        0 |    8194 |
+| model.encoder                                            |                    0 |                 22056576 |                        0 |       0 |
+| model.encoder.embeddings                                 |                    0 |                   753024 |                        0 |       0 |
+| model.encoder.embeddings.patch_embeddings                |                    0 |                   226176 |                        0 |       0 |
+| model.encoder.embeddings.patch_embeddings.projection     |                    0 |                   226176 |                        0 |       0 |
+| model.encoder.embeddings.dropout                         |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder                                    |                    0 |                 21302784 |                        0 |       0 |
+| model.encoder.encoder.layer                              |                    0 |                 21302784 |                        0 |       0 |
+| model.encoder.encoder.layer.0                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.0.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.0.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.0.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.0.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.0.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.0.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.0.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.0.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.0.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.0.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.1                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.1.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.1.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.1.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.1.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.1.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.1.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.1.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.1.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.1.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.1.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.2                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.2.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.2.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.2.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.2.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.2.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.2.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.2.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.2.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.2.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.2.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.3                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.3.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.3.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.3.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.3.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.3.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.3.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.3.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.3.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.3.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.3.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.4                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.4.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.4.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.4.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.4.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.4.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.4.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.4.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.4.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.4.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.4.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.5                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.5.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.5.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.5.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.5.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.5.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.5.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.5.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.5.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.5.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.5.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.6                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.6.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.6.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.6.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.6.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.6.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.6.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.6.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.6.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.6.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.6.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.7                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.7.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.7.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.7.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.7.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.7.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.7.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.7.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.7.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.7.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.7.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.8                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.8.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.8.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.8.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.8.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.8.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.8.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.8.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.8.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.8.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.8.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.9                            |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.9.norm1                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention                  |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.attention        |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.attention.query  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.attention.key    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.attention.value  |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.output           |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.output.dense     |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.9.attention.output.dropout   |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.9.layer_scale1               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.9.drop_path                  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.9.norm2                      |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.9.mlp                        |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.9.mlp.fc1                    |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.9.mlp.activation             |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.9.mlp.fc2                    |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.9.layer_scale2               |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.10                           |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.10.norm1                     |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention                 |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.attention       |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.attention.query |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.attention.key   |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.attention.value |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.output          |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.output.dense    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.10.attention.output.dropout  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.10.layer_scale1              |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.10.drop_path                 |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.10.norm2                     |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.10.mlp                       |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.10.mlp.fc1                   |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.10.mlp.activation            |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.10.mlp.fc2                   |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.10.layer_scale2              |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.11                           |                    0 |                  1775232 |                        0 |       0 |
+| model.encoder.encoder.layer.11.norm1                     |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention                 |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.attention       |                    0 |                   443520 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.attention.query |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.attention.key   |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.attention.value |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.output          |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.output.dense    |                    0 |                   147840 |                        0 |       0 |
+| model.encoder.encoder.layer.11.attention.output.dropout  |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.11.layer_scale1              |                    0 |                      384 |                        0 |       0 |
+| model.encoder.encoder.layer.11.drop_path                 |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.11.norm2                     |                    0 |                      768 |                        0 |       0 |
+| model.encoder.encoder.layer.11.mlp                       |                    0 |                  1181568 |                        0 |       0 |
+| model.encoder.encoder.layer.11.mlp.fc1                   |                    0 |                   591360 |                        0 |       0 |
+| model.encoder.encoder.layer.11.mlp.activation            |                    0 |                        0 |                        0 |       0 |
+| model.encoder.encoder.layer.11.mlp.fc2                   |                    0 |                   590208 |                        0 |       0 |
+| model.encoder.encoder.layer.11.layer_scale2              |                    0 |                      384 |                        0 |       0 |
+| model.encoder.layernorm                                  |                    0 |                      768 |                        0 |       0 |
+| model.predictor                                          |             24372288 |                        0 |                        0 |       0 |
+| model.predictor.dropout                                  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer                              |             24371712 |                        0 |                        0 |       0 |
+| model.predictor.transformer.norm                         |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers                       |             24222720 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0                     |              4037120 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn                |              1574016 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.norm           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.attend         |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_qkv         |              1179648 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_out         |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_out.0       |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.attn.to_out.1       |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp                 |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net             |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.0           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.1           |               788480 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.2           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.3           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.4           |               786816 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.mlp.net.5           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.norm1               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.norm2               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.adaLN_modulation    |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.adaLN_modulation.0  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.0.adaLN_modulation.1  |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1                     |              4037120 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn                |              1574016 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.norm           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.attend         |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_qkv         |              1179648 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_out         |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_out.0       |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.attn.to_out.1       |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp                 |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net             |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.0           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.1           |               788480 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.2           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.3           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.4           |               786816 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.mlp.net.5           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.norm1               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.norm2               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.adaLN_modulation    |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.adaLN_modulation.0  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.1.adaLN_modulation.1  |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2                     |              4037120 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn                |              1574016 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.norm           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.attend         |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_qkv         |              1179648 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_out         |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_out.0       |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.attn.to_out.1       |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp                 |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net             |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.0           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.1           |               788480 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.2           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.3           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.4           |               786816 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.mlp.net.5           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.norm1               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.norm2               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.adaLN_modulation    |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.adaLN_modulation.0  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.2.adaLN_modulation.1  |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3                     |              4037120 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn                |              1574016 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.norm           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.attend         |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_qkv         |              1179648 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_out         |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_out.0       |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.attn.to_out.1       |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp                 |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net             |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.0           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.1           |               788480 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.2           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.3           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.4           |               786816 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.mlp.net.5           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.norm1               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.norm2               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.adaLN_modulation    |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.adaLN_modulation.0  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.3.adaLN_modulation.1  |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4                     |              4037120 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn                |              1574016 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn.norm           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn.attend         |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn.to_qkv         |              1179648 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn.to_out         |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn.to_out.0       |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.attn.to_out.1       |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp                 |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net             |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net.0           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net.1           |               788480 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net.2           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net.3           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net.4           |               786816 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.mlp.net.5           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.norm1               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.norm2               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.adaLN_modulation    |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.adaLN_modulation.0  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.4.adaLN_modulation.1  |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5                     |              4037120 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn                |              1574016 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn.norm           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn.attend         |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn.to_qkv         |              1179648 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn.to_out         |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn.to_out.0       |               393600 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.attn.to_out.1       |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp                 |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net             |              1576064 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net.0           |                  768 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net.1           |               788480 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net.2           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net.3           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net.4           |               786816 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.mlp.net.5           |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.norm1               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.norm2               |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.adaLN_modulation    |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.adaLN_modulation.0  |                    0 |                        0 |                        0 |       0 |
+| model.predictor.transformer.layers.5.adaLN_modulation.1  |               887040 |                        0 |                        0 |       0 |
+| model.predictor.transformer.input_proj                   |                74112 |                        0 |                        0 |       0 |
+| model.predictor.transformer.cond_proj                    |                74112 |                        0 |                        0 |       0 |
+| model.predictor.transformer.output_proj                  |                    0 |                        0 |                        0 |       0 |
+| model.action_encoder                                     |               156126 |                        0 |                        0 |       0 |
+| model.action_encoder.patch_embed                         |                   30 |                        0 |                        0 |       0 |
+| model.action_encoder.embed                               |               156096 |                        0 |                        0 |       0 |
+| model.action_encoder.embed.0                             |                 8448 |                        0 |                        0 |       0 |
+| model.action_encoder.embed.1                             |                    0 |                        0 |                        0 |       0 |
+| model.action_encoder.embed.2                             |               147648 |                        0 |                        0 |       0 |
+| model.projector                                          |              1185984 |                        0 |                        0 |    4097 |
+| model.projector.net                                      |              1185984 |                        0 |                        0 |    4097 |
+| model.projector.net.0                                    |               788480 |                        0 |                        0 |       0 |
+| model.projector.net.1                                    |                 4096 |                        0 |                        0 |    4097 |
+| model.projector.net.2                                    |                    0 |                        0 |                        0 |       0 |
+| model.projector.net.3                                    |               393408 |                        0 |                        0 |       0 |
+| model.pred_proj                                          |              1185984 |                        0 |                        0 |    4097 |
+| model.pred_proj.net                                      |              1185984 |                        0 |                        0 |    4097 |
+| model.pred_proj.net.0                                    |               788480 |                        0 |                        0 |       0 |
+| model.pred_proj.net.1                                    |                 4096 |                        0 |                        0 |    4097 |
+| model.pred_proj.net.2                                    |                    0 |                        0 |                        0 |       0 |
+| model.pred_proj.net.3                                    |               393408 |                        0 |                        0 |       0 |
+| model.probe_head                                         |                  386 |                        0 |                        0 |       0 |
+| model.dynamics                                           |                    2 |                        0 |                        0 |       0 |
+| sigreg                                                   |                    0 |                        0 |                        0 |      51 |
++----------------------------------------------------------+----------------------+--------------------------+--------------------------+---------+
+00:40:46 | INFO  | utils.py    | ── SLURM ─────────────────────────────────────────
+00:40:46 | INFO  | trainer_inf~|   Job ID: N/A
+00:40:46 | INFO  | trainer_inf~|   Task ID: N/A
+00:40:46 | INFO  | trainer_inf~|   Job Name: N/A
+00:40:46 | INFO  | trainer_inf~|   Nodes: N/A
+00:40:46 | INFO  | trainer_inf~|   Tasks: N/A
+00:40:46 | INFO  | trainer_inf~|   CPUs per node: N/A
+00:40:46 | INFO  | trainer_inf~|   CPUs per task: N/A
+00:40:46 | INFO  | trainer_inf~|   Memory per node: N/A
+00:40:46 | INFO  | trainer_inf~|   Memory per CPU: N/A
+00:40:46 | INFO  | trainer_inf~|   Time limit: N/A
+00:40:46 | INFO  | trainer_inf~|   Partition: N/A
+00:40:46 | INFO  | trainer_inf~|   Node List: N/A
+00:40:46 | INFO  | trainer_inf~|   Submit Directory: N/A
+00:40:46 | INFO  | utils.py    | ── HardwareMonitor ───────────────────────────────
+00:40:46 | INFO  | hardware_mo~|   interval: 10.0s
+00:40:46 | INFO  | hardware_mo~|   prefix:   'hardware/'
+00:40:46 | INFO  | hardware_mo~|   metrics:  cpu=True ram=True disk=True net=True gpu=True
+00:40:46 | INFO  | hardware_mo~|   per-rank: rank 0 only
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [7]
+00:40:46 | WARN  | hardware_mo~| HardwareMonitor: pynvml unavailable (ModuleNotFoundError("No module named 'pynvml'")); GPU metrics disabled.
+00:40:46 | WARN  | env_info.py | ! pip freeze failed: Command '['/home/likun-share/junjxu/wm/le-wm/.venv/bin/python', '-m', 'pip', 'freeze']' returned non-zero exit status 1.
+00:40:46 | OK    | env_info.py | ✓ Packages: 0 packages collected in 0.13s
+00:40:47 | INFO  | utils.py    | ── Optimizers ────────────────────────────────────
+00:40:47 | INFO  | module.py   |   Optimizer specified by Dict with keys ['model_opt']
+00:40:47 | INFO  | module.py   | 
+┏━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Optimizer   ┃ Pattern   ┃   Matched Modules ┃   Param Tensors ┃   Total Params ┃   RequiresGrad Tensors ┃
+┣━━━━━━━━━━━━━╋━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ model_opt   ┃ model     ┃               379 ┃             329 ┃       48957346 ┃                    106 ┃
+┗━━━━━━━━━━━━━┻━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━┛
+00:40:47 | INFO  | lr_schedule~| 	User provided a dict
+Loading `train_dataloader` to estimate number of stepping batches.
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lance/__init__.py:320: UserWarning: lance is not fork-safe. If you are using multiprocessing, use spawn or forkserver instead.
+  warnings.warn(
+/usr/lib/python3.10/multiprocessing/popen_fork.py:66: RuntimeWarning: lancedb fork support is experimental: the internal async runtime has been reset in the forked child, but a small chance of deadlock remains if other state was mid-operation at fork time. The 'forkserver' or 'spawn' multiprocessing start method is likely a safer alternative.
+  self.pid = os.fork()
+00:40:47 | OK    | env_info.py | ✓ NVIDIA Driver: 580.65.06
+/usr/lib/python3.10/multiprocessing/popen_fork.py:66: RuntimeWarning: lancedb fork support is experimental: the internal async runtime has been reset in the forked child, but a small chance of deadlock remains if other state was mid-operation at fork time. The 'forkserver' or 'spawn' multiprocessing start method is likely a safer alternative.
+  self.pid = os.fork()
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lance/__init__.py:320: UserWarning: lance is not fork-safe. If you are using multiprocessing, use spawn or forkserver instead.
+  warnings.warn(
+/usr/lib/python3.10/multiprocessing/popen_fork.py:66: RuntimeWarning: lancedb fork support is experimental: the internal async runtime has been reset in the forked child, but a small chance of deadlock remains if other state was mid-operation at fork time. The 'forkserver' or 'spawn' multiprocessing start method is likely a safer alternative.
+  self.pid = os.fork()
+00:40:47 | INFO  | module.py   |   Configured optimizer 'model_opt' (modules=379, param_tensors=329, total_params=48957346) with LinearWarmupCosineAnnealingLR scheduler.
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/model_summary/model_summary.py:242: Precision bf16-mixed is not supported by the model summary.  Estimated model size in MB will not be accurate. Using 32 bits instead.
+┏━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃   ┃ Name              ┃ Type       ┃ Params ┃ Mode  ┃ FLOPs ┃
+┡━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│ 0 │ callbacks_modules │ ModuleDict │      0 │ train │     0 │
+│ 1 │ callbacks_metrics │ ModuleDict │      0 │ train │     0 │
+│ 2 │ model             │ JEPA       │ 49.0 M │ train │     0 │
+│ 3 │ sigreg            │ SIGReg     │      0 │ train │     0 │
+└───┴───────────────────┴────────────┴────────┴───────┴───────┘
+Trainable params: 26.9 M                                                        
+Non-trainable params: 22.1 M                                                    
+Total params: 49.0 M                                                            
+Total estimated model params size (MB): 195.829                                 
+Modules in train mode: 158                                                      
+Modules in eval mode: 224                                                       
+Total FLOPs: 0                                                                  
+00:40:47 | INFO  | logger.py   | [RegistryLogger] summary.json flushed (0 metrics, step=0, epoch=0) → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/summary.json
+/usr/lib/python3.10/multiprocessing/popen_fork.py:66: RuntimeWarning: lancedb fork support is experimental: the internal async runtime has been reset in the forked child, but a small chance of deadlock remains if other state was mid-operation at fork time. The 'forkserver' or 'spawn' multiprocessing start method is likely a safer alternative.
+  self.pid = os.fork()
+/usr/lib/python3.10/multiprocessing/popen_fork.py:66: RuntimeWarning: lancedb fork support is experimental: the internal async runtime has been reset in the forked child, but a small chance of deadlock remains if other state was mid-operation at fork time. The 'forkserver' or 'spawn' multiprocessing start method is likely a safer alternative.
+  self.pid = os.fork()
+/usr/lib/python3.10/multiprocessing/popen_fork.py:66: RuntimeWarning: lancedb fork support is experimental: the internal async runtime has been reset in the forked child, but a small chance of deadlock remains if other state was mid-operation at fork time. The 'forkserver' or 'spawn' multiprocessing start method is likely a safer alternative.
+  self.pid = os.fork()
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 64. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+00:41:16 | INFO  | trainer_inf~| \n+--------------------------------+--------------------+
+|             Metric             |       Value        |
++--------------------------------+--------------------+
+|         [0;34;40mvalidate/loss[0m          | [0;32;40m4.282438278198242[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       | [0;32;40m4.282438278198242[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       | [0;32;40m0.343737930059433[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    | [0;32;40m0.343737930059433[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |        [0;32;40m36.5[0m        |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |        [0;32;40m36.5[0m        |
+|    [0;34;40mvalidate/structured_loss[0m    | [0;32;40m0.6574506759643555[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m | [0;32;40m0.6574506759643555[0m |
++--------------------------------+--------------------+
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/loops/fit_loop.py:538: Found 224 module(s) in eval mode at the start of training. This may lead to unexpected behavior during training. If this is intentional, you can ignore this warning.
+00:41:16 | WARN  | hf_models.py| ! No Hugging Face (PreTrainedModel) submodules found in LightningModule.
+00:41:16 | INFO  | utils.py    | ── Optimizers ────────────────────────────────────
+00:41:16 | INFO  | module.py   |   self.optimizers() gave us 1 optimizers
+00:41:16 | WARN  | module.py   | ! No clip val found for optimizer default_0
+00:41:16 | WARN  | module.py   | ! Will use the Trainer's value of 1.0
+00:41:16 | WARN  | module.py   | ! No clip algorithm found for optimizer default_0
+00:41:16 | WARN  | module.py   | ! Will use the Trainer's value of None
+00:41:16 | OK    | module.py   | ✓ Optimizer check complete:
++------------+-----------+----------------+-----------+-----------+
+| Opt. Index | Opt. name |      opt       | clip val. | clip alg. |
++------------+-----------+----------------+-----------+-----------+
+|     0      | default_0 | LightningAdamW |    1.0    |    None   |
++------------+-----------+----------------+-----------+-----------+
+00:41:16 | INFO  | utils.py    | ── LogUnusedParametersOnce ───────────────────────
+00:41:16 | INFO  | unused_para~|   registered hooks on 106 leaf parameters
+00:41:19 | WARN  | unused_para~| ! the following parameters did NOT receive gradients on the first backward pass (potentially causing Lightning's 'unused parameters' error):
+00:41:19 | WARN  | unused_para~|   model.probe_head.weight
+00:41:19 | WARN  | unused_para~|   model.probe_head.bias
+00:41:19 | INFO  | unused_para~|   hooks removed, callback disabled
+[Epoch 0/20] step 50/309 (0.7 it/s)
+[Epoch 0/20] step 100/309 (0.7 it/s)
+[Epoch 0/20] step 150/309 (0.6 it/s)
+[Epoch 0/20] step 200/309 (0.6 it/s)
+[Epoch 0/20] step 250/309 (0.6 it/s)
+[Epoch 0/20] step 300/309 (0.6 it/s)
+/home/likun-share/junjxu/wm/le-wm/.venv/lib/python3.10/site-packages/lightning/pytorch/utilities/data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 23. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+00:51:34 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.6249046921730042[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.16253769397735596[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m4.875[0m         |
+|      [0;34;40mfit/structured_loss[0m       |   [0;32;40m0.0229138545691967[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |  [0;32;40m0.02498924359679222[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m158.09405517578125[0m  |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.028783995658159256[0m |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.02793063409626484[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |    [0;32;40m832.014892578125[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m82.5999984741211[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.979762161383405e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.6205103993415833[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.6205103993415833[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |   [0;32;40m0.1579594910144806[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |   [0;32;40m0.1579594910144806[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m4.912609577178955[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m4.912609577178955[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.020469577983021736[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.020469577983021736[0m |
++--------------------------------+-----------------------+
+[Epoch 0/20] done in 618.8s
+00:51:35 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+00:51:35 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=0-step=309.ckpt
+00:51:41 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=0-step=309.ckpt saved (392.2 MiB, serialise=2.39s write=3.34s rename=0.1ms)
+00:51:41 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+00:51:41 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+00:51:46 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.62s write=2.35s rename=0.1ms)
+[Epoch 1/20] step 50/309 (0.5 it/s)
+[Epoch 1/20] step 100/309 (0.5 it/s)
+[Epoch 1/20] step 150/309 (0.5 it/s)
+[Epoch 1/20] step 200/309 (0.5 it/s)
+[Epoch 1/20] step 250/309 (0.5 it/s)
+[Epoch 1/20] step 300/309 (0.5 it/s)
+01:03:02 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.5403749942779541[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.15735751390457153[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m4.0625[0m        |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.01778312586247921[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m1.2900794744491577[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m19.69479751586914[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.03590286523103714[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.08033483475446701[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |    [0;32;40m850.63525390625[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m84.4000015258789[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.898469342151657e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.544875979423523[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.544875979423523[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.14572985470294952[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.14572985470294952[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m4.204684734344482[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m4.204684734344482[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.020762627944350243[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.020762627944350243[0m |
++--------------------------------+-----------------------+
+[Epoch 1/20] done in 676.3s
+01:03:03 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:03:03 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=1-step=618.ckpt
+01:03:05 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=1-step=618.ckpt saved (392.2 MiB, serialise=1.00s write=1.62s rename=0.1ms)
+01:03:06 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:03:06 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+01:03:09 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.80s write=1.51s rename=12.5ms)
+[Epoch 2/20] step 50/309 (0.5 it/s)
+[Epoch 2/20] step 100/309 (0.5 it/s)
+[Epoch 2/20] step 150/309 (0.5 it/s)
+[Epoch 2/20] step 200/309 (0.5 it/s)
+[Epoch 2/20] step 250/309 (0.5 it/s)
+[Epoch 2/20] step 300/309 (0.5 it/s)
+01:14:31 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.4947098195552826[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.12943825125694275[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m3.859375[0m       |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.01761532388627529[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m0.0324079804122448[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |    [0;32;40m79.3281021118164[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.03825807571411133[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.07505413144826889[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m855.3285522460938[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m84.9000015258789[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.756937414640561e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.4885508120059967[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.4885508120059967[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.12429489195346832[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.12429489195346832[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.7975287437438965[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.7975287437438965[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.022468386217951775[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.022468386217951775[0m |
++--------------------------------+-----------------------+
+[Epoch 2/20] done in 683.3s
+01:14:33 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:14:33 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=2-step=927.ckpt
+01:14:35 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=2-step=927.ckpt saved (392.2 MiB, serialise=1.24s write=1.32s rename=0.1ms)
+01:14:35 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:14:35 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+01:14:38 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.21s write=1.73s rename=67.0ms)
+[Epoch 3/20] step 50/309 (0.5 it/s)
+[Epoch 3/20] step 100/309 (0.5 it/s)
+[Epoch 3/20] step 150/309 (0.5 it/s)
+[Epoch 3/20] step 200/309 (0.5 it/s)
+[Epoch 3/20] step 250/309 (0.5 it/s)
+[Epoch 3/20] step 300/309 (0.5 it/s)
+01:26:09 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.418986439704895[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.11984555423259735[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m3.140625[0m       |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.015937741845846176[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m76.37274169921875[0m   |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m79.73751831054688[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.030601736158132553[0m |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.031130576506257057[0m |
+|      [0;34;40mhardware/ram_used_gb[0m      |    [0;32;40m862.711669921875[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m85.5999984741211[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.558720684144646e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.4536600112915039[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.4536600112915039[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.11362132430076599[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.11362132430076599[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.5336196422576904[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.5336196422576904[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |   [0;32;40m0.0218765027821064[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |   [0;32;40m0.0218765027821064[0m  |
++--------------------------------+-----------------------+
+[Epoch 3/20] done in 691.8s
+01:26:10 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:26:10 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=3-step=1236.ckpt
+01:26:16 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=3-step=1236.ckpt saved (392.2 MiB, serialise=2.24s write=3.05s rename=0.1ms)
+01:26:16 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:26:16 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+01:26:20 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.66s write=1.31s rename=22.0ms)
+[Epoch 4/20] step 50/309 (0.6 it/s)
+[Epoch 4/20] step 100/309 (0.6 it/s)
+[Epoch 4/20] step 150/309 (0.5 it/s)
+[Epoch 4/20] step 200/309 (0.5 it/s)
+[Epoch 4/20] step 250/309 (0.5 it/s)
+[Epoch 4/20] step 300/309 (0.5 it/s)
+01:37:25 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.39020606875419617[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.10637295246124268[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.890625[0m       |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.024067500606179237[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m0.8746408224105835[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m40.41504669189453[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.04012586921453476[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.07616892457008362[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m862.7067260742188[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m85.5999984741211[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.308798088459298e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.4231173098087311[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.4231173098087311[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |   [0;32;40m0.096996009349823[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |   [0;32;40m0.096996009349823[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.3732094764709473[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.3732094764709473[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |   [0;32;40m0.0227443166077137[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |   [0;32;40m0.0227443166077137[0m  |
++--------------------------------+-----------------------+
+[Epoch 4/20] done in 666.3s
+01:37:27 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:37:27 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=4-step=1545.ckpt
+01:37:30 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=4-step=1545.ckpt saved (392.2 MiB, serialise=1.33s write=2.08s rename=0.1ms)
+01:37:30 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:37:30 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+01:37:34 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.81s write=1.89s rename=62.9ms)
+[Epoch 5/20] step 50/309 (0.5 it/s)
+[Epoch 5/20] step 100/309 (0.5 it/s)
+[Epoch 5/20] step 150/309 (0.5 it/s)
+[Epoch 5/20] step 200/309 (0.5 it/s)
+[Epoch 5/20] step 250/309 (0.5 it/s)
+[Epoch 5/20] step 300/309 (0.5 it/s)
+01:49:07 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.36343446373939514[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.09075239300727844[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.78125[0m        |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.022682081907987595[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m0.1300206333398819[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m118.89469146728516[0m  |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.03752003237605095[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.07326357811689377[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |    [0;32;40m865.144287109375[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m85.9000015258789[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.013446232420392e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.39206936955451965[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.39206936955451965[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |   [0;32;40m0.085431769490242[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |   [0;32;40m0.085431769490242[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.2226970195770264[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.2226970195770264[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.016587024554610252[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.016587024554610252[0m |
++--------------------------------+-----------------------+
+[Epoch 5/20] done in 693.4s
+01:49:08 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:49:08 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=5-step=1854.ckpt
+01:49:11 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=5-step=1854.ckpt saved (392.2 MiB, serialise=1.78s write=1.63s rename=0.1ms)
+01:49:11 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+01:49:11 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+01:49:15 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.38s write=1.75s rename=10.8ms)
+[Epoch 6/20] step 50/309 (0.4 it/s)
+[Epoch 6/20] step 100/309 (0.5 it/s)
+[Epoch 6/20] step 150/309 (0.5 it/s)
+[Epoch 6/20] step 200/309 (0.5 it/s)
+[Epoch 6/20] step 250/309 (0.5 it/s)
+[Epoch 6/20] step 300/309 (0.5 it/s)
+02:00:34 | INFO  | trainer_inf~| \n+--------------------------------+------------------------+
+|             Metric             |         Value          |
++--------------------------------+------------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.36731407046318054[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.09419342130422592[0m   |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m2.9375[0m         |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.009448766708374023[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m          |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m0.2764587700366974[0m   |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m34.10556411743164[0m    |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |   [0;32;40m56.33769607543945[0m    |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |   [0;32;40m0.779017984867096[0m    |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m865.2571411132812[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m85.9000015258789[0m    |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m3.6800833186134696e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.3902145326137543[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.3902145326137543[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.07931772619485855[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.07931772619485855[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.2231056690216064[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.2231056690216064[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.020720141008496284[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.020720141008496284[0m  |
++--------------------------------+------------------------+
+[Epoch 6/20] done in 680.1s
+02:00:36 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:00:36 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=6-step=2163.ckpt
+02:00:40 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=6-step=2163.ckpt saved (392.2 MiB, serialise=2.41s write=1.76s rename=0.1ms)
+02:00:41 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:00:41 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+02:00:45 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.92s write=1.61s rename=366.9ms)
+[Epoch 7/20] step 50/309 (0.5 it/s)
+[Epoch 7/20] step 100/309 (0.5 it/s)
+[Epoch 7/20] step 150/309 (0.5 it/s)
+[Epoch 7/20] step 200/309 (0.5 it/s)
+[Epoch 7/20] step 250/309 (0.5 it/s)
+[Epoch 7/20] step 300/309 (0.5 it/s)
+02:11:50 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.3296670615673065[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.07356998324394226[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.671875[0m       |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.015862692147493362[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m0.2674700915813446[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m79.15474700927734[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |   [0;32;40m0.1716519296169281[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |   [0;32;40m0.4514305293560028[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m861.6209106445312[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |          [0;32;40m85.5[0m         |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m3.317081791465171e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.3735758364200592[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.3735758364200592[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.07203147560358047[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.07203147560358047[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.1588683128356934[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.1588683128356934[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.01730198971927166[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.01730198971927166[0m  |
++--------------------------------+-----------------------+
+[Epoch 7/20] done in 666.1s
+02:11:51 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:11:51 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=7-step=2472.ckpt
+02:11:54 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=7-step=2472.ckpt saved (392.2 MiB, serialise=1.83s write=1.45s rename=0.1ms)
+02:11:55 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:11:55 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+02:12:00 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.46s write=2.18s rename=199.0ms)
+[Epoch 8/20] step 50/309 (0.5 it/s)
+[Epoch 8/20] step 100/309 (0.5 it/s)
+[Epoch 8/20] step 150/309 (0.5 it/s)
+[Epoch 8/20] step 200/309 (0.5 it/s)
+[Epoch 8/20] step 250/309 (0.5 it/s)
+[Epoch 8/20] step 300/309 (0.5 it/s)
+02:23:18 | INFO  | trainer_inf~| \n+--------------------------------+------------------------+
+|             Metric             |         Value          |
++--------------------------------+------------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.31050288677215576[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.07614266872406006[0m   |
+|        [0;34;40mfit/sigreg_loss[0m         |          [0;32;40m2.5[0m           |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.009750832803547382[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m          |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |  [0;32;40m0.24440832436084747[0m   |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m179.24110412597656[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.034692101180553436[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.03799091652035713[0m   |
+|      [0;34;40mhardware/ram_used_gb[0m      |    [0;32;40m869.029052734375[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m86.30000305175781[0m    |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m2.9335586077650078e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.37199124693870544[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.37199124693870544[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.06672313064336777[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.06672313064336777[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.1777689456939697[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.1777689456939697[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.019154425710439682[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.019154425710439682[0m  |
++--------------------------------+------------------------+
+[Epoch 8/20] done in 679.2s
+02:23:19 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:23:19 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=8-step=2781.ckpt
+02:23:23 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=8-step=2781.ckpt saved (392.2 MiB, serialise=1.96s write=2.26s rename=0.1ms)
+02:23:24 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:23:24 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+02:23:29 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.59s write=1.93s rename=580.4ms)
+[Epoch 9/20] step 50/309 (0.5 it/s)
+[Epoch 9/20] step 100/309 (0.5 it/s)
+[Epoch 9/20] step 150/309 (0.5 it/s)
+[Epoch 9/20] step 200/309 (0.5 it/s)
+[Epoch 9/20] step 250/309 (0.5 it/s)
+[Epoch 9/20] step 300/309 (0.5 it/s)
+02:35:06 | INFO  | trainer_inf~| \n+--------------------------------+------------------------+
+|             Metric             |         Value          |
++--------------------------------+------------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.34134453535079956[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.07287570089101791[0m   |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m2.8125[0m         |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.014562590047717094[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m          |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |  [0;32;40m0.012082594446837902[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m0.7826403379440308[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.041191354393959045[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.08058995753526688[0m   |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m868.4593505859375[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m86.19999694824219[0m    |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m2.5391464077983983e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.3632757067680359[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.3632757067680359[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.06816723197698593[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.06816723197698593[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.095750093460083[0m    |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.095750093460083[0m    |
+|    [0;34;40mvalidate/structured_loss[0m    |   [0;32;40m0.0164333526045084[0m   |
+| [0;34;40mvalidate/structured_loss_epoch[0m |   [0;32;40m0.0164333526045084[0m   |
++--------------------------------+------------------------+
+[Epoch 9/20] done in 698.5s
+02:35:08 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:35:08 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=9-step=3090.ckpt
+02:35:12 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=9-step=3090.ckpt saved (392.2 MiB, serialise=2.25s write=1.82s rename=0.1ms)
+02:35:12 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:35:12 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+02:35:16 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.34s write=1.68s rename=350.4ms)
+[Epoch 10/20] step 50/309 (0.5 it/s)
+[Epoch 10/20] step 100/309 (0.5 it/s)
+[Epoch 10/20] step 150/309 (0.5 it/s)
+[Epoch 10/20] step 200/309 (0.5 it/s)
+[Epoch 10/20] step 250/309 (0.5 it/s)
+[Epoch 10/20] step 300/309 (0.5 it/s)
+02:47:08 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.317921906709671[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.06871949136257172[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.578125[0m       |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.016780516132712364[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m110.69295501708984[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m91.29532623291016[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.045221392065286636[0m |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.08875677734613419[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |    [0;32;40m864.907958984375[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m85.9000015258789[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m2.143750862160232e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.35360512137413025[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.35360512137413025[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |   [0;32;40m0.0653795525431633[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |   [0;32;40m0.0653795525431633[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.0269546508789062[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.0269546508789062[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.01577259600162506[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.01577259600162506[0m  |
++--------------------------------+-----------------------+
+[Epoch 10/20] done in 712.0s
+02:47:09 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:47:09 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=10-step=3399.ckpt
+02:47:13 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=10-step=3399.ckpt saved (392.2 MiB, serialise=2.71s write=1.91s rename=0.1ms)
+02:47:14 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:47:14 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+02:47:19 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.81s write=2.58s rename=176.1ms)
+[Epoch 11/20] step 50/309 (0.5 it/s)
+[Epoch 11/20] step 100/309 (0.5 it/s)
+[Epoch 11/20] step 150/309 (0.5 it/s)
+[Epoch 11/20] step 200/309 (0.5 it/s)
+[Epoch 11/20] step 250/309 (0.5 it/s)
+[Epoch 11/20] step 300/309 (0.5 it/s)
+02:58:51 | INFO  | trainer_inf~| \n+--------------------------------+------------------------+
+|             Metric             |         Value          |
++--------------------------------+------------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.3058927059173584[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.06107885763049126[0m   |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.53125[0m         |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.017274783924221992[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m          |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m4.385011196136475[0m    |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m98.16764068603516[0m    |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.035023413598537445[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.03441775217652321[0m   |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m870.2788696289062[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |    [0;32;40m86.4000015258789[0m    |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m1.7573029253981076e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.3506738841533661[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.3506738841533661[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.06057901680469513[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.06057901680469513[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.047581911087036[0m    |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.047581911087036[0m    |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.01588774099946022[0m   |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.01588774099946022[0m   |
++--------------------------------+------------------------+
+[Epoch 11/20] done in 693.4s
+02:58:52 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:58:52 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=11-step=3708.ckpt
+02:58:56 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=11-step=3708.ckpt saved (392.2 MiB, serialise=2.33s write=1.79s rename=0.1ms)
+02:58:56 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+02:58:56 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+02:59:00 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.42s write=1.62s rename=268.8ms)
+[Epoch 12/20] step 50/309 (0.5 it/s)
+[Epoch 12/20] step 100/309 (0.5 it/s)
+[Epoch 12/20] step 150/309 (0.5 it/s)
+[Epoch 12/20] step 200/309 (0.6 it/s)
+[Epoch 12/20] step 250/309 (0.6 it/s)
+[Epoch 12/20] step 300/309 (0.5 it/s)
+03:09:40 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.31111690402030945[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.057804595679044724[0m |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.65625[0m        |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.014054509811103344[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m24.05609893798828[0m   |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m97.04712677001953[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.10737823694944382[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.13189665973186493[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m864.3613891601562[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m85.80000305175781[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m1.389508179272525e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.35140058398246765[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.35140058398246765[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.058435119688510895[0m |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.058435119688510895[0m |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m3.0402703285217285[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m3.0402703285217285[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.019349435344338417[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.019349435344338417[0m |
++--------------------------------+-----------------------+
+[Epoch 12/20] done in 641.5s
+03:09:41 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:09:41 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=12-step=4017.ckpt
+03:09:45 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=12-step=4017.ckpt saved (392.2 MiB, serialise=2.03s write=1.20s rename=0.1ms)
+03:09:45 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:09:45 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+03:09:50 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=3.03s write=1.71s rename=272.5ms)
+[Epoch 13/20] step 50/309 (0.5 it/s)
+[Epoch 13/20] step 100/309 (0.5 it/s)
+[Epoch 13/20] step 150/309 (0.5 it/s)
+[Epoch 13/20] step 200/309 (0.6 it/s)
+[Epoch 13/20] step 250/309 (0.6 it/s)
+[Epoch 13/20] step 300/309 (0.6 it/s)
+03:20:01 | INFO  | trainer_inf~| \n+--------------------------------+------------------------+
+|             Metric             |         Value          |
++--------------------------------+------------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.32300668954849243[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.06953324377536774[0m   |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m2.5625[0m         |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.023004725575447083[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m          |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m139.7125244140625[0m    |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m219.2079315185547[0m    |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |   [0;32;40m0.8660223484039307[0m   |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.18631058931350708[0m   |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m788.3892211914062[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m78.30000305175781[0m    |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m1.0496042705199216e-05[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.34278231859207153[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.34278231859207153[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.05806326866149902[0m   |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.05806326866149902[0m   |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m2.986527919769287[0m    |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m2.986527919769287[0m    |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.016048505902290344[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.016048505902290344[0m  |
++--------------------------------+------------------------+
+[Epoch 13/20] done in 612.2s
+03:20:03 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:20:03 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=13-step=4326.ckpt
+03:20:06 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=13-step=4326.ckpt saved (392.2 MiB, serialise=1.88s write=1.78s rename=0.2ms)
+03:20:07 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:20:07 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+03:20:10 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.89s write=1.43s rename=23.5ms)
+[Epoch 14/20] step 50/309 (0.5 it/s)
+[Epoch 14/20] step 100/309 (0.6 it/s)
+[Epoch 14/20] step 150/309 (0.6 it/s)
+[Epoch 14/20] step 200/309 (0.6 it/s)
+[Epoch 14/20] step 250/309 (0.6 it/s)
+[Epoch 14/20] step 300/309 (0.6 it/s)
+03:29:37 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.31907424330711365[0m  |
+|         [0;34;40mfit/pred_loss[0m          |   [0;32;40m0.0626647025346756[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m2.6875[0m        |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.014222043566405773[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m112.53080749511719[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m157.1096649169922[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |   [0;32;40m0.8364617228507996[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.14629043638706207[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m787.9635620117188[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m78.19999694824219[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m7.461279892595485e-06[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.342398464679718[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.342398464679718[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.05747240409255028[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.05747240409255028[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m2.997896671295166[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m2.997896671295166[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.015146941877901554[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.015146941877901554[0m |
++--------------------------------+-----------------------+
+[Epoch 14/20] done in 567.5s
+03:29:38 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:29:38 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=14-step=4635.ckpt
+03:29:41 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=14-step=4635.ckpt saved (392.2 MiB, serialise=1.89s write=1.74s rename=0.1ms)
+03:29:42 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:29:42 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+03:29:46 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.97s write=2.09s rename=291.2ms)
+[Epoch 15/20] step 50/309 (0.7 it/s)
+[Epoch 15/20] step 100/309 (0.7 it/s)
+[Epoch 15/20] step 150/309 (0.7 it/s)
+[Epoch 15/20] step 200/309 (0.7 it/s)
+[Epoch 15/20] step 250/309 (0.6 it/s)
+[Epoch 15/20] step 300/309 (0.6 it/s)
+03:38:47 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.3385063111782074[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.05776045843958855[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.796875[0m       |
+|      [0;34;40mfit/structured_loss[0m       |   [0;32;40m0.028792729601264[0m   |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m178.65762329101562[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m121.1666259765625[0m   |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |   [0;32;40m0.8027293086051941[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.14097246527671814[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m790.5062255859375[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |          [0;32;40m78.5[0m         |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m4.867013558396138e-06[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.33997422456741333[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.33997422456741333[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.056903161108493805[0m |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.056903161108493805[0m |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m2.978797197341919[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m2.978797197341919[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.015054167248308659[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.015054167248308659[0m |
++--------------------------------+-----------------------+
+[Epoch 15/20] done in 541.8s
+03:38:48 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:38:48 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=15-step=4944.ckpt
+03:38:52 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=15-step=4944.ckpt saved (392.2 MiB, serialise=2.04s write=1.66s rename=0.3ms)
+03:38:53 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:38:53 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+03:38:57 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=2.21s write=1.78s rename=56.6ms)
+[Epoch 16/20] step 50/309 (0.6 it/s)
+[Epoch 16/20] step 100/309 (0.6 it/s)
+[Epoch 16/20] step 150/309 (0.6 it/s)
+[Epoch 16/20] step 200/309 (0.6 it/s)
+[Epoch 16/20] step 250/309 (0.6 it/s)
+[Epoch 16/20] step 300/309 (0.6 it/s)
+03:48:05 | INFO  | trainer_inf~| \n+--------------------------------+----------------------+
+|             Metric             |        Value         |
++--------------------------------+----------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.3037635385990143[0m  |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.0612495020031929[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |       [0;32;40m2.59375[0m        |
+|      [0;34;40mfit/structured_loss[0m       | [0;32;40m0.009115615859627724[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |        [0;32;40m100.0[0m         |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |  [0;32;40m200.12973022460938[0m  |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |  [0;32;40m42.594486236572266[0m  |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.5780848860740662[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     | [0;32;40m0.09290669858455658[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |  [0;32;40m717.8369750976562[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |  [0;32;40m71.30000305175781[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m2.77840081253089e-06[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.3382977247238159[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.3382977247238159[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.0566224530339241[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.0566224530339241[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |  [0;32;40m2.9638259410858154[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |  [0;32;40m2.9638259410858154[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    | [0;32;40m0.014953367412090302[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m | [0;32;40m0.014953367412090302[0m |
++--------------------------------+----------------------+
+[Epoch 16/20] done in 549.4s
+03:48:06 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:48:06 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=16-step=5253.ckpt
+03:48:09 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=16-step=5253.ckpt saved (392.2 MiB, serialise=1.67s write=1.46s rename=0.1ms)
+03:48:10 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:48:10 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+03:48:13 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.51s write=1.73s rename=207.6ms)
+[Epoch 17/20] step 50/309 (0.6 it/s)
+[Epoch 17/20] step 100/309 (0.7 it/s)
+[Epoch 17/20] step 150/309 (0.7 it/s)
+[Epoch 17/20] step 200/309 (0.7 it/s)
+[Epoch 17/20] step 250/309 (0.7 it/s)
+[Epoch 17/20] step 300/309 (0.7 it/s)
+03:56:06 | INFO  | trainer_inf~| \n+--------------------------------+------------------------+
+|             Metric             |         Value          |
++--------------------------------+------------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.30433303117752075[0m   |
+|         [0;34;40mfit/pred_loss[0m          |  [0;32;40m0.05402177572250366[0m   |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.640625[0m        |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.01300656609237194[0m   |
+|      [0;34;40mhardware/cpu_percent[0m      |         [0;32;40m100.0[0m          |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m209.1561737060547[0m    |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m59.76905822753906[0m    |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |   [0;32;40m0.6896721124649048[0m   |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.12723493576049805[0m   |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m596.9688110351562[0m    |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m59.29999923706055[0m    |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m1.2478984672270599e-06[0m |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.34111762046813965[0m   |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.34111762046813965[0m   |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.056935712695121765[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.056935712695121765[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m2.9912850856781006[0m   |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m2.9912850856781006[0m   |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.014934823848307133[0m  |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.014934823848307133[0m  |
++--------------------------------+------------------------+
+[Epoch 17/20] done in 473.0s
+03:56:06 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:56:06 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=17-step=5562.ckpt
+03:56:09 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=17-step=5562.ckpt saved (392.2 MiB, serialise=1.17s write=1.10s rename=0.1ms)
+03:56:09 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+03:56:09 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+03:56:11 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.06s write=0.89s rename=302.8ms)
+[Epoch 18/20] step 50/309 (0.8 it/s)
+[Epoch 18/20] step 100/309 (0.8 it/s)
+[Epoch 18/20] step 150/309 (0.8 it/s)
+[Epoch 18/20] step 200/309 (0.8 it/s)
+[Epoch 18/20] step 250/309 (0.8 it/s)
+[Epoch 18/20] step 300/309 (0.8 it/s)
+04:03:18 | INFO  | trainer_inf~| \n+--------------------------------+-----------------------+
+|             Metric             |         Value         |
++--------------------------------+-----------------------+
+|            [0;34;40mfit/loss[0m            |   [0;32;40m0.2897527515888214[0m  |
+|         [0;34;40mfit/pred_loss[0m          |   [0;32;40m0.0567832812666893[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |         [0;32;40m2.375[0m         |
+|      [0;34;40mfit/structured_loss[0m       |  [0;32;40m0.01910228468477726[0m  |
+|      [0;34;40mhardware/cpu_percent[0m      |    [0;32;40m95.0999984741211[0m   |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |   [0;32;40m276.9650573730469[0m   |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |   [0;32;40m40.615970611572266[0m  |
+|     [0;34;40mhardware/net_recv_mb_s[0m     |  [0;32;40m0.19386744499206543[0m  |
+|     [0;34;40mhardware/net_sent_mb_s[0m     |  [0;32;40m0.09070160239934921[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m475.09600830078125[0m  |
+|     [0;34;40mhardware/ram_used_pct[0m      |   [0;32;40m47.20000076293945[0m   |
+|      [0;34;40mhparams/lr_default_0[0m      | [0;32;40m3.139458613077295e-07[0m |
+|         [0;34;40mvalidate/loss[0m          |   [0;32;40m0.3387240469455719[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |   [0;32;40m0.3387240469455719[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       |  [0;32;40m0.05555504932999611[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    |  [0;32;40m0.05555504932999611[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |   [0;32;40m2.9804883003234863[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |   [0;32;40m2.9804883003234863[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    |  [0;32;40m0.014922542497515678[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m |  [0;32;40m0.014922542497515678[0m |
++--------------------------------+-----------------------+
+[Epoch 18/20] done in 427.7s
+04:03:19 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+04:03:19 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=18-step=5871.ckpt
+04:03:21 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=18-step=5871.ckpt saved (392.2 MiB, serialise=1.13s write=0.87s rename=0.1ms)
+04:03:21 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+04:03:21 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+04:03:24 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=1.00s write=0.91s rename=189.9ms)
+[Epoch 19/20] step 50/309 (0.9 it/s)
+[Epoch 19/20] step 100/309 (0.9 it/s)
+[Epoch 19/20] step 150/309 (1.0 it/s)
+[Epoch 19/20] step 200/309 (1.0 it/s)
+[Epoch 19/20] step 250/309 (1.0 it/s)
+[Epoch 19/20] step 300/309 (1.0 it/s)
+04:09:06 | INFO  | trainer_inf~| \n+--------------------------------+----------------------+
+|             Metric             |        Value         |
++--------------------------------+----------------------+
+|            [0;34;40mfit/loss[0m            |  [0;32;40m0.2987505793571472[0m  |
+|         [0;34;40mfit/pred_loss[0m          | [0;32;40m0.05559150129556656[0m  |
+|        [0;34;40mfit/sigreg_loss[0m         |        [0;32;40m2.5625[0m        |
+|      [0;34;40mfit/structured_loss[0m       | [0;32;40m0.012690328992903233[0m |
+|      [0;34;40mhardware/cpu_percent[0m      |   [0;32;40m82.5999984741211[0m   |
+|    [0;34;40mhardware/disk_read_mb_s[0m     |  [0;32;40m308.0671081542969[0m   |
+|    [0;34;40mhardware/disk_write_mb_s[0m    |  [0;32;40m0.6481751203536987[0m  |
+|     [0;34;40mhardware/net_recv_mb_s[0m     | [0;32;40m0.032972533255815506[0m |
+|     [0;34;40mhardware/net_sent_mb_s[0m     | [0;32;40m0.07124477624893188[0m  |
+|      [0;34;40mhardware/ram_used_gb[0m      |   [0;32;40m398.992431640625[0m   |
+|     [0;34;40mhardware/ram_used_pct[0m      |  [0;32;40m39.599998474121094[0m  |
+|      [0;34;40mhparams/lr_default_0[0m      |         [0;32;40m0.0[0m          |
+|         [0;34;40mvalidate/loss[0m          |  [0;32;40m0.3362121880054474[0m  |
+|      [0;34;40mvalidate/loss_epoch[0m       |  [0;32;40m0.3362121880054474[0m  |
+|       [0;34;40mvalidate/pred_loss[0m       | [0;32;40m0.05605821684002876[0m  |
+|    [0;34;40mvalidate/pred_loss_epoch[0m    | [0;32;40m0.05605821684002876[0m  |
+|      [0;34;40mvalidate/sigreg_loss[0m      |  [0;32;40m2.9470462799072266[0m  |
+|   [0;34;40mvalidate/sigreg_loss_epoch[0m   |  [0;32;40m2.9470462799072266[0m  |
+|    [0;34;40mvalidate/structured_loss[0m    | [0;32;40m0.015007720328867435[0m |
+| [0;34;40mvalidate/structured_loss_epoch[0m | [0;32;40m0.015007720328867435[0m |
++--------------------------------+----------------------+
+[Epoch 19/20] done in 343.6s
+04:09:07 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+04:09:07 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/epoch=19-step=6180.ckpt
+04:09:09 | INFO  | atomic_chec~| [atomic_save] ✓ epoch=19-step=6180.ckpt saved (392.2 MiB, serialise=0.91s write=0.89s rename=0.1ms)
+04:09:09 | INFO  | checkpoint_~|   Checking for non PyTorch modules to save
+04:09:09 | INFO  | atomic_chec~| [atomic_save] → /data1/likun-share/junjxu/.cache_stable-pretraining/runs/20260716/004043/7bceef8cfdda/checkpoints/last.ckpt
+04:09:11 | INFO  | atomic_chec~| [atomic_save] ✓ last.ckpt saved (392.2 MiB, serialise=0.88s write=0.74s rename=181.3ms)
+`Trainer.fit` stopped: `max_epochs=20` reached.
+04:09:12 | OK    | env_info.py | ✓ Git: main @ 7f19b8e3
+04:09:12 | INFO  | env_info.py |   Remote: git@github.com-xuustc99:XuUSTC99/wm.git
+04:09:12 | WARN  | env_info.py | ! Working directory has uncommitted changes
+04:09:12 | OK    | env_info.py | ✓ Environment: 4 relevant variables captured
+04:09:12 | INFO  | env_info.py |   Serializing environment data...
+04:09:12 | INFO  | env_info.py |   File exists, using version 442: environment_v442.json
+04:09:12 | INFO  | env_info.py |   File exists, using version 444: requirements_frozen_v444.txt
+04:09:12 | INFO  | env_info.py |   Save directory: /home/likun-share/.cache/stable-pretraining
+04:09:12 | INFO  | env_info.py |   Writing environment to temp file...
+04:09:12 | INFO  | env_info.py |   Moving to: environment_v442.json
+04:09:12 | OK    | env_info.py | ✓ Environment file saved (2.3 KB)
+04:09:12 | OK    | env_info.py | ✓ Requirements file saved (0.1 KB)
+Epoch 19/19 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 309/309 0:05:07 • 0:00:00 1.07it/s 
+04:09:12 | INFO  | utils.py    | ── SignalHandlers (after Trainer.fit() returned) ──
+04:09:12 | INFO  | manager.py  |   SIGUSR1  → SIG_IGN (ignored)
+04:09:12 | INFO  | manager.py  |   SIGUSR2  → SIG_IGN (ignored)
+04:09:12 | INFO  | manager.py  |   SIGCONT  → SIG_DFL (default OS action — terminate process)
+04:09:12 | INFO  | manager.py  |   SIGTERM  → SIG_DFL (default OS action — terminate process)

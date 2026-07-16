@@ -1,0 +1,71 @@
+[norm] action mean=[ 0.24667731 -0.40296947], std=[0.08836433 0.229554  ]  (from phyworld_parabola_id1k.h5)
+[ckpt] /data1/likun-share/junjxu/.stable_worldmodel/dinowm_par_grounded_const_s1234/dinowm_par_grounded_const_s1234_epoch_20_object.ckpt  tag=dinowm_par_grounded_const_s1234
+  rolled out 100 trajs, t=27s
+  rolled out 200 trajs, t=51s
+  rolled out 300 trajs, t=73s
+  rolled out 400 trajs, t=94s
+  rolled out 500 trajs, t=114s
+
+[data] 500 trajs, 14500 (frame,pred) pairs, emb dim=192
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:242: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:242: NearConstantInputWarning: An input array is nearly constant; the computed correlation coefficient may be inaccurate.
+  rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:242: NearConstantInputWarning: An input array is nearly constant; the computed correlation coefficient may be inaccurate.
+  rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:296: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:296: NearConstantInputWarning: An input array is nearly constant; the computed correlation coefficient may be inaccurate.
+  rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:296: NearConstantInputWarning: An input array is nearly constant; the computed correlation coefficient may be inaccurate.
+  rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
+
+=== parabola AR ROLLOUT (LeWM ID-only FT, history_size=3) ===
+--- latent fidelity (pred vs real emb), test trajs, by partition ---
+  ID         n=  464  cos=+0.9361  nMSE=0.1107
+  r/m-OOD    n=  319  cos=+0.9277  nMSE=0.2556
+  v-OOD      n=  928  cos=+0.7715  nMSE=0.3583
+  both-OOD   n= 1189  cos=+0.7805  nMSE=0.4015
+
+--- latent fidelity vs horizon (test, aggregate) ---
+  h=  1  n=  100  cos=+0.9666  nMSE=0.1815
+  h=  2  n=  100  cos=+0.9600  nMSE=0.1956
+  h=  4  n=  100  cos=+0.9512  nMSE=0.2375
+  h=  8  n=  100  cos=+0.9218  nMSE=0.3335
+  h= 16  n=  100  cos=+0.8245  nMSE=0.3137
+  h= 28  n=  100  cos=+0.6766  nMSE=2.4008
+
+--- decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---
+  [baseline] probe applied to REAL embs:
+  REAL ID                   pos0ρ=+0.938  pos1ρ=+0.988  vel0ρ=+0.608  vel1ρ=+0.992
+  REAL r/m-OOD              pos0ρ=+0.916  pos1ρ=+0.986  vel0ρ=+0.564  vel1ρ=+0.987
+  REAL v-OOD                pos0ρ=+0.924  pos1ρ=+0.914  vel0ρ=+0.795  vel1ρ=+0.955
+  REAL both-OOD             pos0ρ=+0.913  pos1ρ=+0.928  vel0ρ=+0.792  vel1ρ=+0.961
+  [rollout] probe applied to PREDICTED embs:
+  PRED ID                   pos0ρ=+0.393  pos1ρ=+0.782  vel0ρ=+0.278  vel1ρ=+0.747
+  PRED r/m-OOD              pos0ρ=+0.563  pos1ρ=+0.643  vel0ρ=+0.410  vel1ρ=+0.679
+  PRED v-OOD                pos0ρ=+0.747  pos1ρ=+0.732  vel0ρ=+0.484  vel1ρ=+0.732
+  PRED both-OOD             pos0ρ=+0.279  pos1ρ=+0.490  vel0ρ=+0.343  vel1ρ=+0.429
+
+--- decoded vel ρ from PRED latents vs horizon (test, aggregate) ---
+  h=  1  n=  100  vel0ρ=+0.135  vel1ρ=-0.054
+  h=  2  n=  100  vel0ρ=+0.471  vel1ρ=-0.060
+  h=  4  n=  100  vel0ρ=+0.617  vel1ρ=+0.060
+  h=  8  n=  100  vel0ρ=+0.579  vel1ρ=+nan
+  h= 16  n=  100  vel0ρ=+0.564  vel1ρ=-0.136
+  h= 28  n=  100  vel0ρ=+0.193  vel1ρ=-0.108
+
+--- [K=4] decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---
+  [K=4] probe applied to PREDICTED embs (stack 4 consecutive predicted latents):
+  PRED-K4 ID          pos0ρ=+0.336  pos1ρ=+0.748  vel0ρ=+0.254  vel1ρ=+0.710
+  PRED-K4 r/m-OOD     pos0ρ=+0.570  pos1ρ=+0.614  vel0ρ=+0.541  vel1ρ=+0.653
+  PRED-K4 v-OOD       pos0ρ=+0.713  pos1ρ=+0.701  vel0ρ=+0.684  vel1ρ=+0.707
+  PRED-K4 both-OOD    pos0ρ=+0.259  pos1ρ=+0.451  vel0ρ=+0.427  vel1ρ=+0.401
+
+--- [K=4] decoded vel ρ from PRED latents vs horizon (test, aggregate) ---
+  h=  4  n=  100  vel0ρ=+0.581  vel1ρ=+0.009
+  h=  8  n=  100  vel0ρ=+0.649  vel1ρ=+nan
+  h= 16  n=  100  vel0ρ=+0.559  vel1ρ=-0.137
+  h= 28  n=  100  vel0ρ=+0.298  vel1ρ=-0.111
+
+Total 115s

@@ -1,0 +1,62 @@
+[norm] action mean=[0.24667731 0.        ], std=[8.83643282e-02 1.00000000e-08]  (from phyworld_uniform_motion_id1k.h5)
+[ckpt] /data1/likun-share/junjxu/.stable_worldmodel/dinowm_smoke/dinowm_smoke_epoch_1_object.ckpt  tag=dinowm_smoke
+
+[data] 60 trajs, 1740 (frame,pred) pairs, emb dim=192
+
+=== uniform_motion AR ROLLOUT (LeWM ID-only FT, history_size=3) ===
+--- latent fidelity (pred vs real emb), test trajs, by partition ---
+  ID         n=   58  cos=+0.7967  nMSE=0.4488
+  r/m-OOD    n=   58  cos=+0.8113  nMSE=0.8375
+  v-OOD      n=   58  cos=+0.7398  nMSE=0.7451
+  both-OOD   n=  174  cos=+0.7462  nMSE=0.3348
+
+--- latent fidelity vs horizon (test, aggregate) ---
+
+--- decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---
+  [baseline] probe applied to REAL embs:
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  REAL ID                   pos0ρ=+0.954  pos1ρ=+0.989  vel0ρ=+0.760  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  REAL r/m-OOD              pos0ρ=+0.927  pos1ρ=+0.879  vel0ρ=-0.436  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  REAL v-OOD                pos0ρ=+0.955  pos1ρ=+0.300  vel0ρ=+0.824  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  REAL both-OOD             pos0ρ=+0.932  pos1ρ=+0.936  vel0ρ=+0.690  vel1ρ=+nan
+  [rollout] probe applied to PREDICTED embs:
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  PRED ID                   pos0ρ=+0.571  pos1ρ=+0.993  vel0ρ=+0.784  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  PRED r/m-OOD              pos0ρ=+0.976  pos1ρ=+0.834  vel0ρ=+0.051  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  PRED v-OOD                pos0ρ=+0.531  pos1ρ=+0.940  vel0ρ=+0.871  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:197: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  rho = pearsonr(vel_all[mask][:, d], pv[:, d])[0]
+  PRED both-OOD             pos0ρ=+0.302  pos1ρ=+0.971  vel0ρ=+0.593  vel1ρ=+nan
+
+--- decoded vel ρ from PRED latents vs horizon (test, aggregate) ---
+
+--- [K=4] decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---
+  [K=4] probe applied to PREDICTED embs (stack 4 consecutive predicted latents):
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:288: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f"  vel{d}ρ={pearsonr(vel_all[m][:, d], pv[:, d])[0]:+.3f}"
+  PRED-K4 ID          pos0ρ=+0.615  pos1ρ=+0.995  vel0ρ=+0.772  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:288: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f"  vel{d}ρ={pearsonr(vel_all[m][:, d], pv[:, d])[0]:+.3f}"
+  PRED-K4 r/m-OOD     pos0ρ=+0.988  pos1ρ=+0.809  vel0ρ=+0.252  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:288: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f"  vel{d}ρ={pearsonr(vel_all[m][:, d], pv[:, d])[0]:+.3f}"
+  PRED-K4 v-OOD       pos0ρ=+0.666  pos1ρ=+0.892  vel0ρ=+0.595  vel1ρ=+nan
+/home/likun-share/junjxu/wm/phyworld/scripts/rollout_eval_id1k.py:288: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  line += f"  vel{d}ρ={pearsonr(vel_all[m][:, d], pv[:, d])[0]:+.3f}"
+  PRED-K4 both-OOD    pos0ρ=+0.359  pos1ρ=+0.970  vel0ρ=+0.518  vel1ρ=+nan
+
+--- [K=4] decoded vel ρ from PRED latents vs horizon (test, aggregate) ---
+
+Total 11s
