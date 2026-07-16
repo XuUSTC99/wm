@@ -107,7 +107,7 @@
 ### 3.4 外部对照与跨 backbone 泛化的设计
 
 - **PIWM 忠实移植**(extrinsic 对照):回应"没有外部方法 baseline"——官方 3-stage(VAE 128-D → 提取器 → 已知方程动力学)搬到 phyworld,检验"extrinsic 架构是否就是答案"。
-- **DINO-WM 复制**(跨 backbone 对照,⏳ 另一 session 在跑):同一协议(TF vs FR + 注入臂)搬到另一个 JEPA 系 latent WM,检验结论**不依赖 LeWM 单一实现**。
+- **DINO-WM 复制**(跨 backbone 对照,✅ 2026-07-16 落地):同一协议(TF vs FR + 注入臂)搬到冻结 DINOv2 的 JEPA 实例,结论**不依赖 LeWM 单一实现**——FR≫TF 复现(合成 1.39–1.69×+真实 3.99×)、注入 27/30 不优于 baseline。
 
 ---
 
@@ -198,13 +198,19 @@ free-rollout 单开关:合成三域 **2.2–3.6×**、真实 Physion++ **8.3×**
    > | v-OOD | **0.97** | 0.87 |
    > | **both-OOD** | 0.48 ⚠️ | **0.87** |
 
-**⏳ DINO-WM(跨 backbone,数据位——另一 session 在跑,回来填)**:同一协议搬到 DINO-WM,证明结论不依赖 LeWM 单一实现。**待填三格**:
-| 待填 | 预期形态 |
-|---|---|
-| ① TF vs FR(至少 1 域) | nMSE 对照 + 倍数(对应 Fig 2 加一行/一组柱) |
-| ② structpos 一臂 vs FR baseline | nMSE 判决格(对应 Fig 16 补一行注记) |
-| ③(可选)probe REAL-emb ρ | presence 是否同样成立 |
-> 填入后 4.4 的措辞从"LeWM 上的发现"升级为"JEPA 系 latent WM 的共性";若 DINO-WM 结果**不同向**,如实写成边界条件(哪类 backbone 逃过 load-bearing problem)——也是有价值的发现,勿硬凹。
+**✅ DINO-WM 跨 backbone 复核(2026-07-16 落地,~130 run,3 种子)**:同一协议搬到第二个 JEPA 实例——**冻结 `facebook/dinov2-small`(通用 SSL,从没见过 phyworld)+ 可训练 projector adapter + 完全相同的 predictor/losses/eval**。三格全部落地且**同向**:
+
+| 格 | 结果 | 判决 |
+|---|---|---|
+| ① **TF vs FR**(全 3 合成域 + 真实 physion,3 种子) | uniform 1.39× / parabola 1.69× / collision 1.68× / **Physion++ 3.99×**,区间零重叠 | ✅ FR≫TF **跨模型复现** |
+| ② **注入 30 格**(10 臂×3 域) | **27/30 ≥ baseline**(10 差/17 平/3 好);dyn a=g、grounded 在 collision **1.27×** 最害;3 个"好"格全在 uniform | ✅ **注入不是通用杠杆**,与 Fig16 的 29/30 一致 |
+| ③ **REAL-emb ρ**(冻结 encoder presence) | 位置 both-OOD ρ **0.951 > LeWM 0.899**;黑盒 blackbox[2:192] ρ 0.951≈all192 | ✅ presence 更强,**旁路跨模型完好** |
+
+**关键增值**:③ 把步1从"我们的模型编了物理"升级为"**冻结的通用 DINOv2、零物理监督、连梯度都没有,照样把位置线性编到 ρ=0.951**"——presence 是通用视觉表示的固有性质,不是训练产物。堵死"换个 encoder 就不一样"。
+
+**唯一异常已闭环**:uniform pos_weight=300 显著变好(0.67×),但 **shuffle control(钉随机目标)+ weakpin(几乎不钉、只加权)同样 0.77×** → 增益是加权的正则效应、与物理内容无关,且 ID 全退化(容量限制签名)。→ 收进评测陷阱:一个真实的 nMSE 改善,归因被对照证伪。诚实边界:dinowm 注入是"无效(噪声内)"而非 LeWM 的"有害",差异归因于冻结架构限制了旁路——与 extrinsic 结论自洽。
+
+详见 [detail/cross_model_dinowm.md](detail/cross_model_dinowm.md);跨模型热力图 [figures/dinowm_injection_heatmap.png](figures/dinowm_injection_heatmap.png)。→ **4.4 措辞可从"LeWM 上的发现"升级为"两个架构差异显著的 JEPA 实例上的共性"。**
 
 ### 4.5 小结(一段,呼应 thesis)
 
@@ -216,7 +222,7 @@ free-rollout 单开关:合成三域 **2.2–3.6×**、真实 Physion++ **8.3×**
 
 1. **结论**:物理状态在 latent 世界模型里**可解码但不承重**;往共享 latent 注入已有状态系统性有害(29/30);真正的杠杆是训练协议(修长程动力学);extrinsic 架构必要非充分。
 2. **建设性出路(future work)**:注入 latent **真缺的东西**(动力学/守恒量而非状态)、extrinsic 承重通道 + 鲁棒编码器。
-3. **Limitations(诚实列)**:主判决在单 backbone(LeWM ViT-tiny;**DINO-WM 验证 ⏳ 填入后此条可弱化**);Physion++ 物理臂单种子(差距 3–10× 远超噪声带,但如实标注);Physion/Physion++ 是**照片级仿真**、非真实视频;30 格中 26 格单种子(高出 baseline 5–20× 种子 std,4 个贴近格已补三种子);posvel·parabola 例外提示"匹配动力学的注入"可能有效但未系统探索。
+3. **Limitations(诚实列)**:主判决在 LeWM ViT-tiny,**已由冻结 DINOv2 的第二个 JEPA 实例跨 backbone 复核(FR≫TF + 注入失效同向,2026-07-16)**;Physion++ 物理臂单种子(差距 3–10× 远超噪声带,但如实标注);Physion/Physion++ 是**照片级仿真**、非真实视频;30 格中 26 格单种子(高出 baseline 5–20× 种子 std,4 个贴近格已补三种子);posvel·parabola 例外提示"匹配动力学的注入"可能有效但未系统探索。
 
 ---
 
@@ -246,7 +252,7 @@ free-rollout 单开关:合成三域 **2.2–3.6×**、真实 Physion++ **8.3×**
 | **Fig 16** | 注入 30 格全扫,29/30 不优于 baseline | §4.1 主表 | `fig16_physics_injection_scan.pdf` |
 | **Fig 15** | 旁路实证:位置冗余在黑盒 190 维 | §4.2 | `fig15_bypass_probe190.pdf` |
 | **Fig 8** | LBR 剂量-反应(可证伪验证) | §4.2 | `fig8_lbr_ablation.pdf` |
-| **Fig 2** | free-rollout 跨域 2.2–8.3×(+DINO-WM 待填行) | §4.3 | `fig2_free_rollout.pdf` |
+| **Fig 2** | free-rollout 跨域 2.2–8.3×(dinowm 1.39–3.99× 已复现) | §4.3 | `fig2_free_rollout.pdf` |
 | **Fig 7** | 长 rollout 单调好、无拐点 | §4.3 | `fig7_realdata_num_preds.pdf` |
 | **Fig 9** | PIWM extrinsic 对照:必要非充分 | §4.4 | `fig9_piwm_vs_lewm.pdf` |
 | **Fig 5** | cos 陷阱(指标为何这么选) | §4.0 Setup/附录 | `fig5_cos_trap.pdf` |
@@ -259,4 +265,4 @@ free-rollout 单开关:合成三域 **2.2–3.6×**、真实 Physion++ **8.3×**
 
 > *物理归纳偏置在共享 latent 世界模型上系统性失效,因为信息可解码但预测不依赖它;真正的杠杆在训练协议。*
 
-加上 PIWM 的架构性归因(必要非充分)与(⏳)DINO-WM 跨 backbone 复核,这是一篇诚实、完整、有解释力的实证论文。创新性评估与审稿预案 → [02_story_and_novelty.md](02_story_and_novelty.md);数字总账 → [01_results_ledger.md](01_results_ledger.md)。
+加上 PIWM 的架构性归因(必要非充分)与 DINO-WM 跨 backbone 复核(✅),这是一篇诚实、完整、有解释力的实证论文。创新性评估与审稿预案 → [02_story_and_novelty.md](02_story_and_novelty.md);数字总账 → [01_results_ledger.md](01_results_ledger.md)。

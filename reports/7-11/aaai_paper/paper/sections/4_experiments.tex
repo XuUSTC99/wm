@@ -1,33 +1,31 @@
 \section{Experiments}
 \label{sec:exp}
 
-Each subsection reports the results of the corresponding design in \S\ref{sec:method}: \S\ref{sec:scan}$\leftrightarrow$\S\ref{sec:designspace}, \S\ref{sec:mech}$\leftrightarrow$\S\ref{sec:mechtests}, \S\ref{sec:fr}$\leftrightarrow$\S\ref{sec:protocol}, \S\ref{sec:externalres}$\leftrightarrow$\S\ref{sec:external}.
-
 \subsection{Setup}
 \label{sec:setup}
 
 \paragraph{Model.}
 LeWM \citep{maes2025lewm}, a compact JEPA-style action-conditioned world model (${\sim}10$M parameters): a ViT-tiny encoder producing a $192$-dimensional embedding, an MLP projector, an action encoder, and a $6$-layer causal-transformer predictor, trained to minimize latent prediction error plus a SIGReg anti-collapse regularizer \citep{balestriero2025lejepa}. Unless stated otherwise, the encoder is initialized from the public PushT checkpoint; \S\ref{sec:scan} additionally studies from-scratch training. The compact, fully controlled backbone allows the complete factorial anatomy (${\sim}200$ training runs) with headline configurations repeated over three seeds ($3072/1234/42$); remaining cells are single-seed and marked as such.
 
-\paragraph{Domains and OOD protocol.}
-PhyWorld \citep{kang2024how}: three single-mechanism domains---\emph{uniform motion} (zero acceleration), \emph{parabola} (constant gravity), \emph{collision} (elastic impulse; discontinuous)---each trained on its $1{,}000$ in-distribution trajectories ($32$ frames, $224{\times}224$; ID means radius/mass $\in[0.7,1.5]$, velocity $\in[1,4]$) and evaluated on four partitions: ID, \rmood{}, \vood{}, \bothood{}. The small clean training set follows PhyWorld's controlled protocol and isolates the inductive-bias question from data-scale confounds. Photorealistic simulation: Physion \citep{bear2021physion} for zero-shot object-contact-prediction (OCP) transfer, and Physion++ \citep{tung2023physionpp} for direct training with latent rollout to horizon $64$; both are rendered simulation, not camera video.
+\paragraph{Datasets and OOD protocol.}
+All benchmarks are \emph{visual} world-modeling tasks (RGB video frames), not the numerical/tabular sequences of prior physics-injection work (\S\ref{sec:related}); injected state is thus always a small fraction of a high-dimensional visual latent. \emph{PhyWorld} \citep{kang2024how} provides three single-mechanism synthetic domains---\emph{uniform motion}, \emph{parabola}, \emph{collision} (zero/constant/impulsive acceleration)---each with $1{,}000$ ID trajectories ($32$ frames, $224{\times}224$; radius/mass $\in[0.7,1.5]$, velocity $\in[1,4]$), evaluated on four partitions (ID, \rmood{}, \vood{}, \bothood{}); its single-variable OOD ranges isolate physical extrapolation from data-scale confounds. Two \emph{photorealistic-simulation} benchmarks (rendered, not camera video) add realism: \emph{Physion} \citep{bear2021physion} for zero-shot object-contact-prediction (OCP) transfer, and \emph{Physion++} \citep{tung2023physionpp}---ten physical-property scenarios (mass/friction/bounce/deformation)---for direct training with rollout to horizon $64$.
 
 \paragraph{Metrics and decision rules.}
-Verdicts use two scale-aware, \emph{external} metrics: latent nMSE ($\|\hat{\lat}-\lat\|^2$ over target variance) and pixel PSNR of decoded rollouts---external because no injection arm optimizes them directly, and they agree in every case we examined. Latent cosine and probe decodability $\rho$ serve as \emph{diagnostics only}: both are duals of the auxiliary training losses and rise mechanically when those losses are optimized, so as verdicts they systematically overstate physical competence (we measured reversals up to cosine $1.50\times$ better while nMSE degrades to $0.21\times$; our own early sweeps were misled this way before re-judging on prediction loss). nMSE has the opposite failure mode: its denominator degenerates when target variance collapses (a parabola ball exiting the frame drives late-horizon nMSE to $10^6$ while cosine stays normal), so parabola is judged on its clean \rmood{} partition and all numbers are reported per partition and per horizon. Full pathology catalogue and protocol checklist: Appendix~\ref{app:traps}. Splits are trajectory-level; three-seed results report mean$\pm$sample std.
+Verdicts use two scale-aware, \emph{external} metrics: latent nMSE ($\|\hat{\lat}-\lat\|^2$ over target variance) and pixel PSNR of decoded rollouts---external because no injection variant optimizes them directly, and they agree in every case we examined. Latent cosine and probe decodability $\rho$ serve as \emph{diagnostics only}: both are duals of the auxiliary training losses and rise mechanically when those losses are optimized, so as verdicts they systematically overstate physical competence (we measured reversals up to cosine $1.50\times$ better while nMSE degrades to $0.21\times$; our own early sweeps were misled this way before re-judging on prediction loss). nMSE has the opposite failure mode: its denominator degenerates when target variance collapses (a parabola ball exiting the frame drives late-horizon nMSE to $10^6$ while cosine stays normal), so parabola is judged on its clean \rmood{} partition and all numbers are reported per partition and per horizon. Full pathology catalogue and protocol checklist: Appendix~\ref{app:traps}. Splits are trajectory-level; three-seed results report mean$\pm$sample std.
 
-\subsection{Injection Fails in 29 of 30 Cells ($\leftrightarrow$\S\ref{sec:designspace})}
+\subsection{Injection Fails in 29 of 30 Cells}
 \label{sec:scan}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig16_scan_paper.pdf}
-\caption{Every injection arm $\times$ domain against the free-rollout baseline (nMSE ratio; number = single-seed value, $\dagger$ = three-seed mean). Red = worse, white = parity, green = better. Injection is at or below baseline in $29$ of $30$ cells ($25$ worse, $4$ parity); the collision column ($1.33$--$1.66\times$) is uniformly worst; the sole real gain is velocity$+$slot on parabola ($0.76\times$, $\dagger\checkmark$).}
+\caption{Every injection variant $\times$ domain against the free-rollout baseline (nMSE ratio; number = single-seed value, $\dagger$ = three-seed mean). Red = worse, white = parity, green = better. Injection is at or below baseline in $29$ of $30$ cells ($25$ worse, $4$ parity); the collision column ($1.33$--$1.66\times$) is uniformly worst; the sole real gain is velocity$+$slot on parabola ($0.76\times$, $\dagger\checkmark$).}
 \label{fig:scan}
 \end{figure}
 
 Figure~\ref{fig:scan}---whose cells carry the raw nMSE alongside the ratio, so it doubles as the full result table (reproduced with seed annotations in Appendix~\ref{app:injection})---answers every design rationale of Table~\ref{tab:mechanisms}, family by family. \emph{Hard state injection}: the slot faithfully absorbs position (its supervision loss falls $2.53\!\to\!0.015$; slot decodability rises $0.31\!\to\!0.96$), yet prediction worsens in all three domains ($1.40\times$/$1.23\times$/$1.66\times$)---the constraint acts, harmfully. \emph{Soft injection}: the deep-supervision recipe, effective in a low-dimensional state latent where supervised quantities occupy ${\sim}38\%$ of the representation \citep{zahorodnii2025deepsup}, does not transfer to a $192$-D visual latent where they occupy $2\%$: all three domains degrade ($1.27\times$/parity-after-seeds/$1.65\times$), and combining soft with hard does not rescue ($1.54\times$ on collision). \emph{Correct physics does not help}: the strict $a{=}g$ head---the ground-truth functional form---degrades uniform by $1.57\times$ and parabola from $0.127$ to $0.173$, no better than an unconstrained MLP ($0.178$). \emph{The purpose-built design fails worst on its target}: the consistency loss, designed for collision impulses, is among the worst exactly there ($1.63\times$). \emph{Labels are not the issue}: the label-free prior and its perfectly labelled counterpart fail in the same direction (collision $1.66\times$ vs.\ $1.33\times$)---the failure is architectural, not informational.
 
-The sole exception is the mechanism's signature, not a usable prior: adding \emph{velocity} to the re-weighted slot helps on parabola (\rmood{} $0.122{\pm}0.007\!\to\!0.096{\pm}0.007$, every seed lower) because there velocity is an extrapolable driving variable ($a{=}g$ makes it linear in time); the same encoding is the \emph{worst} arm on uniform ($+0.076$, velocity is a redundant constant) and clearly harmful on collision ($+0.025$ over the reweighted slot; velocity jumps discontinuously). A prior that requires knowing the domain's dynamics in advance, and reverses sign across domains, is a diagnostic, not a method---and its best case ($-0.026$ nMSE) is an order of magnitude below the protocol lever of \S\ref{sec:fr}.
+The sole exception is the mechanism's signature, not a usable prior: adding \emph{velocity} to the re-weighted slot helps on parabola (\rmood{} $0.122{\pm}0.007\!\to\!0.096{\pm}0.007$, every seed lower) because there velocity is an extrapolable driving variable ($a{=}g$ makes it linear in time); the same encoding is the \emph{worst} variant on uniform ($+0.076$, velocity is a redundant constant) and clearly harmful on collision ($+0.025$ over the reweighted slot; velocity jumps discontinuously). A prior that requires knowing the domain's dynamics in advance, and reverses sign across domains, is a diagnostic, not a method---and its best case ($-0.026$ nMSE) is an order of magnitude below the protocol lever of \S\ref{sec:fr}.
 
 \paragraph{From-scratch co-training hurts more.}
 The remaining defense---structure must be baked in during pretraining---fails in the strongest way (Table~\ref{tab:scratch}): the physics penalty on uniform grows from $+0.035$ (post-hoc) to $+0.558$ (from-scratch); all six regime--domain cells are positive. The cleaner the baseline, the larger the harm.
@@ -54,7 +52,7 @@ Domain & Regime & phys.\ off & phys.\ on & $\Delta$ \\
 \end{table}
 
 \paragraph{Two corroborations independent of PhyWorld nMSE.}
-First, \emph{zero-shot transfer} (different dataset, metric, and task): on Physion OCP, no synthetic-trained configuration exceeds the random-encoder prior ($0.607$ mean AUC); the physics-structured variant is the \emph{worst} of all ($0.551$), below free rollout ($0.603$)---``more structure, worse transfer'' (Appendix~\ref{app:traps}). Second, \emph{photorealistic simulation}: trained directly on Physion++, every injection arm we ported (fixed slot, consistency, consistency$+$acceleration) degrades per-scenario rollout nMSE by $3$--$10\times$ against the identically trained free-rollout model (Table~\ref{tab:pp}); the gaps dwarf the three-seed noise band of the baseline. The probe family has not yet been run on Physion++, so this corroboration currently covers the slot and consistency families.
+First, \emph{zero-shot transfer} (different dataset, metric, and task): on Physion OCP, no synthetic-trained configuration exceeds the random-encoder prior ($0.607$ mean AUC); the physics-structured variant is the \emph{worst} of all ($0.551$), below free rollout ($0.603$)---``more structure, worse transfer'' (Appendix~\ref{app:traps}). Second, \emph{photorealistic simulation}: trained directly on Physion++, every injection variant we ported (fixed slot, consistency, consistency$+$acceleration) degrades per-scenario rollout nMSE by $3$--$10\times$ against the identically trained free-rollout model (Table~\ref{tab:pp}); the gaps dwarf the three-seed noise band of the baseline. The probe family has not yet been run on Physion++, so this corroboration currently covers the slot and consistency families.
 
 \begin{table}[tb]
 \centering
@@ -73,10 +71,10 @@ mass\_waterpush & $\mathbf{0.122}$ & $0.363$ & $0.663$ & $1.476$ \\
 \label{tab:pp}
 \end{table}
 
-\subsection{Mechanism: Decodable but Not Load-Bearing ($\leftrightarrow$\S\ref{sec:mechtests})}
+\subsection{Mechanism: Decodable but Not Load-Bearing}
 \label{sec:mech}
 
-The three pre-registered tests return the following verdicts.
+The three tests return the following verdicts.
 
 \paragraph{Test 1: the bypass exists.}
 Probing \emph{only the $190$ non-slot dimensions} decodes position at $\rho=0.79$--$0.92$ across all three domains---as well as the full latent, undiminished by pinning the slot---while a random-2-dimension control fails ($0.2$--$0.5$; Figure~\ref{fig:bypass}). Position is a redundant, distributed copy the predictor can route through while ignoring any structured slot.
@@ -92,7 +90,7 @@ Probing \emph{only the $190$ non-slot dimensions} decodes position at $\rho=0.79
 The bug hypothesis is ruled out. At probe weight $\lambda{=}10$ the weighted auxiliary-to-prediction loss ratio---our proxy for gradient magnitude (not a measured gradient norm)---reaches $15$--$125\times$ across domains, and the encoder's participation ratio collapses by $39$--$90\%$ (uniform: $41\!\to\!4$ effective dimensions); at $\lambda{=}1$, the setting of \S\ref{sec:scan}, the ratios are benign yet the harm persists. Together with the slot's own decodability rising $0.31\!\to\!0.96$, the constraint demonstrably reshapes the representation---in a direction that competes with prediction.
 
 \paragraph{Test 3: dose--response holds; rescue does not.}
-Sweeping the slot weight $1\!\to\!300$ (Figure~\ref{fig:lbr}) moves the harm systematically---the mechanism's direction is confirmed---but weighting rescues only $2$ of $4$ domain--partition decision cells, to \emph{parity} and never a net gain: uniform both-OOD returns exactly to baseline ($0.132\pm0.017$ vs.\ $0.136\pm0.008$), uniform \rmood{} never recovers, and collision worsens monotonically with weight. The bypass is architectural: no injection strength closes it. This pre-registers the prediction that only an architecture that closes the bypass can help---tested next.
+Sweeping the slot weight $1\!\to\!300$ (Figure~\ref{fig:lbr}) moves the harm systematically---the mechanism's direction is confirmed---but weighting rescues only $2$ of $4$ domain--partition decision cells, to \emph{parity} and never a net gain: uniform both-OOD returns exactly to baseline ($0.132\pm0.017$ vs.\ $0.136\pm0.008$), uniform \rmood{} never recovers, and collision worsens monotonically with weight. The bypass is architectural: no injection strength closes it. This points to the prediction that only an architecture that closes the bypass can help---tested next.
 
 \begin{figure}[t]
 \centering
@@ -101,17 +99,17 @@ Sweeping the slot weight $1\!\to\!300$ (Figure~\ref{fig:lbr}) moves the harm sys
 \label{fig:lbr}
 \end{figure}
 
-\subsection{The Protocol Control: $2.2$--$8.3\times$ on Identical Code ($\leftrightarrow$\S\ref{sec:protocol})}
+\subsection{The Protocol Control: $2.2$--$8.3\times$ on Identical Code}
 \label{sec:fr}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig2_free_rollout.pdf}
-\caption{Teacher forcing vs.\ free rollout (hardest clean split, nMSE $\downarrow$; fold-change above bars). One training-protocol switch, injecting no physics: uniform $0.300\!\to\!0.136$ ($2.2\times$), parabola $0.443\!\to\!0.122$ ($3.6\times$), collision $1.153\!\to\!0.479$ ($2.4\times$), Physion++ horizon-$64$ $1.174\!\to\!0.141$ ($8.3\times$); all three-seed with non-overlapping intervals.}
+\includegraphics[width=\textwidth]{figures/fig2_free_rollout_2models.pdf}
+\caption{Teacher forcing vs.\ free rollout on both backbones (hardest clean split, nMSE $\downarrow$; fold-change above bars; all three-seed with non-overlapping intervals). Left, LeWM: uniform $0.300\!\to\!0.136$ ($2.2\times$), parabola $0.443\!\to\!0.122$ ($3.6\times$), collision $1.153\!\to\!0.479$ ($2.4\times$), Physion++ horizon-$64$ $1.174\!\to\!0.141$ ($8.3\times$). Right, the frozen-DINOv2 variant (\S\ref{sec:external}): the same physics-free switch yields $1.4\times$/$1.7\times$/$1.7\times$/$4.0\times$---the protocol lever is backbone-independent.}
 \label{fig:fr}
-\end{figure}
+\end{figure*}
 
-Replacing teacher forcing with free rollout cuts the hardest-split error $2.2\times$ (uniform, $0.300{\pm}0.007\!\to\!0.136{\pm}0.008$), $3.6\times$ (parabola, $0.443{\pm}0.048\!\to\!0.122{\pm}0.007$), and $2.4\times$ (collision, $1.152{\pm}0.048\!\to\!0.479{\pm}0.079$), with improvements on \emph{every} partition including ID ($2.0$--$4.6\times$)---it is not an OOD patch (Figure~\ref{fig:fr}). On Physion++ the same switch is worth $8.3\times$ at horizon $64$ ($1.174{\pm}0.041\!\to\!0.141{\pm}0.018$, three seeds). The horizon must match dynamics complexity: collision improves markedly at $H{\approx}20$ ($0.393\!\to\!0.294$) while smooth domains degrade with excess horizon (uniform horizon-$28$ cosine $0.969\!\to\!0.814$ at $H{=}16$); photorealistic scenes have the largest appetite---extending $H{=}8\!\to\!28$ (with geometric scale jitter stabilizing amplitude; Appendix~\ref{app:aug}) drives horizon-$64$ nMSE from $0.280$ to $0.014$, a ${\sim}19\times$ reduction with no inflection found (Figure~\ref{fig:ladder}).
+Replacing teacher forcing with free rollout cuts the hardest-split error $2.2\times$ (uniform, $0.300{\pm}0.007\!\to\!0.136{\pm}0.008$), $3.6\times$ (parabola, $0.443{\pm}0.048\!\to\!0.122{\pm}0.007$), and $2.4\times$ (collision, $1.152{\pm}0.048\!\to\!0.479{\pm}0.079$), with improvements on \emph{every} partition including ID ($2.0$--$4.6\times$)---it is not an OOD patch (Figure~\ref{fig:fr}). On Physion++ the same switch is worth $8.3\times$ at horizon $64$ ($1.174{\pm}0.041\!\to\!0.141{\pm}0.018$, three seeds), and the entire pattern replicates on the frozen-DINOv2 backbone (Figure~\ref{fig:fr}, right; \S\ref{sec:externalres}). The horizon must match dynamics complexity: collision improves markedly at $H{\approx}20$ ($0.393\!\to\!0.294$) while smooth domains degrade with excess horizon (uniform horizon-$28$ cosine $0.969\!\to\!0.814$ at $H{=}16$); photorealistic scenes have the largest appetite---extending $H{=}8\!\to\!28$ (with geometric scale jitter stabilizing amplitude; Appendix~\ref{app:aug}) drives horizon-$64$ nMSE from $0.280$ to $0.014$, a ${\sim}19\times$ reduction with no inflection found (Figure~\ref{fig:ladder}).
 
 \begin{figure}[t]
 \centering
@@ -122,13 +120,13 @@ Replacing teacher forcing with free rollout cuts the hardest-split error $2.2\ti
 
 As the positive control of \S\ref{sec:protocol}, this result carries the methodological weight of the paper: on the same code, metrics, seeds, and data that judged all thirty injection cells, a physics-free intervention produces multiples---so the injection failure of \S\ref{sec:scan} is attributable to the injected structure, not to the pipeline or the yardstick.
 
-\subsection{External Control: Extrinsic Is Necessary, Not Sufficient ($\leftrightarrow$\S\ref{sec:external})}
+\subsection{External Control: Extrinsic Is Necessary, Not Sufficient}
 \label{sec:externalres}
 
 The faithful extrinsic port learns the correct physics and, where its encoder is in-distribution, beats our shared-latent model: rolled-out position $\rho$ reaches $0.96$ (ID) and $0.97$ (\vood) vs.\ LeWM's $0.93$/$0.87$ (Table~\ref{tab:piwm}). But under radius/mass shift---which changes appearance, hitting the VAE encoder---it collapses to $\rho=0.33$ (\rmood) and $0.48$ (\bothood) while LeWM holds $0.89$/$0.87$. The architectural prediction of \S\ref{sec:mech} is confirmed from the outside: making the physical state load-bearing by construction is what extrinsic designs buy (their equations alone do not transfer, \S\ref{sec:scan}); yet closing the bypass leaves the encoder-OOD problem unsolved. Extrinsic structure is necessary but not sufficient.
 
-% ⏳ DINO-WM cross-backbone results go here when the parallel session lands
-% (three cells specified in sections/3_method.tex).
+\paragraph{Cross-backbone replication.}
+On the frozen-DINOv2 variant every headline replicates, three-seed. Presence is even stronger---the physics-naive frozen encoder decodes position at $\rho{=}0.95$ (vs.\ $0.90$ for LeWM), with the same black-box bypass---so presence and bypass are properties of generic visual features, not our training. The protocol lever transfers ($1.4$--$1.7\times$ synthetic, $4.0\times$ Physion++; Figure~\ref{fig:fr}, right). Injection still never wins ($27/30$ at or below baseline; Appendix~\ref{app:crossbackbone}); the three above-parity cells dissolve under content-free controls---a shuffled target, or a $10\times$-weaker pin at matched loss weighting, keeps the apparent gain while ID error degrades, i.e.\ capacity-restriction regularization, not physics (Trap~5, Appendix~\ref{app:traps}). One difference: with the encoder frozen, injection is inert rather than harmful---the losses reshape only the adapter, bounding damage but foreclosing benefit.
 
 \begin{table}[tb]
 \centering
@@ -148,4 +146,4 @@ ID & $\mathbf{0.96}$ & $0.93$ \\
 \end{table}
 
 \subsection{Synthesis}
-Same latent, same code, same metrics: injecting state the latent already encodes fails in $29/30$ cells (\S\ref{sec:scan}) because prediction routes around it (\S\ref{sec:mech}); repairing the long-horizon dynamics of the predictor---with no physics at all---yields $2.2$--$8.3\times$ (\S\ref{sec:fr}); and closing the bypass architecturally helps only until the encoder meets OOD physics (\S\ref{sec:externalres}). Physical state in a latent world model is \emph{decodable but not load-bearing}.
+Same latent, same code, same metrics: injecting state the latent already encodes fails in $29/30$ cells (\S\ref{sec:scan}) because prediction routes around it (\S\ref{sec:mech}); repairing the long-horizon dynamics of the predictor---with no physics at all---yields $2.2$--$8.3\times$ (\S\ref{sec:fr}); closing the bypass architecturally helps only until the encoder meets OOD physics; and the whole pattern survives a backbone swap (\S\ref{sec:externalres}). Physical state in a latent world model is \emph{decodable but not load-bearing}.

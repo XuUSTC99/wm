@@ -1,12 +1,12 @@
 \section{Method: A Design Space of Physical Injection}
 \label{sec:method}
 
-We answer the question of \S\ref{sec:intro} by construction: enumerate the ways physics can be injected into a shared latent, state what each design is supposed to achieve, and pre-register the tests that would falsify our mechanistic explanation. Section~\ref{sec:exp} reports the corresponding results subsection-by-subsection.
+We answer the question of \S\ref{sec:intro} by construction: design the ways physics can be injected into a shared latent, state what each design is supposed to achieve, and lay out the experiments that test the mechanism behind it.
 
-\subsection{Injection Design Space: Five Families, Ten Arms}
+\subsection{Injection Design Space: Five Families, Ten Variants}
 \label{sec:designspace}
 
-We span the design space along three orthogonal axes---\emph{hard vs.\ soft} constraints, pinning \emph{what the state is} vs.\ \emph{how it evolves}, and \emph{labelled vs.\ label-free} supervision---so that any ``try a different encoding'' objection lands on an axis we have measured. Table~\ref{tab:mechanisms} lists the ten arms with the design rationale of each.
+We span the design space along three orthogonal axes---\emph{hard vs.\ soft} constraints on the physical quantity, pinning \emph{what the motion state is} vs.\ \emph{how it evolves}, and \emph{labelled vs.\ label-free} supervision---so that any ``try a different encoding'' objection lands on an axis we have measured. Table~\ref{tab:mechanisms} lists the ten variants with the design rationale of each.
 
 \begin{table}[tb]
 \centering
@@ -14,35 +14,35 @@ We span the design space along three orthogonal axes---\emph{hard vs.\ soft} con
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}p{2.35cm}p{5.4cm}@{}}
 \toprule
-Arm & Design rationale \\
+Variant & What it does, and what it tests \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Family 1: fixed slot (hard $\cdot$ state $\cdot$ labelled)}} \\
-\ \ slot (structpos) & pin dims $[0{:}2]$ to true position: the most direct state injection; tests whether a hard constraint helps \\
-\ \ \ $+$reweight & raise the slot's share of the prediction loss (weight $30$): if failure is due to the slot's ${\sim}1\%$ gradient share, this should rescue it---falsifiable \\
-\ \ \ $+$velocity & encode velocity too: tests whether \emph{extrapolability} of the injected quantity is what matters \\
-\multicolumn{2}{@{}l}{\emph{Family 2: deep-supervision probe (soft $\cdot$ state $\cdot$ labelled)}} \\
+\multicolumn{2}{@{}l}{\emph{Family 1: fixed slot --- hard constraint, pins the state, labelled}} \\
+\ \ slot (structpos) & pin dims $[0{:}2]$ to the true position (the object's $x,y$ coordinates): the most direct state injection; tests whether a hard constraint helps \\
+\ \ \ $+$reweight & raise the slot's share of the prediction loss (weight $30$): if failure is due to the slot's ${\sim}1\%$ gradient share, this should rescue it \\
+\ \ \ $+$velocity & encode velocity too: tests whether it matters \emph{which} quantity is injected, not just that something is \\
+\multicolumn{2}{@{}l}{\emph{Family 2: deep-supervision probe --- soft constraint, pins the state, labelled}} \\
 \ \ probe & linear head reads position from the latent: replicates the deep-supervision recipe \citep{zahorodnii2025deepsup} in a high-dimensional visual latent \\
 \ \ \ $+$slot & soft $+$ hard combination: tests complementarity \\
-\multicolumn{2}{@{}l}{\emph{Family 3: kinematic head (hard $\cdot$ evolution $\cdot$ labelled)}} \\
+\multicolumn{2}{@{}l}{\emph{Family 3: kinematic head --- hard constraint, pins the evolution, labelled}} \\
 \ \ free MLP & attach $z{+}v{+}a$ update with learned $a$: upgrade from pinning state to pinning \emph{evolution} \\
 \ \ strict $a{=}g$ & exact gravitational form, one learnable constant: closes the ``your physics was wrong'' objection \\
-\multicolumn{2}{@{}l}{\emph{Family 4: consistency (soft $\cdot$ evolution $\cdot$ labelled)}} \\
+\multicolumn{2}{@{}l}{\emph{Family 4: consistency --- soft constraint, pins the evolution, labelled}} \\
 \ \ consistency & finite-difference velocity of the rolled-out positions must match ground truth; assumes no form for $a$, designed for collision impulses \\
-\multicolumn{2}{@{}l}{\emph{Family 5: label-free prior (soft $\cdot$ evolution $\cdot$ unlabelled)}} \\
+\multicolumn{2}{@{}l}{\emph{Family 5: label-free prior --- soft constraint, pins the evolution, label-free}} \\
 \ \ label-free & slot must evolve as smooth second-order dynamics, no ground truth: the only injection available for raw video \\
 \ \ grounded & same structure $+$ true labels: isolates the label variable \\
 \bottomrule
 \end{tabular}
-\caption{Ten injection arms grouped into five families, each with its design rationale. The axes close: hard (families 1, 3) vs.\ soft (2, 4, 5); state (1, 2) vs.\ evolution (3, 4, 5); labelled (nine arms) vs.\ label-free (one). All arms run on top of the strongest training protocol (\S\ref{sec:protocol}), which is the deployment-relevant comparison.}
+\caption{Ten injection variants in five families, spanning three axes (read off each family's header). \textbf{Constraint}---\emph{hard}: a latent dimension is forced to equal the physical quantity; \emph{soft}: an auxiliary loss only encourages it. \textbf{Target}---the \emph{state} (what the motion is: position, velocity) vs.\ its \emph{evolution} (how it changes: a dynamics rule). \textbf{Supervision}---\emph{labelled} uses ground-truth physics, \emph{label-free} does not. The three axes span the ways to inject physics into a shared latent, so any alternative encoding falls on an axis we test. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
 \label{tab:mechanisms}
 \end{table}
 
 Orthogonally, we cross injection with the \emph{training regime}: post-hoc fine-tuning of a pretrained encoder vs.\ from-scratch co-training, a $2{\times}2$ per domain. This closes the remaining escape hatch---``structure must be baked in during pretraining, as extrinsic architectures do.''
 
-\subsection{Mechanistic Hypothesis and Three Falsifiable Tests}
+\subsection{Mechanistic Hypothesis and Its Tests}
 \label{sec:mechtests}
 
-\emph{Hypothesis (the load-bearing problem).} The physical slot occupies $2$ of $192$ dimensions and receives ${\sim}1\%$ of the prediction gradient, while the black-box channel \emph{redundantly} encodes the same position---so prediction can route around any injected slot. Injecting state the latent already carries adds no signal, but does consume capacity and gradient. We design three tests, each of which could falsify part of this account:
+\emph{Hypothesis (the load-bearing problem).} The physical slot occupies $2$ of $192$ dimensions and receives ${\sim}1\%$ of the prediction gradient, while the black-box channel \emph{redundantly} encodes the same position---so prediction can route around any injected slot. Injecting state the latent already carries adds no signal, but does consume capacity and gradient. We test this account three ways, each designed so that a specific outcome would show it wrong:
 
 \begin{enumerate}
     \item \textbf{Bypass probe (probe-190).} Split the latent into the $2$ slot dimensions and the $190$ black-box dimensions and decode position from each separately, with a random-2-dimension control. If the black box alone cannot decode position, the redundancy claim is false.
@@ -64,13 +64,4 @@ Free rollout serves two methodological roles; neither is a novelty claim (it is 
 
 \emph{Extrinsic port.} We faithfully port the physically interpretable world model of \citet{mao2024piwm}---a three-stage pipeline (VAE encoder, $128$-D; a supervised extractor to a low-dimensional physical state; known-equation dynamics with learnable constants)---onto the same PhyWorld domains and OOD protocol. The port tests our mechanism's architectural prediction from the outside: extrinsic designs make the physical state the sole pathway prediction must route through, closing the bypass by construction.
 
-% ---------------------------------------------------------------------------
-% ⏳ DINO-WM cross-backbone control (running in a parallel session; fill in):
-%   (1) TF vs FR on >=1 PhyWorld domain: nMSE pair + fold-change.
-%   (2) structpos arm vs FR baseline: one verdict cell.
-%   (3) optional: REAL-emb probe rho (presence).
-% If results agree, upgrade wording here and in §4.4/§5 from "a JEPA-style
-% model (LeWM)" to "JEPA-style latent world models (LeWM and DINO-WM)".
-% If they disagree, report as a boundary condition -- do not force agreement.
-% [CITATION NEEDED: DINO-WM, Zhou et al. -- verify on DBLP before citing.]
-% ---------------------------------------------------------------------------
+\emph{Cross-backbone control.} To test that the conclusions are not artifacts of one encoder, we replicate the core protocol on a second JEPA-family instantiation in the style of DINO-WM \citep{zhou2025dinowm}: a \emph{frozen} DINOv2-small encoder \citep{oquab2024dinov2}---generic self-supervised features that have never seen PhyWorld---with the trainable projector serving as adapter and the identical predictor stack, losses, seeds, and evaluation. The variant differs from LeWM in backbone provenance, dimensionality, and, crucially, in whether the injected losses can reshape the encoder at all.

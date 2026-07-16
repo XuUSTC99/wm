@@ -68,10 +68,28 @@ $\Delta$ (adding velocity) & $+0.075$ & $-0.064$ & $+0.025$ \\
 Position is an output variable with the same role in every domain, so pinning it degrades monotonically with dynamics complexity and never flips sign. The marginal effect of adding velocity ($+0.075/{-}0.064/{+}0.025$) tracks velocity's role in each domain---redundant constant (uniform), linear driver (parabola), discontinuous jump (collision). The parabola gain ($0.122\pm0.007\!\to\!0.096\pm0.007$, every seed lower) is thus the sole seed-robust structural gain in the grid: a fixed form landing on a matching domain, not a portable prior.
 
 \paragraph{Physion++ per-scenario (all ten scenarios, FR at $20$ epochs).}
-Rollout nMSE: bouncy\_platform $0.041$, bouncy\_wall $0.094$, friction\_cloth $0.071$, friction\_collision $0.062$, friction\_platform $0.041$, mass\_collision $0.083$, mass\_dominoes $0.058$, mass\_waterpush $0.122$; deformable scenes are the common hard case for every method (deform\_clothhang $1.375$, deform\_clothhit $0.772$). Injection arms degrade the rigid-body scenarios by $3$--$10\times$ (Table~\ref{tab:pp}) while leaving the deformable failure in place.
+Rollout nMSE: bouncy\_platform $0.041$, bouncy\_wall $0.094$, friction\_cloth $0.071$, friction\_collision $0.062$, friction\_platform $0.041$, mass\_collision $0.083$, mass\_dominoes $0.058$, mass\_waterpush $0.122$; deformable scenes are the common hard case for every method (deform\_clothhang $1.375$, deform\_clothhit $0.772$). Injection variants degrade the rigid-body scenarios by $3$--$10\times$ (Table~\ref{tab:pp}) while leaving the deformable failure in place.
 
 \paragraph{Physion++ horizons.}
 Overall nMSE at horizons $16/32/64$: baseline ($H{=}8$) $0.016/0.140/0.280$; $H{=}20$ $0.022/0.033/0.220$; $H{=}16{+}$scale $0.010/0.035/0.136$; $H{=}20{+}$scale $0.012/0.024/0.087$; $H{=}28{+}$scale reaches horizon-$64$ nMSE $0.014$. Free rollout is the main long-horizon lever (horizon-$32$ cosine $0.91$ vs.\ $0.79$--$0.87$ for every physics-augmented variant); geometric scale jitter acts as an amplitude stabilizer for long rollouts: without it, $H{=}20$ explodes on friction-collision (nMSE $24.6$ at cosine $0.99$); with it, $0.019$.
+
+\section{Cross-Backbone Replication: Frozen DINOv2}
+\label{app:crossbackbone}
+
+The cross-backbone variant (\S\ref{sec:external}) freezes a DINOv2-small encoder \citep{oquab2024dinov2}---in the style of DINO-WM \citep{zhou2025dinowm}---and trains only the projector (as adapter) and the identical predictor stack, losses, and seeds (${\sim}130$ runs). Free-rollout baselines (three-seed): uniform both-OOD $0.427{\pm}0.039$, parabola \rmood{} $0.225{\pm}0.019$, collision both-OOD $0.479{\pm}0.009$; Physion++ horizon-$64$ $0.258{\pm}0.005$ vs.\ teacher forcing $1.030{\pm}0.028$.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/fig17_dinowm_scan.pdf}
+\caption{The injection scan repeated on the frozen-DINOv2 backbone (nMSE over the free-rollout baseline; mean over available seeds, $\dagger$ = three seeds). $10$ cells worse / $17$ parity / $3$ better ($27/30$ at or below baseline). The dynamics-head variants are the worst here too (strict $a{=}g$ and the grounded prior reach $1.27\times$ on collision); the three above-parity cells, all on uniform, are the re-weighting confound of Trap~5.}
+\label{fig:dinowmscan}
+\end{figure}
+
+\paragraph{Presence and bypass.}
+The frozen encoder, which has never seen PhyWorld and received no physics supervision or gradient, decodes position from real-frame embeddings at $\rho{=}0.951$ (both-OOD)---\emph{higher} than the PhyWorld-trained LeWM encoder ($0.899$). The $190$ non-slot dimensions alone decode at $0.951$, indistinguishable from the full latent; pinning the slot at weight $300$ leaves the black-box copy at $0.973$. Presence and the bypass are properties of generic visual representations.
+
+\paragraph{Inert, not harmful.}
+Unlike the trainable-encoder regime, the core variants (re-weighted slot, probe, consistency) land within the baseline's seed band on all three domains, while the plain slot ($1.42\times$ on uniform) and the dynamics-head variants ($1.15$--$1.29\times$ on all domains) still hurt. With the encoder frozen, injection losses can only reshape the $384{\to}192$ adapter: the bypass cannot be displaced, which bounds the damage---and forecloses the benefit. Injection-variant variance also roughly doubles ($\pm0.087$ vs.\ baseline $\pm0.039$ on uniform), so single-seed cells on this backbone are uninformative.
 
 \section{Augmentation: a Domain-Specific Lever with a Reversal Boundary}
 \label{app:aug}
@@ -83,19 +101,22 @@ The appearance recipe reverses on photorealistic simulation: the same jitter tha
 \section{Metric Pathologies and Evaluation Traps}
 \label{app:traps}
 
-Our anatomy repeatedly reached conclusions opposite to those suggested by common metrics; the decision rules of \S\ref{sec:setup} distill the following four failure modes, each of which reversed at least one finding.
+Our anatomy repeatedly reached conclusions opposite to those suggested by common metrics; the decision rules of \S\ref{sec:setup} distill the following five failure modes, each of which reversed at least one finding.
 
 \paragraph{Trap 1: cosine and probe metrics are duals of the training loss.}
 Probe correlation and latent cosine rise mechanically when probe or slot losses are optimized---they measure whether information is \emph{present}, not whether prediction \emph{uses} it. Probe supervision lifts velocity decodability from $\rho{=}0.44$ to $0.80$ and gives the most stable long-horizon \emph{cosine} ($0.882$ vs.\ $0.843$), while its \emph{pixel} rollout is the worst in the comparison ($19.93$ vs.\ $20.64$\,dB at horizon $28$). Appearance augmentation on Physion++ improves the aggregate long-horizon cosine while per-scene nMSE collapses up to $100\times$ (deform\_clothhit: cosine $0.610\!\to\!0.913$, nMSE $0.772\!\to\!3.69$). Judging either result by direction-only or readout metrics inverts the conclusion. Our own early sweep was misled this way: judged on $K{=}4$ probe $\rho$, $\lambda{=}50$ ``won''; re-judged on prediction loss, the ranking reversed.
 
 \paragraph{Trap 2: nMSE denominators can degenerate.}
-When the target sequence degenerates (a parabola ball exits the frame, target variance ${\to}0$), per-horizon nMSE explodes---$3{\times}10^{4}$--$2{\times}10^{6}$ at horizon ${\sim}28$ across all six parabola baseline arms, while cosine sits at a healthy $0.55$--$0.95$---and pollutes every aggregate that includes late horizons. This is why parabola is judged on its clean \rmood{} partition throughout. Traps 1 and 2 point in opposite directions (cosine under-reports failure; degenerate nMSE over-reports it); neither metric family is safe alone, hence per-partition, per-horizon cross-validation.
+When the target sequence degenerates (a parabola ball exits the frame, target variance ${\to}0$), per-horizon nMSE explodes---$3{\times}10^{4}$--$2{\times}10^{6}$ at horizon ${\sim}28$ across all six parabola baseline variants, while cosine sits at a healthy $0.55$--$0.95$---and pollutes every aggregate that includes late horizons. This is why parabola is judged on its clean \rmood{} partition throughout. Traps 1 and 2 point in opposite directions (cosine under-reports failure; degenerate nMSE over-reports it); neither metric family is safe alone, hence per-partition, per-horizon cross-validation.
 
 \paragraph{Trap 3: zero-shot transfer is bounded by the architecture prior.}
 On Physion OCP, a \emph{randomly initialized} encoder scores mean AUC $0.607$. No synthetic-training configuration exceeds it: free rollout approaches it ($0.603$), physics variants fall below it ($0.551$--$0.582$), appearance augmentation $0.579$--$0.597$; training longer approaches the ceiling monotonically ($0.554$ at epoch $1$ to $0.603$ at epoch $20$) without crossing. Per-scenario, only Support ($+0.10$) and Collide ($+0.07$) show signal above the random control. Zero-shot claims must be calibrated against the random-prior floor, or they measure the architecture, not the learning.
 
 \paragraph{Trap 4: protocol confounds fabricate results in both directions.}
 Three probe-protocol choices (random vs.\ pretrained initialization, single-frame vs.\ stacked probes, probing through the projector) multiply into a false negative: the naive stack reads uniform velocity decodability at $R^{2}{=}0.166$, the corrected protocol $0.939$. A silent initialization bug (only $24$ of $216$ loadable encoder keys actually loaded) invalidated an entire 45-configuration sweep before a loading guard caught it. And converged training loss proves nothing about rollout: our clean from-scratch baseline converges to the pretrained model's prediction loss ($0.006$ vs.\ $0.005$) while its rollout OOD error is $2.8\times$ worse.
+
+\paragraph{Trap 5: loss re-weighting masquerades as physics.}
+On the frozen-DINOv2 backbone, heavily re-weighting the pinned position slot (weight $300$; the $2$ slot dimensions then carry $76\%$ of the prediction loss) improves uniform both-OOD from $0.427{\pm}0.039$ to $0.286{\pm}0.015$---apparently the one clear injection win on either backbone. Two content-free controls dissolve it: pinning the slot to a \emph{shuffled}, physically meaningless target at the same weight reaches $0.330{\pm}0.013$, and weakening the pin $10\times$ while keeping the weighting reaches $0.329{\pm}0.084$---most of the gain, with no usable physics. All three variants degrade in-distribution error ($0.099\!\to\!0.115$--$0.136$), the signature of capacity restriction (the predictor is effectively reduced to a $2$-dimensional task), and the same recipe \emph{worsens} collision ($1.11\times$) and parabola ($1.14\times$). An apparent injection gain must be checked against a content-free control at matched loss weighting.
 
 \paragraph{Auxiliary-loss dominance (measurement behind \S\ref{sec:mech}, Test 2).}
 At probe weight $\lambda{=}10$, the weighted auxiliary-to-prediction loss ratios---used as a proxy for gradient magnitude; we do not measure gradient norms directly---are $15\times$ (collision), $44\times$ (uniform), and $125\times$ (parabola); the encoder's effective (participation-ratio) dimensionality collapses by $39$--$90\%$ relative to baseline (uniform $41\!\to\!4$). At $\lambda{=}1$ the ratios are benign, which is the setting used in \S\ref{sec:scan}.

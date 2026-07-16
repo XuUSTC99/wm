@@ -21,6 +21,7 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 - **⚠️ parabola both-OOD nMSE 弃用(2026-07-11 lewm 交接)**:六个 parabola 臂 h28 nMSE 全部爆点(3.2万~101万;球出框→目标方差→0→除零,h28 cos 却正常 0.55~0.95),both-OOD 聚合被污染。parabola 一律以 **r/m-OOD** 判决(实测无爆点);旧 both-OOD 数字(TF 0.750±0.027 / FR 0.279±0.035)仅作方向参考。uniform/collision h28 正常(~1–2),不受影响。
 - **真实数据同样成立(2026-07-12,3 种子 solid)**:Physion++ 直训 **FR vs TF headline h64 nMSE = FR 0.141 vs TF 1.174(好 8.3×,3v3 区间零重叠,cos 0.89 vs 0.50)**;物理结构(struct/cons/consacc)长程全差于纯 FR(0.168–0.266 vs 0.141)。出处:[physionpp §3.8](../../physion/physionpp_ood_longhorizon.md)。
 - **迁移也最好**:phyworld→Physion zero-shot 所有配置中 free-rollout 最高(0.603,唯一逼近 random 天花板 0.607 者)。出处:[transfer_improvement_report.md](../../physion/transfer_improvement_report.md)。
+- **跨模型也成立(2026-07-16,第二个 JEPA 实例,3 种子)**:冻结 DINOv2-small + adapter(DINO-WM 风格)复跑同协议,**FR≫TF = uniform 1.39× / parabola 1.69× / collision 1.68× / Physion++ 3.99×**(区间零重叠);注入 30 格 **27/30 不优于 baseline**(与 LeWM Fig16 一致);REAL-emb 位置 ρ **0.951 > LeWM 0.899**(presence 更强)、黑盒旁路 ρ 0.951≈all192(旁路跨模型完好)。**唯一异常 uniform pw300(0.67×)经 shuffle+weakpin 双对照证明是加权正则、非物理**(随机目标同样 0.77×+ID 退化)。出处:[detail/cross_model_dinowm.md](detail/cross_model_dinowm.md)、`raw_data/runs/dinowm/`。
 - 5-27 rollout 报告提供了"为什么":num_preds=1 时 1-step cos 0.98–0.99 但多步漂移,漂移速度=f(动力学复杂度) uniform<parabola<collision——teacher forcing 掩盖误差累积。
 
 ## C2. 训练 rollout 长度要匹配动力学复杂度(horizon-complexity matching)✅✅
