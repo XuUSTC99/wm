@@ -6,7 +6,7 @@ We answer the question of \S\ref{sec:intro} by construction: design the ways phy
 \subsection{Injection Design Space: Five Families, Ten Variants}
 \label{sec:designspace}
 
-We span the design space along three orthogonal axes---\emph{hard vs.\ soft} constraints on the physical quantity, pinning \emph{what the motion state is} vs.\ \emph{how it evolves}, and \emph{labelled vs.\ label-free} supervision---so that any ``try a different encoding'' objection lands on an axis we have measured. Table~\ref{tab:mechanisms} lists the ten variants with the design rationale of each.
+We span the design space along three orthogonal axes---\emph{hard vs.\ soft} constraints on the physical quantity, pinning \emph{what the motion state is} vs.\ \emph{how it evolves}, and \emph{labeled vs.\ label-free} supervision---so that any ``try a different encoding'' objection lands on an axis we have measured. Table~\ref{tab:mechanisms} lists the ten variants with the design rationale of each.
 
 \begin{table}[tb]
 \centering
@@ -16,24 +16,24 @@ We span the design space along three orthogonal axes---\emph{hard vs.\ soft} con
 \toprule
 Variant & What it does, and what it tests \\
 \midrule
-\multicolumn{2}{@{}l}{\emph{Family 1: fixed slot --- hard constraint, pins the state, labelled}} \\
+\multicolumn{2}{@{}l}{\emph{Family 1: fixed slot --- hard constraint, pins the state, labeled}} \\
 \ \ slot (structpos) & pin dims $[0{:}2]$ to the true position (the object's $x,y$ coordinates): the most direct state injection; tests whether a hard constraint helps \\
 \ \ \ $+$reweight & raise the slot's share of the prediction loss (weight $30$): if failure is due to the slot's ${\sim}1\%$ gradient share, this should rescue it \\
 \ \ \ $+$velocity & encode velocity too: tests whether it matters \emph{which} quantity is injected, not just that something is \\
-\multicolumn{2}{@{}l}{\emph{Family 2: deep-supervision probe --- soft constraint, pins the state, labelled}} \\
+\multicolumn{2}{@{}l}{\emph{Family 2: deep-supervision probe --- soft constraint, pins the state, labeled}} \\
 \ \ probe & linear head reads position from the latent: replicates the deep-supervision recipe \citep{zahorodnii2025deepsup} in a high-dimensional visual latent \\
 \ \ \ $+$slot & soft $+$ hard combination: tests complementarity \\
-\multicolumn{2}{@{}l}{\emph{Family 3: kinematic head --- hard constraint, pins the evolution, labelled}} \\
+\multicolumn{2}{@{}l}{\emph{Family 3: kinematic head --- hard constraint, pins the evolution, labeled}} \\
 \ \ free MLP & attach $z{+}v{+}a$ update with learned $a$: upgrade from pinning state to pinning \emph{evolution} \\
 \ \ strict $a{=}g$ & exact gravitational form, one learnable constant: closes the ``your physics was wrong'' objection \\
-\multicolumn{2}{@{}l}{\emph{Family 4: consistency --- soft constraint, pins the evolution, labelled}} \\
+\multicolumn{2}{@{}l}{\emph{Family 4: consistency --- soft constraint, pins the evolution, labeled}} \\
 \ \ consistency & finite-difference velocity of the rolled-out positions must match ground truth; assumes no form for $a$, designed for collision impulses \\
 \multicolumn{2}{@{}l}{\emph{Family 5: label-free prior --- soft constraint, pins the evolution, label-free}} \\
 \ \ label-free & slot must evolve as smooth second-order dynamics, no ground truth: the only injection available for raw video \\
 \ \ grounded & same structure $+$ true labels: isolates the label variable \\
 \bottomrule
 \end{tabular}
-\caption{Ten injection variants in five families, spanning three axes (read off each family's header). \textbf{Constraint}---\emph{hard}: a latent dimension is forced to equal the physical quantity; \emph{soft}: an auxiliary loss only encourages it. \textbf{Target}---the \emph{state} (what the motion is: position, velocity) vs.\ its \emph{evolution} (how it changes: a dynamics rule). \textbf{Supervision}---\emph{labelled} uses ground-truth physics, \emph{label-free} does not. The three axes span the ways to inject physics into a shared latent, so any alternative encoding falls on an axis we test. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
+\caption{Ten injection variants in five families, spanning three axes (read off each family's header). \textbf{Constraint}---\emph{hard}: a latent dimension is forced to equal the physical quantity; \emph{soft}: an auxiliary loss only encourages it. \textbf{Target}---the \emph{state} (what the motion is: position, velocity) vs.\ its \emph{evolution} (how it changes: a dynamics rule). \textbf{Supervision}---\emph{labeled} uses ground-truth physics, \emph{label-free} does not. The three axes span the ways to inject physics into a shared latent, so any alternative encoding falls on an axis we test. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
 \label{tab:mechanisms}
 \end{table}
 
@@ -55,7 +55,7 @@ Orthogonally, we cross injection with the \emph{training regime}: post-hoc fine-
 
 Free rollout serves two methodological roles; neither is a novelty claim (it is scheduled sampling, \citealp{bengio2015scheduled}).
 
-\emph{Controlled factorial variable.} Physical structure has never been compared against the training protocol on the same baseline; prior studies treat the protocol as background. We set the protocol first---replacing teacher forcing (one-step, ground-truth context) with free rollout ($H{=}8$ autoregressive steps, supervising the whole rollout)---and then ask whether structure adds incremental value. Teacher forcing hides compounding error at training time (\emph{exposure bias}): the model never sees its own mistakes, then must consume them at deployment. Free rollout exposes them during training, injecting no physics whatsoever. A second protocol variable, the rollout horizon $H$, must \emph{match dynamics complexity}: domains with late causal events (collision; realistic scenes) need horizons long enough to contain them.
+\emph{Controlled factorial variable.} Physical structure has never been compared against the training protocol on the same baseline; prior studies treat the protocol as background. We set the protocol first---replacing teacher forcing (one-step, ground-truth context) with free rollout ($H{=}8$ autoregressive steps, supervising the whole rollout)---and then ask whether structure adds incremental value. Teacher forcing hides compounding error at training time (\emph{exposure bias}): the model never sees its own mistakes, then must consume them at deployment. Free rollout exposes them during training, injecting no physics whatsoever. A second protocol variable, the rollout horizon $H$, must \emph{match dynamics complexity}: domains with late causal events (collision; realistic-simulation scenes) need horizons long enough to contain them.
 
 \emph{Positive control.} A negative result invites two deflations---``your implementation is broken'' or ``your metrics cannot detect improvement.'' A protocol change that produces large gains on identical code and identical metrics rules out both at once, pinning the failure on the injected structure itself.
 
