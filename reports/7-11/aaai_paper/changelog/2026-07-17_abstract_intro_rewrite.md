@@ -78,6 +78,10 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 
 摘要用美式 "labeled"，正文原为英式 "labelled"。统一为美式（AAAI 为美国会议）：`3_method.tex` 6 处（含 Table 1 各 family 表头与 caption）、`4_experiments.tex` 1 处。
 
+## 6. §3.3 新增 free rollout 成因分析（`3_method.tex`，20:57）
+
+在 exposure bias 句之后、horizon 句之前插入一段解读（用户待润色）：free rollout 的增益不只是对累积误差的鲁棒性——监督 $H$ 步自回归 rollout 使训练本身成为**长程动力学模拟**（long-horizon dynamics simulation）：teacher forcing 只考察局部单步转移，free rollout 考察整个 horizon 上的状态演化，梯度奖励自洽的多步动力学而非单步映射——正是 latent 缺失的能力（呼应 §1）。由此 free rollout 是一种**无需物理标签的 evolution-targeted 训练信号**：训练 "how the state evolves" 而不触碰 "what the state is"（呼应摘要/结论的 constructive 落点）。
+
 ---
 
 ## 验证
