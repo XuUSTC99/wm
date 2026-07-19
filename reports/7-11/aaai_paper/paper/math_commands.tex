@@ -12,3 +12,19 @@
 \newcommand{\bothood}{\text{both-OOD}}
 \newcommand{\rmood}{\text{r/m-OOD}}
 \newcommand{\vood}{\text{v-OOD}}
+
+%% ---- cross-document reference macros -------------------------------------
+%% \appref{label}{letter}  : main text -> appendix
+%% \mainref{label}{number} : appendix -> main text section
+%% \mainfig{label}{number} : appendix -> main text figure
+%% When \ifappendixinline is true the appendix ships inside main.tex and these
+%% resolve via \ref; otherwise they degrade to literal cross-PDF wording.
+\ifappendixinline
+  \newcommand{\appref}[2]{Appendix~\ref{#1}}
+  \newcommand{\mainref}[2]{\S\ref{#1}}
+  \newcommand{\mainfig}[2]{Figure~\ref{#1}}
+\else
+  \newcommand{\appref}[2]{Appendix~#2 (supplementary)}
+  \newcommand{\mainref}[2]{\S#2 of the main paper}
+  \newcommand{\mainfig}[2]{Figure~#2 of the main paper}
+\fi

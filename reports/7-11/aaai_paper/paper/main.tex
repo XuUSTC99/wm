@@ -27,6 +27,9 @@
 \usepackage{booktabs}
 \usepackage{amsmath,amssymb}
 \usepackage{multirow}
+%% Set true to ship the appendix inside this PDF (arXiv/single-file build);
+%% keep false for the AAAI submission (7pp + refs, appendix ships separately).
+\newif\ifappendixinline\appendixinlinetrue
 \input{math_commands}
 % AAAI style ships with secnumdepth=0 (unnumbered sections), which makes
 % \ref{sec:...} expand to empty. Re-enable section+subsection numbering so
@@ -75,7 +78,14 @@
 
 \bibliography{references}
 
-%% Appendix A--E ship as a separate supplementary PDF (supplementary.tex):
-%% AAAI-27 reserves pages 8-9 of the main PDF exclusively for references.
+%% With \appendixinlinefalse (the AAAI submission build) Appendix A--E ships as a
+%% separate PDF via supplementary.tex, because AAAI-27 reserves pages 8-9 of the
+%% main PDF exclusively for references. Flip the switch above to \appendixinlinetrue
+%% for a single self-contained PDF (arXiv, sharing) -- that build exceeds 9 pages.
+\ifappendixinline
+  \clearpage
+  \appendix
+  \input{sections/A_appendix}
+\fi
 
 \end{document}
