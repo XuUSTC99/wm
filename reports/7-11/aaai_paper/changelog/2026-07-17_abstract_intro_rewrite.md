@@ -180,6 +180,64 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 
 编译零错误、无 undefined、无 Overfull，仍 12 页；PDF 内 fig17 已确认为真实数值（0 个 `--`）。
 
+## 16. 引用审计（2026-07-19）
+
+三层核查（存在性 → 元数据 → 上下文），Codex MCP 不可用，改由 WebSearch/WebFetch 逐条实地核实。报告见 `paper/CITATION_AUDIT.md`，bib 备份 `references.bib.bak`。
+
+**结论：无伪造引用、无错引（wrong-context）。** 20 个被引条目全部真实存在、作者与使用语境均正确。查出 5 处元数据问题，已全部修正：
+
+1. **`maes2025lewm`（最严重，且是本文骨干）**：bib 标题 "le-wm: A Latent Embedding World Model" 是**编造的全称展开**；仓库真实标题为 "LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels"（LeWM = LeWorldModel）。已改；正文从未展开该缩写，无需改动 prose。
+2. **`hafner2023dreamer`**：引 CoRR 2023 预印本，实际已发表 **Nature 640:647–653 (2025)**，且**发表时标题变更**（Diverse *Domains* → diverse *control tasks*）。已换 Nature 记录。
+3. **`kang2024how`（PhyWorld，主基准，引 6 次）**：裸 arXiv 2024 → **ICML 2025**。
+4. **`peper2025principles`**：裸 arXiv → **PMLR v288, NeuS 2025, pp. 66–89**。
+5. **`zahorodnii2025deepsup`**：补记 **ICLR 2025 Workshop on World Models**（该文承载"低维 latent 上 deep-sup 有效"的关键对照）。
+
+**顺带确认**：`nie2026physjepa` 真实存在（arXiv 2606.16076, 2026-06-15），且实证其基准为 Jena Climate / Traffic 等**数值时序**——印证第 15 条之后那处"按数据模态而非表征占比描述"的修正；`mao2024piwm` 当前 v6 标题与 bib 一致（v3 曾用过异名，已核，无需改）。
+
+**未引用条目已删**：`ball2021augmented`、`jin2024piaug`（后者 key 双重错误：无 Jin 作者、key 年份与 year 字段不符）。bib 22 → 20 条，与被引 key 数完全一致。
+
+重建后：bibtex 干净、`main.bbl` 恰好 20 个 `\bibitem`、0 undefined、仍 12 页。
+
+## 17. 补充引用 + 发现版面超限（2026-07-19）
+
+**新增 8 条引用**（20 → 28），元数据全部实地核实，且**只挂在已有句子上**（因版面压力，未新增段落）：
+
+- **Probing 谱系**（最高价值，本文 "decodable but not load-bearing" 在 NLP 有直接先例）：`alain2016probes`（线性探针方法出处 → §4.1 Metrics）、`hewitt2019control`（control task 方法学 → §3.2 Test 1 的随机 2 维对照）、`elazar2021amnesic`（TACL 9:160–175，Elazar/Ravfogel/Jacovi/Goldberg → §4.3 定位一句）。
+- **物理注入经典**：`raissi2019pinn`（PINN, JCP 378:686–707）、`cranmer2020lnn`（LNN, ICLR 2020 workshop）→ Related Work，与已有 HNN 并列。
+- **显式状态模拟器**：`battaglia2016interaction`、`sanchez2020gns` → Related Work，作为"结构在显式状态上有效"的对照，**收窄并加固** scope 主张。
+- **术语消歧**：`locatello2020slot` → Table 1 slot 行括注（"a fixed index range, not an attention slot"）。
+
+**⚠️ 发现两处 AAAI-27 硬性超限（先前未察觉，非本次改动引入）**：
+
+规定："main submission PDF can have up to 9 pages, with pages 8–9 reserved **exclusively** for references… up to 7 pages of non-references content"；reproducibility checklist 与补充材料**单独提交**。
+
+| 项 | 限制 | 现状 |
+|---|---|---|
+| 技术正文 | ≤ 7.00 页 | **7.75 页**（本次引用前已 ≈7.69，新增约 4 行）——第 8 页左栏 Table 4 + §5 Conclusion，右栏 §4.5 尾 + Reproducibility 到 y=399 |
+| 主 PDF | ≤ 9 页 | **12 页**——附录 A–E 占 p10–12，须移为独立补充材料 |
+
+需从正文削减约 **0.75 页（≈1.5 栏 / 70 行）**。候选（按损伤从小到大）：Figure 6（horizon ladder，仅支撑一句）移附录 ≈20 行；Table 4（PIWM，4 行数字正文已全述）删表留文 ≈15 行；§4.1 Metrics 段（与附录 E 重复）压缩 ≈8 行；contributions 三条各压到 2 行 ≈8 行；Reproducibility 段（checklist 本就单独提交）精简 ≈5 行。**待用户决定砍哪些。**
+
+## 18. 版面合规改造：正文压进 7 页 + 附录拆为补充材料（2026-07-19）
+
+起点：技术正文 7.75 页（限 7）、主 PDF 12 页（限 9）。终点：**正文 7 页整、主 PDF 9 页、补充材料 4 页**，编译零错误、0 undefined。
+
+**结构拆分**：新建 `supplementary.tex`（复用 main 前导区），附录 A–E 迁出主文档；main.tex 移除 `\appendix\input{...}`。正文中 5 处 `Appendix~\ref{app:*}` 改为文字引用 "Appendix~X (supplementary)"（跨文档 `\ref` 会失效）。
+
+**内容削减（按执行顺序）**：
+1. Figure 6（horizon ladder）移入补充材料附录 D — 它只支撑正文一句话
+2. Table 4（PIWM）删表留文 — 4 行数字 §4.5 正文已全述
+3. §4.1 Metrics 段压缩（与附录 E 重复的陷阱细节移出）
+4. contributions 三条收紧（"five mechanism families…" → "ten variants × two regimes × three domains"）
+5. Table 3（Physion++）移入补充材料 — 其内容在附录 B「Physion++ per-scenario」已完整重复
+6. **Related Work 三段整体压缩**（用户要求）— 保留全部 20+ 引用与防守论证，仅收紧行文
+7. Figure 2 高度 6.0in → 4.8in（10 行热力图原尺寸偏大）
+8. Limitations 压缩 + 去重（"evolution 变体是简单实现"在 Conclusion 与 Limitations 重复，保留一处；"Physion 是仿真非实拍"§4.1 已述，删重复）
+9. **Reproducibility 段移入补充材料附录 A**（用户提问触发）— AAAI-27 的 reproducibility **checklist 本就单独上传**，正文无需此段
+10. Conclusion 首段与末句收尾微调
+
+**依据**：AAAI-27 "main submission PDF can have up to 9 pages, with pages 8–9 reserved exclusively for references… up to 7 pages of non-references content"；checklist 与补充材料单独提交。
+
 ---
 
 ## 验证

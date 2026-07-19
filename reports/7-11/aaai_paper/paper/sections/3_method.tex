@@ -32,7 +32,7 @@ We span the design space along three orthogonal axes---\emph{hard vs.\ soft} con
 Variant & What it does, and what it tests \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Family 1: fixed slot --- hard constraint, pins the state, labeled}} \\
-\ \ slot (structpos) & pin dims $[0{:}2]$ to the true position (the object's $x,y$ coordinates): the most direct state injection; tests whether a hard constraint helps \\
+\ \ slot (structpos) & pin dims $[0{:}2]$ to the true position (the object's $x,y$ coordinates; a fixed index range, not an attention slot \citep{locatello2020slot}): the most direct state injection; tests whether a hard constraint helps \\
 \ \ \ $+$reweight & raise the slot's share of the prediction loss ($w{=}30$, Eq.~\ref{eq:loss}): if failure is due to the slot's ${\sim}1\%$ gradient share, this should rescue it \\
 \ \ \ $+$velocity & encode velocity too: tests whether it matters \emph{which} quantity is injected, not just that something is \\
 \multicolumn{2}{@{}l}{\emph{Family 2: deep-supervision probe --- soft constraint, pins the state, labeled}} \\
@@ -60,7 +60,7 @@ Orthogonally, we cross injection with the \emph{training regime}: fine-tuning a 
 \emph{Hypothesis (the load-bearing problem).} The physical slot occupies $2$ of $192$ dimensions and receives ${\sim}1\%$ of the prediction gradient, while the black-box channel \emph{redundantly} encodes the same position---so prediction can route around any injected slot. Because the latent already carries the injected state, injection adds no new signal---it only consumes capacity and gradient share. We test this account in three ways, each admitting a specific outcome that would falsify it:
 
 \begin{enumerate}
-    \item \textbf{Is the physical constraint injected?} Split the latent into the $2$ slot dimensions and the $190$ black-box dimensions and decode position from each separately, with a random-2-dimension control. If the black box alone cannot decode position, the redundancy claim is false.
+    \item \textbf{Is the physical constraint injected?} Split the latent into the $2$ slot dimensions and the $190$ black-box dimensions and decode position from each separately, with a random-2-dimension control \citep{hewitt2019control}. If the black box alone cannot decode position, the redundancy claim is false.
     \item \textbf{Is the constraint acting at all?} Two measurements: how large the weighted physical auxiliary loss is relative to the prediction loss (a proxy for gradient magnitude), and whether the encoder's effective dimensionality (participation ratio) changes. If neither moves, the constraint never took effect and the failure is a bug. If the auxiliary term dominates and dimensionality collapses, the constraint is acting---and competing with prediction.
     \item \textbf{Does re-weighting the physical loss help?} Sweep the slot weight $w$ of Eq.~\ref{eq:loss} from $1$ to $300$. If harm does not respond systematically to the weight, the gradient-share mechanism is wrong; if it responds but weighting to saturation still cannot rescue every domain, demonstrating that insufficient physical loss is not the root cause.
 \end{enumerate}

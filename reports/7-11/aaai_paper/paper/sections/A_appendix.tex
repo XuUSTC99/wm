@@ -1,6 +1,9 @@
 \section{Training and Evaluation Details}
 \label{app:details}
 
+\paragraph{Reproducibility.}
+All training configurations, per-run logs, evaluation protocols, and the exact numbers behind every table and figure are archived alongside the code; the study builds on public assets (LeWM, PhyWorld, Physion, Physion++). We will release the evaluation suite, including the per-horizon/per-partition audit tools and the random-encoder controls.
+
 \paragraph{Hyperparameters.}
 All PhyWorld runs: AdamW, lr $5{\times}10^{-5}$ (from-scratch reruns: $2{\times}10^{-5}$), weight decay $10^{-3}$, bf16, gradient clip $1.0$, $20$ epochs ($60$ for from-scratch cells; the pretraining-regime $2{\times}2$ uses $60$ epochs uniformly), batch size $64$ for free rollout ($H{=}8$), $128$ for teacher forcing ($H{=}1$), $48$ for $H{\geq}16$. History size $3$; embedding dimension $192$; SIGReg weight $0.09$. Seeds: $3072/1234/42$ where seed-replicated. Physion++ runs use the readout split ($800$ clips) with the same optimizer.
 
@@ -70,6 +73,23 @@ Position is an output variable with the same role in every domain, so pinning it
 \paragraph{Physion++ per-scenario (all ten scenarios, FR at $20$ epochs).}
 Rollout nMSE: bouncy\_platform $0.041$, bouncy\_wall $0.094$, friction\_cloth $0.071$, friction\_collision $0.062$, friction\_platform $0.041$, mass\_collision $0.083$, mass\_dominoes $0.058$, mass\_waterpush $0.122$; deformable scenes are the common hard case for every method (deform\_clothhang $1.375$, deform\_clothhit $0.772$). Injection variants degrade the rigid-body scenarios by $3$--$10\times$ (Table~\ref{tab:pp}) while leaving the deformable failure in place.
 
+\begin{table}[tb]
+\centering
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Scenario & FR & $+$slot & $+$cons. & $+$cons.+acc. \\
+\midrule
+friction\_platform & $\mathbf{0.041}$ & $0.119$ & $0.078$ & $0.067$ \\
+mass\_collision & $\mathbf{0.083}$ & $0.510$ & $0.682$ & $0.696$ \\
+mass\_dominoes & $\mathbf{0.058}$ & $0.452$ & $0.586$ & $0.597$ \\
+mass\_waterpush & $\mathbf{0.122}$ & $0.363$ & $0.663$ & $1.476$ \\
+\bottomrule
+\end{tabular}
+\caption{Physion++ direct training: per-scenario rollout nMSE ($\downarrow$) at $20$ epochs. Injection degrades realistic-simulation prediction by $3$--$10\times$ on the mass/friction scenarios shown (deformable-object scenes are the hardest category for all methods, including the baseline). Single-seed; the gaps far exceed baseline seed noise.}
+\label{tab:pp}
+\end{table}
+
 \paragraph{Physion++ horizons.}
 Overall nMSE at horizons $16/32/64$: baseline ($H{=}8$) $0.016/0.140/0.280$; $H{=}20$ $0.022/0.033/0.220$; $H{=}16{+}$scale $0.010/0.035/0.136$; $H{=}20{+}$scale $0.012/0.024/0.087$; $H{=}28{+}$scale reaches horizon-$64$ nMSE $0.014$. Free rollout is the main long-horizon lever (horizon-$32$ cosine $0.91$ vs.\ $0.79$--$0.87$ for every physics-augmented variant); geometric scale jitter acts as an amplitude stabilizer for long rollouts: without it, $H{=}20$ explodes on friction-collision (nMSE $24.6$ at cosine $0.99$); with it, $0.019$.
 
@@ -90,6 +110,13 @@ The frozen encoder, which has never seen PhyWorld and received no physics superv
 
 \paragraph{Inert, not harmful.}
 Unlike the trainable-encoder regime, the core variants (re-weighted slot, probe, consistency) land within the baseline's seed band on all three domains, while the plain slot ($1.42\times$ on uniform) and the dynamics-head variants ($1.15$--$1.29\times$ on all domains) still hurt. With the encoder frozen, injection losses can only reshape the $384{\to}192$ adapter: the bypass cannot be displaced, which bounds the damage---and forecloses the benefit. Injection-variant variance also roughly doubles ($\pm0.087$ vs.\ baseline $\pm0.039$ on uniform), so single-seed cells on this backbone are uninformative.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/fig7_realdata_num_preds.pdf}
+\caption{Physion++ direct training: per-horizon rollout nMSE (log scale) as the training horizon grows ($H{=}8\!\to\!28$, $+$scale jitter). Long-horizon error falls monotonically to $1/19$ of baseline with no inflection: realistic-simulation dynamics reward long-rollout training more than the synthetic domains do.}
+\label{fig:ladder}
+\end{figure}
 
 \section{Augmentation: a Domain-Specific Lever with a Reversal Boundary}
 \label{app:aug}
