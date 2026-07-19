@@ -16,7 +16,7 @@ Ridge regression ($\alpha{=}1$), trajectory-level 80/20 splits, probing the enco
 \section{Full Injection Results}
 \label{app:injection}
 
-Table~\ref{tab:injection} is the numeric form of Figure~\ref{fig:scan}, with the seed annotations spelled out.
+Table~\ref{tab:injection} is the numeric form of Figure~2 of the main paper, with the seed annotations spelled out.
 
 \begin{table}[h]
 \centering
@@ -96,7 +96,7 @@ Overall nMSE at horizons $16/32/64$: baseline ($H{=}8$) $0.016/0.140/0.280$; $H{
 \section{Cross-Backbone Replication: Frozen DINOv2}
 \label{app:crossbackbone}
 
-The cross-backbone variant (\S\ref{sec:external}) freezes a DINOv2-small encoder \citep{oquab2024dinov2}---in the style of DINO-WM \citep{zhou2025dinowm}---and trains only the projector (as adapter) and the identical predictor stack, losses, and seeds (${\sim}130$ runs). Free-rollout baselines (three-seed): uniform both-OOD $0.427{\pm}0.039$, parabola \rmood{} $0.225{\pm}0.019$, collision both-OOD $0.479{\pm}0.009$; Physion++ horizon-$64$ $0.258{\pm}0.005$ vs.\ teacher forcing $1.030{\pm}0.028$.
+The cross-backbone variant (\S3.5 of the main paper) freezes a DINOv2-small encoder \citep{oquab2024dinov2}---in the style of DINO-WM \citep{zhou2025dinowm}---and trains only the projector (as adapter) and the identical predictor stack, losses, and seeds (${\sim}130$ runs). Free-rollout baselines (three-seed): uniform both-OOD $0.427{\pm}0.039$, parabola \rmood{} $0.225{\pm}0.019$, collision both-OOD $0.479{\pm}0.009$; Physion++ horizon-$64$ $0.258{\pm}0.005$ vs.\ teacher forcing $1.030{\pm}0.028$.
 
 \begin{figure}[h]
 \centering
@@ -128,7 +128,7 @@ The appearance recipe reverses on realistic simulation: the same jitter that hal
 \section{Metric Pathologies and Evaluation Traps}
 \label{app:traps}
 
-Our anatomy repeatedly reached conclusions opposite to those suggested by common metrics; the decision rules of \S\ref{sec:setup} distill the following five failure modes, each of which reversed at least one finding.
+Our anatomy repeatedly reached conclusions opposite to those suggested by common metrics; the decision rules of \S4.1 of the main paper distill the following five failure modes, each of which reversed at least one finding.
 
 \paragraph{Trap 1: cosine and probe metrics are duals of the training loss.}
 Probe correlation and latent cosine rise mechanically when probe or slot losses are optimized---they measure whether information is \emph{present}, not whether prediction \emph{uses} it. Probe supervision lifts velocity decodability from $\rho{=}0.44$ to $0.80$ and gives the most stable long-horizon \emph{cosine} ($0.882$ vs.\ $0.843$), while its \emph{pixel} rollout is the worst in the comparison ($19.93$ vs.\ $20.64$\,dB at horizon $28$). Appearance augmentation on Physion++ improves the aggregate long-horizon cosine while per-scene nMSE collapses up to $100\times$ (deform\_clothhit: cosine $0.610\!\to\!0.913$, nMSE $0.772\!\to\!3.69$). Judging either result by direction-only or readout metrics inverts the conclusion. Our own early sweep was misled this way: judged on $K{=}4$ probe $\rho$, $\lambda{=}50$ ``won''; re-judged on prediction loss, the ranking reversed.
@@ -145,8 +145,8 @@ Three probe-protocol choices (random vs.\ pretrained initialization, single-fram
 \paragraph{Trap 5: loss re-weighting masquerades as physics.}
 On the frozen-DINOv2 backbone, heavily re-weighting the pinned position slot (weight $300$; the $2$ slot dimensions then carry $76\%$ of the prediction loss) improves uniform both-OOD from $0.427{\pm}0.039$ to $0.286{\pm}0.015$---apparently the one clear injection win on either backbone. Two content-free controls dissolve it: pinning the slot to a \emph{shuffled}, physically meaningless target at the same weight reaches $0.330{\pm}0.013$, and weakening the pin $10\times$ while keeping the weighting reaches $0.329{\pm}0.084$---most of the gain, with no usable physics. All three variants degrade in-distribution error ($0.099\!\to\!0.115$--$0.136$), the signature of capacity restriction (the predictor is effectively reduced to a $2$-dimensional task), and the same recipe \emph{worsens} collision ($1.11\times$) and parabola ($1.14\times$). An apparent injection gain must be checked against a content-free control at matched loss weighting.
 
-\paragraph{Auxiliary-loss dominance (measurement behind \S\ref{sec:mech}, Test 2).}
-At probe weight $\lambda{=}10$, the weighted auxiliary-to-prediction loss ratios---used as a proxy for gradient magnitude; we do not measure gradient norms directly---are $15\times$ (collision), $44\times$ (uniform), and $125\times$ (parabola); the encoder's effective (participation-ratio) dimensionality collapses by $39$--$90\%$ relative to baseline (uniform $41\!\to\!4$). At $\lambda{=}1$ the ratios are benign, which is the setting used in \S\ref{sec:scan}.
+\paragraph{Auxiliary-loss dominance (measurement behind \S4.3 of the main paper, Test 2).}
+At probe weight $\lambda{=}10$, the weighted auxiliary-to-prediction loss ratios---used as a proxy for gradient magnitude; we do not measure gradient norms directly---are $15\times$ (collision), $44\times$ (uniform), and $125\times$ (parabola); the encoder's effective (participation-ratio) dimensionality collapses by $39$--$90\%$ relative to baseline (uniform $41\!\to\!4$). At $\lambda{=}1$ the ratios are benign, which is the setting used in \S4.2 of the main paper.
 
 \paragraph{Checklist.}
 (i)~Report per-partition \emph{and} per-horizon; never aggregate across horizons without inspecting them. (ii)~Judge with scale-aware prediction metrics (nMSE, decoded-pixel PSNR); use cosine and probe $\rho$ as diagnostics only. (iii)~Audit nMSE denominators for degenerate targets. (iv)~Calibrate transfer against a random-init control, and validate probe protocols on a random encoder.

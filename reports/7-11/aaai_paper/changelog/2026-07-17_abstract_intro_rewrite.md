@@ -238,6 +238,15 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 
 **依据**：AAAI-27 "main submission PDF can have up to 9 pages, with pages 8–9 reserved exclusively for references… up to 7 pages of non-references content"；checklist 与补充材料单独提交。
 
+## 19. 交叉引用体检（2026-07-19）
+
+按"摘要不放节引用 + 无 hyperref 故须人工核对 `??`"的意见做全面体检。
+
+- **摘要**：0 处 `\ref` / `§` / "Section" —— 本就干净，符合"摘要须能独立阅读"的规范。
+- **`??` 扫描**：`main.pdf` 0 处 ✅；**`supplementary.pdf` 发现 5 处** ❌ —— 附录拆分为独立文档后，其中指向主文档 label 的引用无法解析（AAAI 禁 hyperref，这类错误**不报错、只静默输出 `??`**）。已全部改为对主文的文字引用：`fig:scan`→"Figure 2 of the main paper"、`sec:external`→§3.5、`sec:setup`→§4.1、`sec:mech`→§4.3、`sec:scan`→§4.2（编号取自 `main.aux`）。重建后两个 PDF 均 0 处 `??`。
+- **contributions 节号核对**（逐条比对 `main.aux` 与实际章节标题）：`sec:scan`=§4.2「Injection Fails in 29 of 30 Cells」、`sec:mech`=§4.3「Mechanism: Decodable but Not Load-Bearing」、`sec:fr`=§4.4「Free Rollout Reduces Error」、`sec:externalres`=§4.5「External Control」——**四条全部对应正确**。
+- **孤立 `§` 扫描**：两个 PDF 中所有 `§` 后均跟有节号，无空引用残留。
+
 ---
 
 ## 验证
