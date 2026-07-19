@@ -82,6 +82,26 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 
 在 exposure bias 句之后、horizon 句之前插入一段解读（用户待润色）：free rollout 的增益不只是对累积误差的鲁棒性——监督 $H$ 步自回归 rollout 使训练本身成为**长程动力学模拟**（long-horizon dynamics simulation）：teacher forcing 只考察局部单步转移，free rollout 考察整个 horizon 上的状态演化，梯度奖励自洽的多步动力学而非单步映射——正是 latent 缺失的能力（呼应 §1）。由此 free rollout 是一种**无需物理标签的 evolution-targeted 训练信号**：训练 "how the state evolves" 而不触碰 "what the state is"（呼应摘要/结论的 constructive 落点）。
 
+## 7. 全文去掉 "post-hoc"，改用 fine-tune 口径（2026-07-19）
+
+**动机**："post-hoc fine-tuning" 语义冗余（fine-tuning 本就发生在预训练之后），且 post-hoc 真正修饰的是注入时机而非训练动作；直接用 "fine-tuning a pretrained encoder vs. from-scratch co-training" 自解释、更简单。
+
+共 7 处：
+- `3_method.tex`：regime 句改为 "fine-tuning a pretrained encoder vs.\ from-scratch co-training; with injection on/off this gives a $2\times2$ per domain"（顺带把 2×2 的两个因子说明白）。
+- `4_experiments.tex`：正文 "(post-hoc)" → "(fine-tuned)"；Table 3 行标 "post-hoc" → "fine-tune"（3 行）；Table 3 caption "Pretraining vs.\ post-hoc injection" → "Injection under from-scratch co-training vs.\ fine-tuning a pretrained encoder"。
+- `1_introduction.tex`：anatomy 段 "(post-hoc fine-tuning and …)" → "(fine-tuning a pretrained encoder and …)"；结果段 "from-scratch vs.\ post-hoc" → "from-scratch vs.\ fine-tuned"。
+
+事实口径备注：post-hoc/fine-tune regime = encoder 从 PushT checkpoint 初始化后在物理域带注入 loss 继续训练（"后训练嫁接"），不是从收敛的 PhyWorld baseline 出发。
+
+## 8. 删除原 Figure 3（bypass 柱状图，2026-07-19）
+
+删除 `fig15_bypass_probe190.pdf` 的 figure 环境及 `Figure~\ref{fig:bypass}` 引用（正文数字 ρ=0.79–0.92、随机对照 0.2–0.5 已完整覆盖图中信息）。后续图自动重编号：fig:lbr→3、fig:fr→4、fig:ladder→5、fig:dinowmscan→6。无悬空引用。
+
+## 9. §3.2/§4.3 Test 2 简化 + 数据勘误（2026-07-19）
+
+- §3.2 测试 2 与 §4.3 Test 2 段简化（去掉 (a)/(b) 编号、≈1/≫1 符号条件、"not a measured gradient norm" 长 hedge，保留 "proxy for gradient magnitude"）。
+- **勘误**：§4.3 原句 "at λ=1 the ratio is benign yet the harm persists" 与数据不符——diagnostic_report.md §1.2（fixed-init，λ∈{1,5,10}）实测 λ=1 时 (λ·probe)/pred = **3–20×**、probe 占 total 20–43%（"pred 项已被相对边缘化"），并非 benign。已改为 "the ratio is milder ($3$--$20\times$) yet the harm persists"。修正后逻辑也更自洽：λ=1 下约束同样在实质用力，危害与剂量连续。
+
 ---
 
 ## 验证

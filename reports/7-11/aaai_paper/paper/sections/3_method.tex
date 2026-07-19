@@ -37,17 +37,17 @@ Variant & What it does, and what it tests \\
 \label{tab:mechanisms}
 \end{table}
 
-Orthogonally, we cross injection with the \emph{training regime}: post-hoc fine-tuning of a pretrained encoder vs.\ from-scratch co-training, a $2{\times}2$ per domain. This closes the remaining escape hatch---``structure must be baked in during pretraining, as extrinsic architectures do.''
+Orthogonally, we cross injection with the \emph{training regime}: fine-tuning a pretrained encoder vs.\ from-scratch co-training; with injection on/off this gives a $2{\times}2$ per domain. This closes the remaining escape hatch---``structure must be baked in during pretraining, as extrinsic architectures do.''
 
 \subsection{Mechanistic Hypothesis and Its Tests}
 \label{sec:mechtests}
 
-\emph{Hypothesis (the load-bearing problem).} The physical slot occupies $2$ of $192$ dimensions and receives ${\sim}1\%$ of the prediction gradient, while the black-box channel \emph{redundantly} encodes the same position---so prediction can route around any injected slot. Injecting state the latent already carries adds no signal, but does consume capacity and gradient. We test this account three ways, each designed so that a specific outcome would show it wrong:
+\emph{Hypothesis (the load-bearing problem).} The physical slot occupies $2$ of $192$ dimensions and receives ${\sim}1\%$ of the prediction gradient, while the black-box channel \emph{redundantly} encodes the same position---so prediction can route around any injected slot. Because the latent already carries the injected state, injection adds no new signal---it only consumes capacity and gradient share. We test this account in three ways, each admitting a specific outcome that would falsify it:
 
 \begin{enumerate}
-    \item \textbf{Bypass probe (probe-190).} Split the latent into the $2$ slot dimensions and the $190$ black-box dimensions and decode position from each separately, with a random-2-dimension control. If the black box alone cannot decode position, the redundancy claim is false.
-    \item \textbf{Is the constraint acting at all?} Two independent measurements: (a) the ratio of the \emph{weighted} auxiliary loss to the prediction loss---a proxy for gradient magnitude, not a measured gradient norm; (b) the encoder's participation ratio (effective dimensionality). If the ratio is ${\approx}1$ and the participation ratio unchanged, the constraint never took effect and the failure is an implementation artifact---the ``bug hypothesis.'' If the ratio is $\gg 1$ and dimensionality collapses, the constraint is acting, and competing with prediction.
-    \item \textbf{Dose--response re-weighting.} Sweep the slot's prediction-loss weight from $1$ to $300$. If harm does not respond systematically to the weight, the gradient-share mechanism is wrong; if it responds but weighting to saturation still cannot rescue every domain, the bypass is architectural rather than a matter of injection strength---and only an architecture that \emph{closes} the bypass could work, a prediction \S\ref{sec:externalres} tests.
+    \item \textbf{Is the physical constraint injected?} Split the latent into the $2$ slot dimensions and the $190$ black-box dimensions and decode position from each separately, with a random-2-dimension control. If the black box alone cannot decode position, the redundancy claim is false.
+    \item \textbf{Is the constraint acting at all?} Two measurements: how large the weighted physical auxiliary loss is relative to the prediction loss (a proxy for gradient magnitude), and whether the encoder's effective dimensionality (participation ratio) changes. If neither moves, the constraint never took effect and the failure is a bug. If the auxiliary term dominates and dimensionality collapses, the constraint is acting---and competing with prediction.
+    \item \textbf{Does re-weighting the physical loss help?} Sweep the physical slot's prediction-loss weight from $1$ to $300$. If harm does not respond systematically to the weight, the gradient-share mechanism is wrong; if it responds but weighting to saturation still cannot rescue every domain, demonstrating that insufficient physical loss is not the root cause.
 \end{enumerate}
 
 \subsection{The Training-Protocol Control: Free Rollout}

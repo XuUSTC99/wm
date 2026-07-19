@@ -28,7 +28,7 @@ Figure~\ref{fig:scan}---whose cells carry the raw nMSE alongside the ratio, so i
 The sole exception is the mechanism's signature, not a usable prior: adding \emph{velocity} to the re-weighted slot helps on parabola (\rmood{} $0.122{\pm}0.007\!\to\!0.096{\pm}0.007$, every seed lower) because there velocity is an extrapolable driving variable ($a{=}g$ makes it linear in time); the same encoding is the \emph{worst} variant on uniform ($+0.076$, velocity is a redundant constant) and clearly harmful on collision ($+0.025$ over the reweighted slot; velocity jumps discontinuously). A prior that requires knowing the domain's dynamics in advance, and reverses sign across domains, is a diagnostic, not a method---and its best case ($-0.026$ nMSE) is an order of magnitude below the protocol lever of \S\ref{sec:fr}.
 
 \paragraph{From-scratch co-training hurts more.}
-The remaining defense---structure must be baked in during pretraining---fails in the strongest way (Table~\ref{tab:scratch}): the physics penalty on uniform grows from $+0.035$ (post-hoc) to $+0.558$ (from-scratch); all six regime--domain cells are positive. The cleaner the baseline, the larger the harm.
+The remaining defense---structure must be baked in during pretraining---fails in the strongest way (Table~\ref{tab:scratch}): the physics penalty on uniform grows from $+0.035$ (fine-tuned) to $+0.558$ (from-scratch); all six regime--domain cells are positive. The cleaner the baseline, the larger the harm.
 
 \begin{table}[tb]
 \centering
@@ -38,16 +38,16 @@ The remaining defense---structure must be baked in during pretraining---fails in
 Domain & Regime & phys.\ off & phys.\ on & $\Delta$ \\
 \midrule
 \multirow{2}{*}{uniform} & scratch & $0.192$ & $0.750$ & $\mathbf{+0.558}$ \\
- & post-hoc & $0.131$ & $0.166$ & $+0.035$ \\
+ & fine-tune &$0.131$ & $0.166$ & $+0.035$ \\
 \midrule
 \multirow{2}{*}{parabola (\rmood)} & scratch & $0.343$ & $0.375$ & $+0.03$ \\
- & post-hoc & $0.124$ & $0.198$ & $+0.07$ \\
+ & fine-tune &$0.124$ & $0.198$ & $+0.07$ \\
 \midrule
 \multirow{2}{*}{collision} & scratch & $0.538$ & $0.635$ & $+0.097$ \\
- & post-hoc & $0.393$ & $0.525$ & $+0.132$ \\
+ & fine-tune &$0.393$ & $0.525$ & $+0.132$ \\
 \bottomrule
 \end{tabular}
-\caption{Pretraining vs.\ post-hoc injection (latent nMSE $\downarrow$, hardest clean split; strict $a{=}g$ head $+$ fixed slot). Physics hurts in every cell, most where the baseline is cleanest.}
+\caption{Injection on/off $\times$ training regime, per domain (latent nMSE $\downarrow$ on the hardest clean split; injected structure: strict $a{=}g$ head $+$ fixed slot). \emph{Scratch} trains everything from random initialization; \emph{fine-tune} starts the encoder from pretrained weights. $\Delta$ is the cost of switching injection on within a regime: positive in all six regime--domain cells, and amplified from $+0.035$ to $+0.558$ on uniform when physics is baked in from the start.}
 \label{tab:scratch}
 \end{table}
 
@@ -76,21 +76,14 @@ mass\_waterpush & $\mathbf{0.122}$ & $0.363$ & $0.663$ & $1.476$ \\
 
 The three tests return the following verdicts.
 
-\paragraph{Test 1: the bypass exists.}
-Probing \emph{only the $190$ non-slot dimensions} decodes position at $\rho=0.79$--$0.92$ across all three domains---as well as the full latent, undiminished by pinning the slot---while a random-2-dimension control fails ($0.2$--$0.5$; Figure~\ref{fig:bypass}). Position is a redundant, distributed copy the predictor can route through while ignoring any structured slot.
+\paragraph{Test 1: the physical constraint is injected.}
+Probing \emph{only the $190$ non-slot dimensions} decodes position at $\rho=0.79$--$0.92$ across all three domains---as well as the full latent, undiminished by pinning the slot---while a random-2-dimension control fails ($0.2$--$0.5$). Position is a redundant, distributed copy the predictor can route through while ignoring any structured slot.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.95\linewidth]{figures/fig15_bypass_probe190.pdf}
-\caption{Direct evidence of the bypass. Per domain: position decoded from all $192$ dimensions (dark) vs.\ from the $190$ black-box dimensions alone (blue) are nearly equal ($0.78$--$0.92$); a random $2$-dimension control (band) fails. The black box redundantly encodes position, so prediction need not consult an injected slot.}
-\label{fig:bypass}
-\end{figure}
+\paragraph{Test 2: the constraint acts harmfully.}
+Both measurements move, which indicates the constraint acts. At probe weight $\lambda{=}10$ the weighted physical loss grows to $15$--$125\times$ the prediction loss (the gradient-magnitude proxy), and the encoder's effective dimensionality collapses by $39$--$90\%$; at $\lambda{=}1$, the setting of \S\ref{sec:scan}, the ratio is milder ($3$--$20\times$) yet the harm persists. With slot decodability rising $0.31\!\to\!0.96$, the constraint demonstrably reshapes the representation---in a direction that competes with prediction.
 
-\paragraph{Test 2: the constraint acts---harmfully.}
-The bug hypothesis is ruled out. At probe weight $\lambda{=}10$ the weighted auxiliary-to-prediction loss ratio---our proxy for gradient magnitude (not a measured gradient norm)---reaches $15$--$125\times$ across domains, and the encoder's participation ratio collapses by $39$--$90\%$ (uniform: $41\!\to\!4$ effective dimensions); at $\lambda{=}1$, the setting of \S\ref{sec:scan}, the ratios are benign yet the harm persists. Together with the slot's own decodability rising $0.31\!\to\!0.96$, the constraint demonstrably reshapes the representation---in a direction that competes with prediction.
-
-\paragraph{Test 3: dose--response holds; rescue does not.}
-Sweeping the slot weight $1\!\to\!300$ (Figure~\ref{fig:lbr}) moves the harm systematically---the mechanism's direction is confirmed---but weighting rescues only $2$ of $4$ domain--partition decision cells, to \emph{parity} and never a net gain: uniform both-OOD returns exactly to baseline ($0.132\pm0.017$ vs.\ $0.136\pm0.008$), uniform \rmood{} never recovers, and collision worsens monotonically with weight. The bypass is architectural: no injection strength closes it. This points to the prediction that only an architecture that closes the bypass can help---tested next.
+\paragraph{Test 3: re-weighting the physical loss does not help.}
+Sweeping the slot weight $1\!\to\!300$ (Figure~\ref{fig:lbr}) moves the harm systematically---the mechanism's direction is confirmed---but weighting rescues only $2$ of $4$ domain--partition decision cells, to \emph{parity} and never a net gain: uniform both-OOD returns exactly to baseline ($0.132\pm0.017$ vs.\ $0.136\pm0.008$), uniform \rmood{} never recovers, and collision worsens monotonically with weight. Insufficient physical loss is therefore not the root cause: the black-box route stays open at every weight, and closing it requires changing the architecture.
 
 \begin{figure}[t]
 \centering
