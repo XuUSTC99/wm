@@ -74,7 +74,14 @@ mass\_waterpush & $\mathbf{0.122}$ & $0.363$ & $0.663$ & $1.476$ \\
 \subsection{Mechanism: Decodable but Not Load-Bearing}
 \label{sec:mech}
 
-The three tests return the following verdicts.
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/fig1_thesis_presence_not_use.pdf}
+\caption{Decodable, but not load-bearing (collision domain). The flat dashed line is position decodability from the frame embeddings (probe $\rho\approx0.84$): the state is \emph{present} at every horizon. Yet the teacher-forced rollout (LeWM's default) collapses from near-perfect one-step agreement ($0.99$) to $0.24$ by horizon $28$; training the same model by free rollout (\S\ref{sec:protocol}) stabilizes the long horizon ($0.48$) with no physics added. Presence of the state does not imply its use by prediction.}
+\label{fig:presence}
+\end{figure}
+
+The puzzle of \S\ref{sec:intro} localizes here: position is linearly decodable from the latent at every horizon, yet the rollout drifts away from it (Figure~\ref{fig:presence})---\emph{decodable, but not load-bearing}. The three tests explain why.
 
 \paragraph{Test 1: the physical constraint is injected.}
 Probing \emph{only the $190$ non-slot dimensions} decodes position at $\rho=0.79$--$0.92$ across all three domains---as well as the full latent, undiminished by pinning the slot---while a random-2-dimension control fails ($0.2$--$0.5$). Position is a redundant, distributed copy the predictor can route through while ignoring any structured slot.
@@ -116,10 +123,11 @@ As the positive control of \S\ref{sec:protocol}, this result carries the methodo
 \subsection{External Control: Extrinsic Is Necessary, Not Sufficient}
 \label{sec:externalres}
 
-The faithful extrinsic port learns the correct physics and, where its encoder is in-distribution, beats our shared-latent model: rolled-out position $\rho$ reaches $0.96$ (ID) and $0.97$ (\vood) vs.\ LeWM's $0.93$/$0.87$ (Table~\ref{tab:piwm}). But under radius/mass shift---which changes appearance, hitting the VAE encoder---it collapses to $\rho=0.33$ (\rmood) and $0.48$ (\bothood) while LeWM holds $0.89$/$0.87$. The architectural prediction of \S\ref{sec:mech} is confirmed from the outside: making the physical state load-bearing by construction is what extrinsic designs buy (their equations alone do not transfer, \S\ref{sec:scan}); yet closing the bypass leaves the encoder-OOD problem unsolved. Extrinsic structure is necessary but not sufficient.
+\paragraph{Extrinsic port.}
+The faithful extrinsic port (PIWM; \S\ref{sec:external}) learns the correct physics and, where its encoder is in-distribution, beats our shared-latent model: rolled-out position $\rho$ reaches $0.96$ (ID) and $0.97$ (\vood) vs.\ LeWM's $0.93$/$0.87$ (Table~\ref{tab:piwm}). But under radius/mass shift---which changes appearance, hitting the VAE encoder---it collapses to $\rho=0.33$ (\rmood) and $0.48$ (\bothood) while LeWM holds $0.89$/$0.87$. The architectural prediction of \S\ref{sec:mech} is confirmed from the outside: making the physical state load-bearing by construction is what extrinsic designs buy (their equations alone do not transfer, \S\ref{sec:scan}); yet closing the bypass leaves the encoder-OOD problem unsolved. Extrinsic structure is necessary but not sufficient.
 
 \paragraph{Cross-backbone replication.}
-On the frozen-DINOv2 variant every headline replicates, three-seed. Presence is even stronger---the physics-naive frozen encoder decodes position at $\rho{=}0.95$ (vs.\ $0.90$ for LeWM), with the same black-box bypass---so presence and bypass are properties of generic visual features, not our training. The protocol lever transfers ($1.4$--$1.7\times$ synthetic, $4.0\times$ Physion++; Figure~\ref{fig:fr}, right). Injection still never wins ($27/30$ at or below baseline; Appendix~\ref{app:crossbackbone}); the three above-parity cells dissolve under content-free controls---a shuffled target, or a $10\times$-weaker pin at matched loss weighting, keeps the apparent gain while ID error degrades, i.e.\ capacity-restriction regularization, not physics (Trap~5, Appendix~\ref{app:traps}). One difference: with the encoder frozen, injection is inert rather than harmful---the losses reshape only the adapter, bounding damage but foreclosing benefit.
+On the frozen-DINOv2 variant every headline finding replicates across three seeds. Presence is even stronger---the physics-naive frozen encoder decodes position at $\rho{=}0.95$ (vs.\ $0.90$ for LeWM), with the same black-box bypass---so presence and bypass are properties of generic visual features, not our training. The protocol lever transfers ($1.4$--$1.7\times$ synthetic, $4.0\times$ Physion++; Figure~\ref{fig:fr}, right). Injection still never wins ($27/30$ at or below baseline; Appendix~\ref{app:crossbackbone}); the three above-parity cells dissolve under content-free controls---a shuffled target, or a $10\times$-weaker pin at matched loss weighting, keeps the apparent gain while ID error degrades, i.e.\ capacity-restriction regularization, not physics (Trap~5, Appendix~\ref{app:traps}). One difference: with the encoder frozen, injection is inert rather than harmful---the losses reshape only the adapter, bounding damage but foreclosing benefit.
 
 \begin{table}[tb]
 \centering

@@ -102,6 +102,38 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 - §3.2 测试 2 与 §4.3 Test 2 段简化（去掉 (a)/(b) 编号、≈1/≫1 符号条件、"not a measured gradient norm" 长 hedge，保留 "proxy for gradient magnitude"）。
 - **勘误**：§4.3 原句 "at λ=1 the ratio is benign yet the harm persists" 与数据不符——diagnostic_report.md §1.2（fixed-init，λ∈{1,5,10}）实测 λ=1 时 (λ·probe)/pred = **3–20×**、probe 占 total 20–43%（"pred 项已被相对边缘化"），并非 benign。已改为 "the ratio is milder ($3$--$20\times$) yet the harm persists"。修正后逻辑也更自洽：λ=1 下约束同样在实质用力，危害与剂量连续。
 
+## 10. Introduction 按 AAAI 六段式蓝图重写（2026-07-19）
+
+按外部意见把 intro 从 7 段重构为六段式，并对齐新 abstract 的机制框架（redundant→bypassed / what-the-state-is vs how-it-evolves）。
+
+- **第 1 段（谜）**：加快开场（去掉慢热的通用定义句），保留全部数字（ρ≤0.96、cos 0.98–0.99、collision h28→0.24、OOD several-fold），收在 "state is present; fails to evolve it"。
+- **第 2 段（药方+缺口）**：合并旧 line13（remedy/data-scaling）与旧 line17（factorial gap）为一段；显式点出 "shared, high-dimensional latent" 与 "training protocol 混淆" 双重缺口。
+- **第 3 段（做了什么）**：**删除全部 setup 细节**——JEPA 定义、TF/FR 定义、PhyWorld [0.7,1.5] 参数范围与四分区、nMSE 定义全部搬走（归 Setup §4.1）；压成"十变体 × 两 regime × 三域 + 两真实感基准 + 指标纪律一句话"。"exhaustive"→"systematic"。
+- **第 4 段（结论一：注入失败）**：判定口径改为 "degrades or fails to improve in 29 of 30"（比裸 "fails" 稳）；给最反直觉两证据（a=g 1.57×、scratch +0.558 vs +0.035）。
+- **第 5 段（机制+可证伪）**：2/192 维、190 维冗余编码、旁路；可证伪预言（加权应消危害）→ 实测只回持平 → "decodable but not load-bearing"。
+- **第 6 段（结论二+建设性）**：protocol lever 2.2–8.3×（同码同指标同种子，正对照排除 pipeline/指标伪影）；建设性收尾（补"如何演化"而非"状态是什么"）；extrinsic 必要不充分；末句跨 backbone 复现。
+- **contributions**：四条保留，与新正文一致（bullet 1 已 "systematic"）。
+
+页数仍 12 页（更紧凑），编译零错误、无 undefined 引用。Figure 1（fig:teaser，presence-not-use）保留在首页。
+
+## 11. Figure 1 换成架构图（2026-07-19）
+
+用户提供 LeWM physics-injection 架构 SVG，替换原 Figure 1（fig:teaser，presence-not-use 折线图）。
+
+- 新增 `figures/fig1_architecture.svg`（修正粘贴时的字符乱码：ẑ、≈；字体改 DejaVu Sans，系统无 Anthropic Sans）→ cairosvg 转 `fig1_architecture.pdf`（pdflatex 不支持 SVG）。装了 cairosvg/pymupdf 到 `p3_llm_env`（绝对路径 pip）。
+- intro 图块换成架构图，label `fig:teaser`→`fig:arch`，新 caption（encoder→黑盒 predictor + kinematic head→拼接 ẑ→MSE/SIGReg；右栏三注入机制 Slot/Probe/Kinematic；点出 2-vs-190 旁路 crux）。
+- 引用调整：para 1 去掉旧图引用；para 2 "inject physical structure...(Figure~\ref{fig:arch})" —— 图右栏 Slot/Probe/Kinematic 正好对应该句三种注入方式。
+- Figure 1 落在第 1 页右上角（column 2 顶），符合 reviewer 对 Fig 1 位置的要求；单栏宽度下标签清晰。
+- 旧 `fig1_thesis_presence_not_use.pdf` 文件保留未删；presence-not-use 折线图如需保留可移入 §4。
+
+编译零错误、无 undefined 引用，仍 12 页。
+
+## 12. 架构图下标修复 + presence 图移入 §4.3（2026-07-19）
+
+- **下标重叠修复**：cairosvg 对 `dominant-baseline="central"` + tspan `dy` 组合有 bug，导致 z_{t+1}/o_{t+1}/ẑ_{t+1} 的下标压在基字上。改为**手动双 text 定位**（基字 anchor=middle + 下标独立 text anchor=start，各自 dominant-baseline=central、y 下移 4px）。6 个带下标标签（o_t, o_{t+1}, z_t, z_{t+1}, a_t, ẑ_{t+1}）全部修正，重转 fig1_architecture.pdf。
+- **presence 图归位**：原 Figure 1（fig1_thesis_presence_not_use.pdf）放入 §4.3「Mechanism: Decodable but Not Load-Bearing」节首作总起图，label `fig:presence`（= Figure 3）。节首新增一句 "The puzzle of \S\ref{sec:intro} localizes here … decodable, but not load-bearing (Figure~\ref{fig:presence})"。caption 精简保留（present 平线 + TF 崩塌 + FR 稳住）。该节此前删掉 bypass 图后正好缺图，主题契合。
+- 图编号：fig:arch=1 / fig:scan=2 / fig:presence=3 / fig:lbr=4 / fig:fr=5 / fig:ladder=6 / fig:dinowmscan=7。编译零错误、无 undefined、仍 12 页。
+
 ---
 
 ## 验证
