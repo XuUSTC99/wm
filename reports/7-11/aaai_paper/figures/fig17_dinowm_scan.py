@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import TwoSlopeNorm
+from matplotlib.colors import TwoSlopeNorm, LinearSegmentedColormap
 
 LOG = "/data1/likun-share/junjxu/runs/dinowm"
 HERE = Path(__file__).resolve().parent
@@ -67,9 +67,14 @@ for i, (k, _) in enumerate(ARMS):
             M[i, j] = m / base[d]
             N[i, j] = n
 
+if np.all(np.isnan(M)):
+    raise SystemExit("[abort] no run data found (logs live on /data1); refusing to overwrite "
+                     "the existing figure with an empty one. Use restore_fig17.py instead.")
+
 fig, ax = plt.subplots(figsize=(5.6, 6.6))
 norm = TwoSlopeNorm(vmin=0.7, vcenter=1.0, vmax=1.4)
-ax.imshow(M, cmap="RdYlGn_r", norm=norm, aspect="auto")
+_cmap = LinearSegmentedColormap.from_list("bwv", ["#0072B2", "#f7f7f7", "#D55E00"])
+ax.imshow(M, cmap=_cmap, norm=norm, aspect="auto")
 for i in range(len(ARMS)):
     for j in range(3):
         if np.isnan(M[i, j]):
@@ -80,7 +85,7 @@ for i in range(len(ARMS)):
         ax.text(j, i, f"{M[i,j]:.2f}×{dag}\n({raw:.3f})", ha="center", va="center", fontsize=8)
 ax.set_xticks(range(3)); ax.set_xticklabels(DOMLAB, fontsize=9)
 ax.set_yticks(range(len(ARMS))); ax.set_yticklabels([lab for _, lab in ARMS], fontsize=8.5)
-ax.set_title("Injection scan on the frozen-DINOv2 backbone\n(nMSE / free-rollout baseline; red = worse)",
+ax.set_title("Injection scan on the frozen-DINOv2 backbone\n(nMSE / free-rollout baseline; vermillion = worse)",
              fontsize=10)
 fig.tight_layout()
 for out in [HERE / "fig17_dinowm_scan", PAPER_FIG / "fig17_dinowm_scan"]:

@@ -161,6 +161,25 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 
 编译零错误、无 undefined、无 Overfull，仍 12 页。
 
+## 15. 色盲无障碍改色（2026-07-19）
+
+对全部 7 张图做 deuteranopia / protanopia 模拟（Machado 2009 矩阵，脚本 `scratchpad/cvd_sim.py`），发现 3 张不合格：
+
+- **Figure 2 / Figure 7（两张注入扫描热力图）**：Fig 2 用 green–white–vermillion 发散色，Fig 7 用 `RdYlGn_r`。红绿色盲下绿色→灰，**唯一的真实增益格（0.76×）褪成灰色**，与"持平"格无法区分。改为 **blue–white–vermillion**（Okabe-Ito `#0072B2` / `#D55E00`，CVD-safe 发散标准配色）。两图统一。
+- **Figure 1（架构图）**：绿色注入模块→灰白，与 190-d 黑盒/帧框同色，而图注恰恰指示读者"看绿色"。改为：**注入=琥珀** (`rgb(252,232,205)`/`rgb(176,88,10)`)、**损失项(SIGReg/MSE)降为中性灰**（避免与琥珀撞色）、模型蓝紫与数据米色不变。
+- 其余 4 张（presence、dose-response、free-rollout、horizon ladder）通过：主对比均为蓝/橙，绿线仅作参考线或有独立标记形状。
+
+**正文颜色描述同步**：Fig 2 caption "Red = worse, white = parity, green = better" → "Vermillion = worse, white = parity, blue = better"；Fig 1 caption "\emph{Green} marks..." → "\emph{Amber} marks..."；Fig 7 图内标题 "red = worse" → "vermillion = worse"。附录无其他颜色描述。
+
+### ⚠️ 事故与恢复：fig17 一度被覆盖为空图
+
+重跑 `fig17_dinowm_scan.py` 时脚本读不到 `/data1/` 上的 run 日志，静默生成了 30 格全 `--` 的空表并**覆盖了两份副本**（源目录 + paper/figures），zip 内无备份。
+
+- **恢复**：改色前做 CVD 模拟时已渲染过原图，从该 PNG 中读回全部 30 格数值与 † 标记，写 `scratchpad/restore_fig17.py` 硬编码重建。**校验：重建图算出 10 worse / 17 parity / 3 better，与附录 caption 声称的 10/17/3 完全一致。**
+- **防复发**：给 `fig17_dinowm_scan.py` 加了 guard——`if np.all(np.isnan(M)): raise SystemExit(...)`，无数据时拒绝写入而非覆盖（已验证生效）。
+
+编译零错误、无 undefined、无 Overfull，仍 12 页；PDF 内 fig17 已确认为真实数值（0 个 `--`）。
+
 ---
 
 ## 验证

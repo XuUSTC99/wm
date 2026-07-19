@@ -412,7 +412,7 @@ ratio = disp / base            # color by the real (best-estimate) ratio, no art
 parity3 = {(1, 0), (3, 1), (4, 0)}  # 3-seed overlaps baseline (parity)
 gain = {(2, 1)}                     # posvel·parabola = only real 3-seed gain
 ratio_c = ratio
-cmap = LinearSegmentedColormap.from_list("gwv", [GREEN, "#f7f7f7", VERM])  # green<1 white=1 vermillion>1 (Okabe-Ito diverging)
+cmap = LinearSegmentedColormap.from_list("bwv", [BLUE, "#f7f7f7", VERM])  # blue<1 white=1 vermillion>1 (Okabe-Ito, CVD-safe)
 norm = TwoSlopeNorm(vmin=0.75, vcenter=1.0, vmax=1.7)
 fig, ax = plt.subplots(figsize=(6.6, 7.2))
 im = ax.imshow(ratio_c, cmap=cmap, norm=norm, aspect="auto")
