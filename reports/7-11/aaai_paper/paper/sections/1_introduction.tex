@@ -6,7 +6,7 @@ A \emph{world model} rolls an internal representation forward to predict how an 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig1_architecture.pdf}
-\caption{Physics injection into the LeWM shared-latent world model. The encoder maps each frame to a $192$-d latent; a black-box transformer predicts the full latent from $(z_t,a_t)$, and the free-rollout objective aligns the predicted $\hat z_{t+1}$ to the encoded next latent by MSE (SIGReg prevents collapse). Physics enters a $2$-d position \emph{slot} carved from the $192$ dimensions (right panel): a hard \emph{slot} pinning $z[1{:}2]$ to position, a supervised \emph{probe} reading position off the latent, or a \emph{kinematic} head evolving the slot by a second-order rule---while the other $190$ ``black-box'' dimensions stay free. This $2$-vs-$190$ split is the crux: prediction can route through the black box and bypass any injected slot.}
+\caption{Physics injection into the LeWM shared-latent world model. The encoder maps each frame to a $192$-d latent; a black-box transformer predicts the full latent from the latent history and action $u_t$, and the free-rollout objective aligns the predicted $\hat z_{t+1}$ to the encoded next latent by MSE (SIGReg prevents collapse). Physics enters a $2$-d position \emph{slot} carved from the $192$ dimensions (right panel): a hard \emph{slot} pinning $z[1{:}2]$ to position, a supervised \emph{probe} reading position off the latent, or a \emph{kinematic} head evolving the slot by a second-order rule---while the other $190$ ``black-box'' dimensions stay free. This $2$-vs-$190$ split is the crux: prediction can route through the black box and bypass any injected slot.}
 \label{fig:arch}
 \end{figure}
 

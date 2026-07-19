@@ -386,8 +386,8 @@ save(fig, "fig15_bypass_probe190"); plt.close(fig)
 #   uniform/collision both-OOD, parabola r/m-OOD). baseline u=0.131 p=0.127 c=0.393.
 # ============================================================================
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
-arms = ["[slot] structpos", "[slot] +pw30 (LBR)", "[slot] +velocity",
-        "[probe] probe", "[probe] +structpos", "[dyn] free MLP", "[dyn] strict a=g",
+arms = ["[slot] structpos", "[slot] +reweight (w=30)", "[slot] +velocity",
+        "[probe] probe", "[probe] +slot", "[dyn] free MLP", "[dyn] strict a=g",
         "[cons] consistency", "[free] label-free", "[free] grounded"]
 bcols = ["uniform\n(both-OOD)", "parabola\n(r/m-OOD)", "collision\n(both-OOD)"]
 base = np.array([0.131, 0.127, 0.393])

@@ -134,6 +134,33 @@ LaTeX 化细节：em-dash 用 `---`；数字进 math mode（`$29$ of $30$`、`$2
 - **presence 图归位**：原 Figure 1（fig1_thesis_presence_not_use.pdf）放入 §4.3「Mechanism: Decodable but Not Load-Bearing」节首作总起图，label `fig:presence`（= Figure 3）。节首新增一句 "The puzzle of \S\ref{sec:intro} localizes here … decodable, but not load-bearing (Figure~\ref{fig:presence})"。caption 精简保留（present 平线 + TF 崩塌 + FR 稳住）。该节此前删掉 bypass 图后正好缺图，主题契合。
 - 图编号：fig:arch=1 / fig:scan=2 / fig:presence=3 / fig:lbr=4 / fig:fr=5 / fig:ladder=6 / fig:dinowmscan=7。编译零错误、无 undefined、仍 12 页。
 
+## 13. 新增 §3.1 Setting and Notation + 符号统一 + 腾页（2026-07-19）
+
+按外部意见解决三个问题：§3 前向引用（192 维/H 等定义在 §4.1）、全文零公式、λ 符号重载。
+
+- **新增 §3.1 "Setting and Notation"**（label `sec:prelim`）：LeWM 模型符号（$E_\theta$, $F_\phi$, $z_t\in\mathbb{R}^{192}$）+ 两个公式——**Eq. 1** 总损失（加权 pred loss + β·SIGReg + λ·L_phys，正式定义 $w$=slot 预测权重、$\lambda$=辅助损失权重，"two distinct dials"）；**Eq. 2** kinematic head 二阶更新（$a\in\{\mathrm{MLP},g\}$）。TF/FR 与 $H{=}8$ 的定义、PushT init 声明也移入此节。
+- **§4.1 Model 段瘦身**：模型描述上移后只留析因规模（~200 runs）与种子（3072/1234/42）。
+- **符号统一**：Table 1 reweight 行 "(weight 30)"→"($w{=}30$, Eq. 1)"；§3.3 Test 3 "Sweep the slot weight $w$ of Eq. 1"；§4.3 Test 3 "$w{=}1\to300$"；Figure 4 caption 注明 "axis label pos\_weight λ denotes $w$"（fig8 源脚本不在仓库、未重生成）。λ 专属辅助损失（probe λ=10/λ=1 用法不变）。
+- **LBR 缩写修复**：重新生成 `fig16_scan_paper.pdf`（standalone 脚本，aff env matplotlib；数据不变），行标 "[slot] +pw30 (LBR)"→"[slot] +reweight (w=30)"、"[probe] +structpos"→"[probe] +slot"；master 脚本 storyline_figures.py 同步改。
+- **腾页**：删 §4.6 Synthesis（收束句 "decodable but not load-bearing" 移到 §4.5 末尾）；Related Work Phys-JEPA 段 5 句压 1 句（38%、2/192 论证保留在 §4.2/§4.3）；§3.3 首句去掉与 §3.1 重复的 TF/FR 括号定义。
+- 编译零错误、无 undefined、无 Overfull，仍 12 页。Eq/sec 标签：eq:loss=1、eq:kin=2、sec:prelim=3.1。
+
+## 14. 公式压宽 + 动作/加速度符号解冲突（2026-07-19）
+
+**问题一：公式过宽导致 tag 换行。** AAAI 单栏 3.3in 放不下公式本体 + 右侧编号时，LaTeX 会把 (1)/(2) 挪到下一行（非错误，但每个公式白占一行）。
+
+- **Eq (1)**：删掉 `\underbrace{}`（宽高双重元凶），主式压成 $\mathcal{L}=\mathcal{L}_{\mathrm{pred}}+\beta\,\mathrm{SIGReg}(z)+\lambda\,\mathcal{L}_{\mathrm{phys}}$，$\mathcal{L}_{\mathrm{pred}}$ 的加权求和形式（含 $w_i$ 定义）改为紧随其后的行内公式。
+- **Eq (2)**：把 $a\in\{\cdot\}$ 从主行移到正文（"the acceleration $a$ is either a learned MLP or a single learnable constant---the strict $a{=}g$ head"）。
+- 结果：两式编号均回到同行右对齐，各省一行。
+
+**问题二：$a$ 重载（加速度 vs 动作 $a_t$）。** 统计后取顾问的 Option B——`a=g` 全文出现 7 处（intro / Table 1 / Table 2 caption / §4.2×2 / 附录×2），是反复使用的物理招牌；动作数学符号仅 3 处。故**保留加速度 $a$ 与 `a=g`，把动作改为 $u_t$**（控制论惯例）：
+- §3.1：$F_\phi(z_{\le t},u_t)$、$\mathrm{MLP}(z_t,u_t)$；
+- Figure 1 caption：$(z_t,a_t)$ → "the latent history and action $u_t$"；
+- Figure 1 SVG：动作箭头标签 `a_t` → `u_t`（右栏 Kinematic 行 "ẑ = z + v + a" 中的 $a$ 是加速度，保持不变），重转 PDF。
+- Table 1 "learned $a$"、全文 "strict $a{=}g$" 一律不动。
+
+编译零错误、无 undefined、无 Overfull，仍 12 页。
+
 ---
 
 ## 验证

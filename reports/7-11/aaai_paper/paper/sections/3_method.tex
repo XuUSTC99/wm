@@ -3,6 +3,21 @@
 
 We answer the question of \S\ref{sec:intro} by construction: design the ways physics can be injected into a shared latent, state what each design is supposed to achieve, and lay out the experiments that test the mechanism behind it.
 
+\subsection{Setting and Notation}
+\label{sec:prelim}
+
+We study LeWM \citep{maes2025lewm}, a compact JEPA-style action-conditioned world model (${\sim}10$M parameters): an encoder $E_\theta$ (ViT-tiny) maps frame $o_t$ to a latent $z_t\in\mathbb{R}^{D}$ with $D{=}192$, and a causal-transformer predictor $F_\phi$ rolls latents forward from the history and action $u_t$, i.e.\ $\hat z_{t+1}=F_\phi(z_{\le t},u_t)$. Training minimizes a prediction loss, an anti-collapse regularizer \citep{balestriero2025lejepa}, and---when physics is injected---an auxiliary physical loss:
+\begin{equation}
+\mathcal{L}=\mathcal{L}_{\mathrm{pred}}+\beta\,\mathrm{SIGReg}(z)+\lambda\,\mathcal{L}_{\mathrm{phys}}.
+\label{eq:loss}
+\end{equation}
+Here $\mathcal{L}_{\mathrm{pred}}=\frac{1}{D}\sum_i w_i(\hat z_{t+1,i}-z_{t+1,i})^2$ is a per-dimension weighted prediction error. By default $w_i{=}1$; \emph{re-weighting} raises $w_i$ to $w$ on the $2$ slot dimensions ($w$ swept $1\!\to\!300$ in \S\ref{sec:mechtests}), while $\lambda$ scales the soft auxiliary losses (probe, consistency, label-free priors). Throughout, $w$ denotes the slot's prediction-loss weight and $\lambda$ an auxiliary-loss weight---two distinct dials. \emph{Teacher forcing} trains $F_\phi$ on one-step transitions from encoded ground-truth context; \emph{free rollout} feeds predictions back for $H$ autoregressive steps ($H{=}8$ unless stated) and supervises the whole rollout. The kinematic head (Family~3 below) replaces the slot's transition by a second-order update
+\begin{equation}
+\hat z^{[0:2]}_{t+1}=z^{[0:2]}_{t}+v_t\,\Delta t+\tfrac{1}{2}\,a\,\Delta t^{2},
+\label{eq:kin}
+\end{equation}
+where $v_t$ is the finite-difference slot velocity and the acceleration $a$ is either a learned $\mathrm{MLP}(z_t,u_t)$ or a single learnable constant---the strict $a{=}g$ head. Unless stated otherwise the encoder is initialized from the public PushT checkpoint; \S\ref{sec:scan} additionally studies from-scratch training.
+
 \subsection{Injection Design Space: Five Families, Ten Variants}
 \label{sec:designspace}
 
@@ -18,7 +33,7 @@ Variant & What it does, and what it tests \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Family 1: fixed slot --- hard constraint, pins the state, labeled}} \\
 \ \ slot (structpos) & pin dims $[0{:}2]$ to the true position (the object's $x,y$ coordinates): the most direct state injection; tests whether a hard constraint helps \\
-\ \ \ $+$reweight & raise the slot's share of the prediction loss (weight $30$): if failure is due to the slot's ${\sim}1\%$ gradient share, this should rescue it \\
+\ \ \ $+$reweight & raise the slot's share of the prediction loss ($w{=}30$, Eq.~\ref{eq:loss}): if failure is due to the slot's ${\sim}1\%$ gradient share, this should rescue it \\
 \ \ \ $+$velocity & encode velocity too: tests whether it matters \emph{which} quantity is injected, not just that something is \\
 \multicolumn{2}{@{}l}{\emph{Family 2: deep-supervision probe --- soft constraint, pins the state, labeled}} \\
 \ \ probe & linear head reads position from the latent: replicates the deep-supervision recipe \citep{zahorodnii2025deepsup} in a high-dimensional visual latent \\
@@ -47,7 +62,7 @@ Orthogonally, we cross injection with the \emph{training regime}: fine-tuning a 
 \begin{enumerate}
     \item \textbf{Is the physical constraint injected?} Split the latent into the $2$ slot dimensions and the $190$ black-box dimensions and decode position from each separately, with a random-2-dimension control. If the black box alone cannot decode position, the redundancy claim is false.
     \item \textbf{Is the constraint acting at all?} Two measurements: how large the weighted physical auxiliary loss is relative to the prediction loss (a proxy for gradient magnitude), and whether the encoder's effective dimensionality (participation ratio) changes. If neither moves, the constraint never took effect and the failure is a bug. If the auxiliary term dominates and dimensionality collapses, the constraint is acting---and competing with prediction.
-    \item \textbf{Does re-weighting the physical loss help?} Sweep the physical slot's prediction-loss weight from $1$ to $300$. If harm does not respond systematically to the weight, the gradient-share mechanism is wrong; if it responds but weighting to saturation still cannot rescue every domain, demonstrating that insufficient physical loss is not the root cause.
+    \item \textbf{Does re-weighting the physical loss help?} Sweep the slot weight $w$ of Eq.~\ref{eq:loss} from $1$ to $300$. If harm does not respond systematically to the weight, the gradient-share mechanism is wrong; if it responds but weighting to saturation still cannot rescue every domain, demonstrating that insufficient physical loss is not the root cause.
 \end{enumerate}
 
 \subsection{The Training-Protocol Control: Free Rollout}
@@ -55,7 +70,7 @@ Orthogonally, we cross injection with the \emph{training regime}: fine-tuning a 
 
 Free rollout serves two methodological roles; neither is a novelty claim (it is scheduled sampling, \citealp{bengio2015scheduled}).
 
-\emph{Controlled factorial variable.} Physical structure has never been compared against the training protocol on the same baseline; prior studies treat the protocol as background. We set the protocol first---replacing teacher forcing (one-step, ground-truth context) with free rollout ($H{=}8$ autoregressive steps, supervising the whole rollout)---and then ask whether structure adds incremental value. Teacher forcing hides compounding error at training time (\emph{exposure bias}): the model never sees its own mistakes, then must consume them at deployment. Free rollout exposes them during training, injecting no physics whatsoever. We read the resulting gain as more than robustness to compounding error: supervising an $H$-step autoregressive rollout turns training itself into \emph{long-horizon dynamics simulation}. Under teacher forcing the predictor is graded only on reproducing local one-step transitions; under free rollout it is graded on \emph{evolving} the state over the full horizon, so the gradient rewards a self-consistent multi-step dynamics rather than a one-step map---precisely the capability the latent is missing (\S\ref{sec:intro}). On this reading, free rollout is an evolution-targeted training signal that requires no physics labels: it trains \emph{how the state evolves} without touching \emph{what the state is}. A second protocol variable, the rollout horizon $H$, must \emph{match dynamics complexity}: domains with late causal events (collision; realistic-simulation scenes) need horizons long enough to contain them.
+\emph{Controlled factorial variable.} Physical structure has never been compared against the training protocol on the same baseline; prior studies treat the protocol as background. We set the protocol first---replacing teacher forcing with free rollout (\S\ref{sec:prelim})---and then ask whether structure adds incremental value. Teacher forcing hides compounding error at training time (\emph{exposure bias}): the model never sees its own mistakes, then must consume them at deployment. Free rollout exposes them during training, injecting no physics whatsoever. We read the resulting gain as more than robustness to compounding error: supervising an $H$-step autoregressive rollout turns training itself into \emph{long-horizon dynamics simulation}. Under teacher forcing the predictor is graded only on reproducing local one-step transitions; under free rollout it is graded on \emph{evolving} the state over the full horizon, so the gradient rewards a self-consistent multi-step dynamics rather than a one-step map---precisely the capability the latent is missing (\S\ref{sec:intro}). On this reading, free rollout is an evolution-targeted training signal that requires no physics labels: it trains \emph{how the state evolves} without touching \emph{what the state is}. A second protocol variable, the rollout horizon $H$, must \emph{match dynamics complexity}: domains with late causal events (collision; realistic-simulation scenes) need horizons long enough to contain them.
 
 \emph{Positive control.} A negative result invites two deflations---``your implementation is broken'' or ``your metrics cannot detect improvement.'' A protocol change that produces large gains on identical code and identical metrics rules out both at once, pinning the failure on the injected structure itself.
 
