@@ -1,6 +1,14 @@
 """Storyline figures for the AAAI paper (advisor PPT set).
 Run: le-wm/.venv/bin/python reports/7-11/aaai_paper/figures/storyline_figures.py
 
+!! DO NOT RUN THIS TO REFRESH THE PAPER FIGURES !!
+    It writes fig16_scan_paper and fig1_thesis_presence_not_use, which the
+    paper now takes from regen_fig16_scan.py and regen_fig3_presence.py
+    instead. Those two carry the three-seed overrides and the shared
+    DejaVu Serif style; this script would overwrite them with the older
+    single-seed, DejaVu Sans versions and silently undo both.
+    Use this script only for the PPT set, or after redirecting its output.
+
 Every number is inlined with its raw-data source path (see comments) so figures are
 reproducible & auditable. Palette = Okabe-Ito (CVD-safe). White bg for slides.
 Data sources (curated): 01_results_ledger.md (C1-C7) + logs under
