@@ -3,6 +3,19 @@ Recomputes every cell from rollout logs (means over available seeds; dagger = 3 
 Writes fig17_dinowm_scan.pdf into aaai_paper/figures/ and paper/figures/.
 Source: /data1/likun-share/junjxu/runs/dinowm/rollout_dinowm_*.log
 """
+#
+# ---------------------------------------------------------------------------
+# DATA SOURCE (updated 2026-07-19)
+#   Use  /home/qlib/am/wm/raw_data/runs/   -- the in-repo copy of every log.
+#   The /data1/likun-share/junjxu/runs/ paths quoted below are the ORIGINAL
+#   locations; that server is being retired, so treat them as provenance
+#   notes, not as a path to read from right now.
+#   NOTE: seed naming differs by seed (see raw_data/README.md #0) --
+#     seed 3072 (default) has NO _s suffix and lives in runs/structdyn_eval/;
+#     seeds 1234 / 42 carry _s1234 / _s42 and live in runs/aaai_p0/.
+#   Also: a run with no pwN in its name is the default slot weight w=1.
+# ---------------------------------------------------------------------------
+
 import os
 import re
 from pathlib import Path
@@ -13,7 +26,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm, LinearSegmentedColormap
 
-LOG = "/data1/likun-share/junjxu/runs/dinowm"
+# in-repo copy of the logs; the /data1 original is offline (see banner above)
+LOG = "/home/qlib/am/wm/raw_data/runs/dinowm"
 HERE = Path(__file__).resolve().parent
 PAPER_FIG = HERE.parent / "paper" / "figures"
 PART = {"um": "both-OOD", "par": "r/m-OOD", "col": "both-OOD"}
@@ -68,8 +82,8 @@ for i, (k, _) in enumerate(ARMS):
             N[i, j] = n
 
 if np.all(np.isnan(M)):
-    raise SystemExit("[abort] no run data found (logs live on /data1); refusing to overwrite "
-                     "the existing figure with an empty one. Use restore_fig17.py instead.")
+    raise SystemExit(f"[abort] no run data parsed from {LOG}; refusing to overwrite the "
+                     "existing figure with an empty one.")
 
 fig, ax = plt.subplots(figsize=(5.6, 6.6))
 norm = TwoSlopeNorm(vmin=0.7, vcenter=1.0, vmax=1.4)

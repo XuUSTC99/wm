@@ -50,6 +50,13 @@ Latent both-OOD nMSE / pixel both-OOD PSNR (dB): baseline $0.131$ / $20.41$; pro
 \paragraph{Slot reweighting sweep (uniform).}
 Slot weight $1/30/100$: $0.183$ / $0.114$ / $0.136$ (single seed), with the $w{=}30$ cell seed-replicated at $0.132\pm0.017$ against the baseline $0.136\pm0.008$. Kinematic head on the reweighted slot: velocity-OOD decoded position $\rho{=}0.991/0.987$ ($x$/$y$); uniform pixel horizon-28 $23.34$ vs.\ $22.09$\,dB ($+1.25$); appearance-OOD remains the weak axis (decoded $\rho$ $0.29\!\to\!0.43$, vs.\ $0.96$ without the kinematic head).
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/fig8_lbr_ablation.pdf}
+\caption{Dose--response re-weighting, all partitions. Solid curves are the four decision cells (hardest clean split); dotted are partitions we do not judge on---ID is not an extrapolation test, and parabola's \vood{}/\bothood{} nMSE is denominator-degenerate (Appendix~\ref{app:traps}). Only $2$ of the $4$ decision cells reach parity (uniform \bothood{}, parabola \rmood{}); uniform \rmood{} and collision \bothood{} stay above baseline at every weight, and collision degrades as weight grows. The sweep is single-seed; both parity cells were re-run over three seeds and land at baseline (\mainref{sec:mech}{4.3}).}
+\label{fig:lbr}
+\end{figure*}
+
 \paragraph{Bypass probe details.}
 Decoded position $\rho$ per domain (uniform/parabola/collision). Baseline model: full $192$ dims $0.92/0.85/0.78$; black-box $[2{:}192]$ alone $0.92/0.85/0.79$. Slot-pinned model (structpos, $w{=}30$): slot dims $[0{:}2]$ alone $0.92/0.85/0.51$; black-box $[2{:}192]$ alone $0.92/0.86/0.79$---unchanged by pinning. The slot absorbs position (its supervision loss falls $2.53\!\to\!0.015$) without displacing the black box's redundant copy.
 

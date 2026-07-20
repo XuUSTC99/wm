@@ -6,6 +6,19 @@ reproducible & auditable. Palette = Okabe-Ito (CVD-safe). White bg for slides.
 Data sources (curated): 01_results_ledger.md (C1-C7) + logs under
   /data1/likun-share/junjxu/runs/{aaai_p0,physionpp,structdyn_eval,piwm_baseline}/
 """
+#
+# ---------------------------------------------------------------------------
+# DATA SOURCE (updated 2026-07-19)
+#   Use  /home/qlib/am/wm/raw_data/runs/   -- the in-repo copy of every log.
+#   The /data1/likun-share/junjxu/runs/ paths quoted below are the ORIGINAL
+#   locations; that server is being retired, so treat them as provenance
+#   notes, not as a path to read from right now.
+#   NOTE: seed naming differs by seed (see raw_data/README.md #0) --
+#     seed 3072 (default) has NO _s suffix and lives in runs/structdyn_eval/;
+#     seeds 1234 / 42 carry _s1234 / _s42 and live in runs/aaai_p0/.
+#   Also: a run with no pwN in its name is the default slot weight w=1.
+# ---------------------------------------------------------------------------
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

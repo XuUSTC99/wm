@@ -3,6 +3,19 @@ Reads grid30.json produced by the collection step. Color = nMSE/baseline ratio
 (red worse, white parity, green better). Mirrors the LeWM figure's layout so the
 two can sit side by side in the paper/appendix.
 """
+#
+# ---------------------------------------------------------------------------
+# DATA SOURCE (updated 2026-07-19)
+#   Use  /home/qlib/am/wm/raw_data/runs/   -- the in-repo copy of every log.
+#   The /data1/likun-share/junjxu/runs/ paths quoted below are the ORIGINAL
+#   locations; that server is being retired, so treat them as provenance
+#   notes, not as a path to read from right now.
+#   NOTE: seed naming differs by seed (see raw_data/README.md #0) --
+#     seed 3072 (default) has NO _s suffix and lives in runs/structdyn_eval/;
+#     seeds 1234 / 42 carry _s1234 / _s42 and live in runs/aaai_p0/.
+#   Also: a run with no pwN in its name is the default slot weight w=1.
+# ---------------------------------------------------------------------------
+
 import json
 import numpy as np
 import matplotlib
