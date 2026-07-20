@@ -2,18 +2,24 @@
 
 Two things this fixes across every figure:
 
-1. Typography. The paper body sets in Nimbus Roman (a Times clone, `utmr8a`
-   in the log); matplotlib's default is DejaVu Sans, so figure text used to
-   read as a different document pasted in.
+1. Typography. AAAI requires the paper to be set in Times Roman or Nimbus --
+   Computer Modern is allowed for mathematics only -- and requires every font
+   to be embedded, including inside figures, with no Type 3 anywhere. The body
+   already satisfies this (NimbusRomNo9L); matplotlib's default DejaVu Sans
+   did not match it, so figure text read as a different document pasted in.
 
-   DejaVu Serif is the choice here, not a closer Times clone, because the
-   architecture diagram (fig1_architecture.svg, rendered by cairosvg) needs
-   the SAME font and needs U+1E91 "z with circumflex". Nimbus Roman, Georgia,
-   Latin Modern and STIXGeneral all lack that glyph, and cairosvg drops
-   missing glyphs SILENTLY rather than falling back per character -- the hat
-   simply vanishes from the predicted-latent box. DejaVu Serif is the only
-   serif on this machine that carries it, so it wins on being one font across
-   every figure. Verify glyph coverage before changing this.
+   Figures therefore set in Nimbus Roman too, registered from the system OTF
+   because matplotlib does not index it by default.
+
+   GLYPH COVERAGE IS THE TRAP HERE. Nimbus Roman is a Times clone with a
+   Times-era character set. It has no U+2713 CHECK MARK and no U+1E91 Z WITH
+   CIRCUMFLEX. Neither matplotlib nor cairosvg warns: matplotlib draws a
+   hollow .notdef box, cairosvg draws nothing at all. So:
+     - the scan figure marks its seed-robust gain with U+2021 DOUBLE DAGGER,
+       not a check mark;
+     - the architecture SVG composes z-hat from a z plus a positioned
+       circumflex rather than using the precomposed character.
+   Check any new glyph against `fc-list :charset=XXXX` before using it.
 
 2. Palette. Muted blue/sienna rather than saturated Okabe-Ito. The hues are
    still the Okabe-Ito axis (short-wavelength vs long-wavelength), which is
@@ -23,10 +29,23 @@ Two things this fixes across every figure:
 
 Import and call `apply()` before creating figures.
 """
+import glob
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 from matplotlib.colors import LinearSegmentedColormap
+
+# The URW base-35 Nimbus Roman that the AAAI template uses for body text.
+# matplotlib does not index /usr/share/fonts/opentype by default, so register
+# the family explicitly; without this the serif request silently falls back.
+_NIMBUS_GLOB = "/usr/share/fonts/opentype/urw-base35/NimbusRoman-*.otf"
+for _f in glob.glob(_NIMBUS_GLOB):
+    try:
+        fm.fontManager.addfont(_f)
+    except Exception:
+        pass
+NIMBUS_AVAILABLE = any(f.name == "Nimbus Roman" for f in fm.fontManager.ttflist)
 
 # --- palette -----------------------------------------------------------
 BLUE = "#3B6E92"   # cool, low chroma -- "better than baseline" / free rollout
@@ -55,8 +74,14 @@ def apply(base=8.0):
     """
     plt.rcParams.update({
         "font.family": "serif",
-        "font.serif": ["DejaVu Serif"],
-        "mathtext.fontset": "dejavuserif",
+        "font.serif": ["Nimbus Roman", "DejaVu Serif"],
+        # Math in the figures is limited to rho and the up/down arrows, which
+        # Nimbus carries; "custom" keeps them in the text face instead of
+        # pulling in a second family for two symbols.
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Nimbus Roman",
+        "mathtext.it": "Nimbus Roman:italic",
+        "mathtext.bf": "Nimbus Roman:bold",
         "font.size": base,
         "axes.titlesize": base,
         "axes.labelsize": base,

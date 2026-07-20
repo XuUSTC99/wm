@@ -71,7 +71,9 @@ def ink_or_white(rgba):
 
 for i in range(len(arms)):
     for j in range(3):
-        mark = "†" if (i, j) in parity3 else ("†✓" if (i, j) in gain else "")
+        # Double dagger, not a check mark: Nimbus Roman has no U+2713 and
+        # matplotlib would draw a hollow .notdef box without warning.
+        mark = "†" if (i, j) in parity3 else ("‡" if (i, j) in gain else "")
         ax.text(j, i, f"{ratio[i, j]:.2f}×\n({disp[i, j]:.3f}){mark}",
                 ha="center", va="center", fontsize=5.9,
                 color=ink_or_white(SCAN_CMAP(norm(ratio[i, j]))))
