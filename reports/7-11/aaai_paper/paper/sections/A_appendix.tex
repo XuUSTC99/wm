@@ -105,6 +105,9 @@ Overall nMSE at horizons $16/32/64$: baseline ($H{=}8$) $0.016/0.140/0.280$; $H{
 
 The cross-backbone variant (\mainref{sec:external}{3.5}) freezes a DINOv2-small encoder \citep{oquab2024dinov2}---in the style of DINO-WM \citep{zhou2025dinowm}---and trains only the projector (as adapter) and the identical predictor stack, losses, and seeds (${\sim}130$ runs). Free-rollout baselines (three-seed): uniform both-OOD $0.427{\pm}0.039$, parabola \rmood{} $0.225{\pm}0.019$, collision both-OOD $0.479{\pm}0.009$; Physion++ horizon-$64$ $0.258{\pm}0.005$ vs.\ teacher forcing $1.030{\pm}0.028$.
 
+\paragraph{Teacher forcing vs.\ free rollout, per domain.}
+Values behind \mainfig{fig:fr}{4} (hardest clean split, latent nMSE $\downarrow$, three-seed mean${\pm}$sample std). LeWM: uniform $0.300{\pm}0.007\!\to\!0.136{\pm}0.008$ ($2.2\times$), parabola $0.443{\pm}0.048\!\to\!0.122{\pm}0.007$ ($3.6\times$), collision $1.152{\pm}0.048\!\to\!0.479{\pm}0.079$ ($2.4\times$), Physion++ horizon-$64$ $1.174{\pm}0.041\!\to\!0.141{\pm}0.018$ ($8.3\times$). Every teacher-forcing interval is disjoint from its free-rollout counterpart. The frozen-DINOv2 counterparts above give $1.4$--$4.0\times$ over the same four settings, so the lever survives replacing a trainable ViT-tiny with a frozen general-purpose encoder.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.9\linewidth]{figures/fig17_dinowm_scan.pdf}
