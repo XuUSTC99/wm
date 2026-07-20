@@ -58,7 +58,7 @@ Slot weight $1/30/100$: $0.183$ / $0.114$ / $0.136$ (single seed), with the $w{=
 \end{figure*}
 
 \paragraph{Bypass probe details.}
-Decoded position $\rho$ per domain (uniform/parabola/collision). Baseline model: full $192$ dims $0.92/0.85/0.78$; black-box $[2{:}192]$ alone $0.92/0.85/0.79$. Slot-pinned model (structpos, $w{=}30$): slot dims $[0{:}2]$ alone $0.92/0.85/0.51$; black-box $[2{:}192]$ alone $0.92/0.86/0.79$---unchanged by pinning. The slot absorbs position (its supervision loss falls $2.53\!\to\!0.015$) without displacing the black box's redundant copy.
+Protocol for \mainref{sec:mech}{4.3}, which reports the numbers. Two models are probed: the free-rollout baseline (no injection) and the slot-pinned model (structpos, $w{=}30$). For each, a ridge probe is fit on the dimension subset alone---the full $192$, the black box $[2{:}192]$, the slot $[0{:}2]$, or a random pair as control---with train/test trajectories split $80/20$, so decodability is measured out of sample. Values are Pearson $\rho$ against ground-truth position on the \bothood{} partition, averaged over both coordinates, from frame embeddings rather than rolled-out latents. The slot absorbs position (its supervision loss falls $2.53\!\to\!0.015$) without displacing the black box's redundant copy.
 
 \paragraph{Encoded quantity vs.\ domain (position monotone, velocity sign-flipping).}
 The reweighted slot's effect is systematic in what it encodes (hardest clean split; baseline: uniform both-OOD $0.131$, parabola \rmood{} $0.127$, collision both-OOD $0.393$):
