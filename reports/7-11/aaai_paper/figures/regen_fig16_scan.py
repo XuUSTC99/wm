@@ -84,12 +84,10 @@ ax.tick_params(length=0, pad=2.5)
 for s in ax.spines.values():
     s.set_visible(False)
 
-# Group boundaries: state | evolution | label-free, matching Table 1.
-# A thin dark rule, not a thick white one -- white bands across a filled
-# heatmap read as missing cells or a rendering seam rather than as structure.
-# The mechanism level is left undrawn; the row labels already prefix it.
-for y in (4.5, 7.5):
-    ax.axhline(y, color=INK, lw=0.8, alpha=0.85)
+# No separator lines. White ones read as missing cells, and even thin dark
+# ones cut a filled heatmap in a way the appendix scan (which draws none)
+# shows is unnecessary: the row labels already prefix the mechanism, and
+# Table 1 carries the grouping. Keep the grid unbroken.
 
 cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.03)
 cb.set_label("nMSE / baseline", fontsize=6.2)
