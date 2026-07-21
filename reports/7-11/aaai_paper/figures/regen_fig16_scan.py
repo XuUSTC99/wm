@@ -84,11 +84,12 @@ ax.tick_params(length=0, pad=2.5)
 for s in ax.spines.values():
     s.set_visible(False)
 
-# Two-level grouping, matching Table 1.
-for y in (4.5, 7.5):            # group boundaries: state | evolution | label-free
-    ax.axhline(y, color="white", lw=2.0)
-for y in (2.5, 6.5):            # mechanism boundaries inside a group
-    ax.axhline(y, color="white", lw=0.8, alpha=0.75)
+# Group boundaries: state | evolution | label-free, matching Table 1.
+# A thin dark rule, not a thick white one -- white bands across a filled
+# heatmap read as missing cells or a rendering seam rather than as structure.
+# The mechanism level is left undrawn; the row labels already prefix it.
+for y in (4.5, 7.5):
+    ax.axhline(y, color=INK, lw=0.8, alpha=0.85)
 
 cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.03)
 cb.set_label("nMSE / baseline", fontsize=6.2)
