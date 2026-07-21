@@ -21,7 +21,9 @@ where $v_t$ is the finite-difference slot velocity and the acceleration $a$ is e
 \subsection{Injection Design Space: Three Groups, Ten Variants}
 \label{sec:designspace}
 
-We span the design space along three orthogonal axes---injecting \emph{what the motion state is} vs.\ \emph{how it evolves}, under \emph{hard vs.\ soft} constraints, with \emph{labeled vs.\ label-free} supervision---so that any ``try a different encoding'' objection lands on an axis we have measured. Table~\ref{tab:mechanisms} groups the ten variants by the first axis and gives the design rationale of each.
+We study one family: \emph{intrinsic coordinate injection}---physics written onto the coordinates of a latent the predictor already shares, by a loss or a hard assignment, leaving the encoder and the transition operator otherwise untouched. This is the family the ``just add a physics term'' proposal names, and within it we vary three orthogonal axes: injecting \emph{what the motion state is} vs.\ \emph{how it evolves}, under \emph{hard vs.\ soft} constraints, with \emph{labeled vs.\ label-free} supervision. Table~\ref{tab:mechanisms} groups the ten variants by the first axis and gives the design rationale of each.
+
+Two large families lie outside it, and our results do not speak to them. One changes what the representation \emph{is}---object-centric slots and relational graphs \citep{locatello2020slot,battaglia2016interaction,sanchez2020gns}, or equivariant features. The other changes the form of the \emph{transition operator}---Hamiltonian, Lagrangian or symplectic integrators \citep{cranmer2020lnn}, neural ODEs, and learned contact or impulse operators. Both alter the architecture rather than annotate its coordinates, which \S\ref{sec:mech} argues is where the leverage lies; we test one such design as an external control (\S\ref{sec:external}) but do not survey the space.
 
 \begin{table}[tb]
 \centering
@@ -50,7 +52,7 @@ Variant & What it does, and what it tests \\
 \ \ grounded & \emph{soft.} same structure $+$ true labels: isolates the label variable \\
 \bottomrule
 \end{tabular}
-\caption{Ten injection variants in three groups. The groups follow the \textbf{target} axis---inject the \emph{state} (what the motion is), its \emph{evolution} (how it changes), or, dropping \textbf{supervision}, a label-free prior over that evolution with its labeled control. The \textbf{constraint} axis is marked per variant: \emph{hard} forces a latent dimension to equal the physical quantity, \emph{soft} adds an auxiliary loss that only encourages it. These three axes span the ways to inject physics into a shared latent, so any alternative encoding falls on an axis we test. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
+\caption{Ten injection variants in three groups. The groups follow the \textbf{target} axis---inject the \emph{state} (what the motion is), its \emph{evolution} (how it changes), or, dropping \textbf{supervision}, a label-free prior over that evolution with its labeled control. The \textbf{constraint} axis is marked per variant: \emph{hard} forces a latent dimension to equal the physical quantity, \emph{soft} adds an auxiliary loss that only encourages it. The axes are orthogonal within intrinsic coordinate injection; they do not reach designs that restructure the representation or the transition operator. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
 \label{tab:mechanisms}
 \end{table}
 
