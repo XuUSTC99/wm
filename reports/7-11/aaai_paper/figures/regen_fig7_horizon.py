@@ -39,12 +39,14 @@ for name, (vals, c, mk) in series.items():
 
 ax.set_yscale("log")
 ax.set_xticks(hz)
-ax.set_xlim(12, 82)
+# Just enough right margin to label the np28 endpoint in place; the previous
+# limit (82) left dead space because the annotation used to sit under the axis.
+ax.set_xlim(13, 77)
+ax.set_ylim(0.0055, 0.46)   # headroom so the np8 curve stops short of the frame
 ax.set_xlabel("rollout horizon (steps)", fontsize=7.6)
 ax.set_ylabel("nMSE  (log, $\\downarrow$)", fontsize=7.6)
-ax.annotate("0.014 at $h{=}64$\n($1/19$ of baseline,\nno plateau)",
-            (64, 0.0144), (30, 0.0042), fontsize=6.2, color=BLUE, ha="center",
-            arrowprops=dict(arrowstyle="->", color=BLUE, lw=0.7))
+ax.annotate("$0.014$\n($1/19\\times$ baseline)", (65.5, 0.0144),
+            fontsize=6.0, color=BLUE, ha="left", va="center")
 ax.legend(fontsize=6.4, loc="upper left", bbox_to_anchor=(0.005, 1.0),
           handlelength=1.6, labelspacing=0.3)
 ax.tick_params(labelsize=6.8, length=2.5, width=0.7)
