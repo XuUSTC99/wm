@@ -52,7 +52,7 @@ Grounded prior & $0.173$ & $0.151$ & $0.536^{\circ}$ \\
 \end{table}
 
 \paragraph{Probe/slot factorial (uniform, free rollout).}
-Latent both-OOD nMSE / pixel both-OOD PSNR (dB): baseline $0.131$ / $20.41$; probe-only $0.167$ / $19.83$; slot$+$reweight $0.114$ / $21.30$; probe$+$slot$+$reweight $0.125$ / $20.02$. The combination underperforms the slot alone on both scales; the latent and pixel verdicts agree.
+Latent both-OOD nMSE / pixel both-OOD PSNR (dB), seed-$3072$ values: baseline $0.131$ / $20.41$; probe-only $0.167$ / $19.83$; slot$+$reweight $0.114$ / $21.30$; probe$+$slot$+$reweight $0.125$ / $20.02$. The combination underperforms the slot alone on both scales; the latent and pixel verdicts agree.
 
 \paragraph{Slot reweighting sweep (uniform).}
 Slot weight $1/30/100$: $0.183$ / $0.114$ / $0.136$ (single seed), with the $w{=}30$ cell seed-replicated at $0.132\pm0.017$ against the baseline $0.136\pm0.008$. Kinematic head on the reweighted slot: velocity-OOD decoded position $\rho{=}0.991/0.987$ ($x$/$y$); uniform pixel horizon-28 $23.34$ vs.\ $22.09$\,dB ($+1.25$); appearance-OOD remains the weak axis (decoded $\rho$ $0.29\!\to\!0.43$, vs.\ $0.96$ without the kinematic head).
@@ -64,11 +64,11 @@ Slot weight $1/30/100$: $0.183$ / $0.114$ / $0.136$ (single seed), with the $w{=
 \label{fig:lbr}
 \end{figure*}
 
-\paragraph{Bypass probe details.}
-Protocol for \mainref{sec:mech}{4.3}, which reports the numbers. Two models are probed: the free-rollout baseline (no injection) and the slot-pinned model (structpos, $w{=}30$). For each, a ridge probe is fit on the dimension subset alone---the full $192$, the black box $[2{:}192]$, the slot $[0{:}2]$, or a random pair as control---with train/test trajectories split $80/20$, so decodability is measured out of sample. Values are Pearson $\rho$ against ground-truth position on the \bothood{} partition, averaged over both coordinates, from frame embeddings rather than rolled-out latents. The slot absorbs position (its supervision loss falls $2.53\!\to\!0.015$) without displacing the black box's redundant copy.
+\paragraph{Redundancy probe details.}
+Protocol for \mainref{sec:mech}{4.3}, which reports the numbers. Two models are probed: the free-rollout baseline (no injection) and the slot-pinned model (structpos, $w{=}30$). For each, a ridge probe is fit on the dimension subset alone---the full $192$, the black box $[2{:}192]$, the slot $[0{:}2]$, or a random pair as control---with train/test trajectories split $80/20$, so decodability is measured out of sample. Values are Pearson $\rho$ against ground-truth position on the \bothood{} partition, averaged over both coordinates, from frame embeddings; the same table holds on rolled-out latents (Appendix~\ref{app:causal}). The slot absorbs position (its supervision loss falls $2.53\!\to\!0.015$) without displacing the black box's redundant copy.
 
 \paragraph{Encoded quantity vs.\ domain (position monotone, velocity sign-flipping).}
-The reweighted slot's effect is systematic in what it encodes (hardest clean split; baseline: uniform both-OOD $0.131$, parabola \rmood{} $0.127$, collision both-OOD $0.393$):
+The reweighted slot's effect is systematic in what it encodes (hardest clean split, legacy seed-$3072$ values; the three-seed baselines are $0.136$/$0.122$/$0.479$, Table~\ref{tab:injection}):
 
 \begin{center}\small
 \begin{tabular}{@{}lccc@{}}
@@ -122,11 +122,11 @@ Values behind \mainfig{fig:fr}{4} (hardest clean split, latent nMSE $\downarrow$
 \label{fig:dinowmscan}
 \end{figure}
 
-\paragraph{Presence and bypass.}
-The frozen encoder, which has never seen PhyWorld and received no physics supervision or gradient, decodes position from real-frame embeddings at $\rho{=}0.951$ (both-OOD)---\emph{higher} than the PhyWorld-trained LeWM encoder ($0.899$). The $190$ non-slot dimensions alone decode at $0.951$, indistinguishable from the full latent; pinning the slot at weight $300$ leaves the black-box copy at $0.973$. Presence and the bypass are properties of generic visual representations.
+\paragraph{Presence and redundancy.}
+The frozen encoder, which has never seen PhyWorld and received no physics supervision or gradient, decodes position from real-frame embeddings at $\rho{=}0.951$ (both-OOD)---\emph{higher} than the PhyWorld-trained LeWM encoder ($0.899$). The $190$ non-slot dimensions alone decode at $0.951$, indistinguishable from the full latent; pinning the slot at weight $300$ leaves the black-box copy at $0.973$. Presence and the redundant copy are properties of generic visual representations.
 
 \paragraph{Inert, not harmful.}
-Unlike the trainable-encoder regime, the core variants (re-weighted slot, probe, consistency) land within the baseline's seed band on all three domains, while the plain slot ($1.42\times$ on uniform) and the dynamics-head variants ($1.15$--$1.29\times$ on all domains) still hurt. With the encoder frozen, injection losses can only reshape the $384{\to}192$ adapter: the bypass cannot be displaced, which bounds the damage---and forecloses the benefit. Injection-variant variance also roughly doubles ($\pm0.087$ vs.\ baseline $\pm0.039$ on uniform), so single-seed cells on this backbone are uninformative.
+Unlike the trainable-encoder regime, the core variants (re-weighted slot, probe, consistency) land within the baseline's seed band on all three domains, while the plain slot ($1.42\times$ on uniform) and the dynamics-head variants ($1.15$--$1.29\times$ on all domains) still hurt. With the encoder frozen, injection losses can only reshape the $384{\to}192$ adapter: the redundant copy cannot be displaced, which bounds the damage---and forecloses the benefit. Injection-variant variance also roughly doubles ($\pm0.087$ vs.\ baseline $\pm0.039$ on uniform), so single-seed cells on this backbone are uninformative.
 
 \begin{figure}[t]
 \centering
@@ -178,7 +178,7 @@ Replacing $k$ black-box dimensions outright with a donor's (slot untouched) side
 \section{Augmentation: a Domain-Specific Lever with a Reversal Boundary}
 \label{app:aug}
 
-Augmentation is not part of the paper's main line (it is neither an injection mechanism nor a protocol variable), but its boundary behavior is a useful caution. On synthetic domains, per-trial appearance jitter (brightness/contrast, strength $0.5$) roughly halves the hardest split: uniform $0.131\!\to\!0.068$ ($-48\%$), parabola $-63\%$ (\rmood{} $0.127\!\to\!0.065$); geometric scale jitter, only in combination with a long horizon, sets the collision record ($0.393\!\to\!0.172\pm0.004$ over three seeds). Interactions are non-monotone: appearance conflicts with long-horizon training ($0.472$, worse than either alone), scale synergizes ($0.208$), the triple is worse than the best pair ($0.253$); temporal-stride augmentation loses even to appearance on velocity-OOD ($0.556$ vs.\ $0.376$), leaving unseen velocities the open hard case.
+Augmentation is not part of the paper's main line (it is neither an injection mechanism nor a protocol variable), but its boundary behavior is a useful caution. On synthetic domains, per-trial appearance jitter (brightness/contrast, strength $0.5$) roughly halves the hardest split: uniform $0.131\!\to\!0.068$ ($-48\%$), parabola $-63\%$ (\rmood{}, seed $3072$: $0.127\!\to\!0.065$); geometric scale jitter, only in combination with a long horizon, sets the collision record ($0.172\pm0.004$ over three seeds, vs.\ the $0.479\pm0.079$ free-rollout baseline). Interactions are non-monotone: appearance conflicts with long-horizon training ($0.472$, worse than either alone), scale synergizes ($0.208$), the triple is worse than the best pair ($0.253$); temporal-stride augmentation loses even to appearance on velocity-OOD ($0.556$ vs.\ $0.376$), leaving unseen velocities the open hard case.
 
 The appearance recipe reverses on realistic simulation: the same jitter that halves synthetic OOD error degrades Physion++ friction-collision prediction by two orders of magnitude (nMSE $0.062\!\to\!6.44$) while the \emph{aggregate} long-horizon cosine improves (Trap 1 below), and it does not help zero-shot transfer either ($0.597$, below the $0.607$ random-prior ceiling). The boundary is principled: appearance jitter encodes an appearance-invariance assumption that holds under PhyWorld's simple renderer but breaks where appearance carries physical information (friction, mass, material). Scale jitter, which assumes only size-invariance, keeps helping at realistic-simulation scale (Appendix~\ref{app:injection}); appearance jitter flips sign. Augmentation gains are domain- and type-specific, not portable.
 
