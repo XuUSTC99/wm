@@ -5,6 +5,8 @@ Values recovered from the pre-recolor render of the original figure (all 30 cell
 markers). Ratios and raw nMSE are hardcoded exactly as the original displayed them, so this
 reproduces the figure without needing the run logs on /data1.
 """
+import pathlib
+_HERE = pathlib.Path(__file__).resolve().parent
 import numpy as np, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -64,8 +66,8 @@ ax.set_yticks(range(len(ARMS))); ax.set_yticklabels(ARMS, fontsize=8.5)
 ax.set_title("Injection scan on the frozen-DINOv2 backbone\n"
              "(nMSE / free-rollout baseline; warm = worse)", fontsize=10)
 fig.tight_layout()
-for out in ["/home/qlib/am/wm/reports/7-11/aaai_paper/figures/fig17_dinowm_scan",
-            "/home/qlib/am/wm/reports/7-11/aaai_paper/paper/figures/fig17_dinowm_scan"]:
+for out in [str(_HERE / "fig17_dinowm_scan"),
+            str(_HERE.parent / "paper" / "figures" / "fig17_dinowm_scan")]:
     fig.savefig(f"{out}.pdf"); fig.savefig(f"{out}.png")
     print("restored", out)
 worse = int((RATIO > 1.05).sum()); par = int(((RATIO >= 0.95) & (RATIO <= 1.05)).sum())

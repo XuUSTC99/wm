@@ -9,6 +9,8 @@ import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import fig_style
 from fig_style import INK, MUTED, CAT
+import pathlib
+_HERE = pathlib.Path(__file__).resolve().parent
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -56,8 +58,8 @@ axes[0].text(1.15, 0.97, "better", fontsize=7, color=BLUE, va="top")
 axes[0].legend(frameon=False, fontsize=7.2, loc="upper left", ncol=2,
                columnspacing=0.8, handlelength=1.6, borderpad=0.2)
 fig.tight_layout(pad=0.4)
-for out in ["/home/qlib/am/wm/reports/7-11/aaai_paper/figures/fig8_lbr_ablation",
-            "/home/qlib/am/wm/reports/7-11/aaai_paper/paper/figures/fig8_lbr_ablation"]:
+for out in [str(_HERE / "fig8_lbr_ablation"),
+            str(_HERE.parent / "paper" / "figures" / "fig8_lbr_ablation")]:
     fig.savefig(out + ".pdf"); fig.savefig(out + ".png")
     print("wrote", out)
 

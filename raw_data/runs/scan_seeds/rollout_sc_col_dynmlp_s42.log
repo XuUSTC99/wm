@@ -1,0 +1,59 @@
+[norm] action mean=[-0.01484401  0.          0.01575156  0.        ], std=[7.72976437e-02 1.00000000e-08 8.20558954e-02 1.00000000e-08]  (from phyworld_collision_id1k.h5)
+[ckpt] /data1/likun-share/junjxu/.stable_worldmodel/sc_col_dynmlp_s42/sc_col_dynmlp_s42_epoch_20_object.ckpt  tag=sc_col_dynmlp_s42
+  rolled out 100 trajs, t=25s
+  rolled out 200 trajs, t=42s
+  rolled out 300 trajs, t=59s
+  rolled out 400 trajs, t=75s
+  rolled out 500 trajs, t=90s
+
+[data] 500 trajs, 14500 (frame,pred) pairs, emb dim=192
+
+=== collision AR ROLLOUT (LeWM ID-only FT, history_size=3) ===
+--- latent fidelity (pred vs real emb), test trajs, by partition ---
+  ID         n=  203  cos=+0.8886  nMSE=0.2580
+  r/m-OOD    n=  754  cos=+0.8222  nMSE=0.3526
+  v-OOD      n=  290  cos=+0.7349  nMSE=0.5708
+  both-OOD   n= 1653  cos=+0.7405  nMSE=0.5291
+
+--- latent fidelity vs horizon (test, aggregate) ---
+  h=  1  n=  100  cos=+0.9960  nMSE=0.0111
+  h=  2  n=  100  cos=+0.9915  nMSE=0.0217
+  h=  4  n=  100  cos=+0.9785  nMSE=0.0512
+  h=  8  n=  100  cos=+0.9482  nMSE=0.1237
+  h= 16  n=  100  cos=+0.7959  nMSE=0.4456
+  h= 28  n=  100  cos=+0.4670  nMSE=1.0939
+
+--- decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---
+  [baseline] probe applied to REAL embs:
+  REAL ID                   pos0ρ=+0.907  pos1ρ=+0.928  vel0ρ=+0.772  vel1ρ=+0.765
+  REAL r/m-OOD              pos0ρ=+0.826  pos1ρ=+0.815  vel0ρ=+0.770  vel1ρ=+0.752
+  REAL v-OOD                pos0ρ=+0.946  pos1ρ=+0.853  vel0ρ=+0.647  vel1ρ=+0.579
+  REAL both-OOD             pos0ρ=+0.906  pos1ρ=+0.859  vel0ρ=+0.900  vel1ρ=+0.777
+  [rollout] probe applied to PREDICTED embs:
+  PRED ID                   pos0ρ=+0.856  pos1ρ=+0.825  vel0ρ=+0.756  vel1ρ=+0.739
+  PRED r/m-OOD              pos0ρ=+0.332  pos1ρ=+0.531  vel0ρ=+0.730  vel1ρ=+0.641
+  PRED v-OOD                pos0ρ=+0.628  pos1ρ=+0.478  vel0ρ=+0.595  vel1ρ=+0.376
+  PRED both-OOD             pos0ρ=+0.099  pos1ρ=+0.739  vel0ρ=+0.762  vel1ρ=+0.689
+
+--- decoded vel ρ from PRED latents vs horizon (test, aggregate) ---
+  h=  1  n=  100  vel0ρ=+0.172  vel1ρ=-0.111
+  h=  2  n=  100  vel0ρ=+0.199  vel1ρ=-0.098
+  h=  4  n=  100  vel0ρ=+0.276  vel1ρ=-0.062
+  h=  8  n=  100  vel0ρ=+0.694  vel1ρ=+0.776
+  h= 16  n=  100  vel0ρ=+0.852  vel1ρ=+0.825
+  h= 28  n=  100  vel0ρ=+0.582  vel1ρ=+0.685
+
+--- [K=4] decoded pos/vel ρ from ROLLED-OUT latents (test), by partition ---
+  [K=4] probe applied to PREDICTED embs (stack 4 consecutive predicted latents):
+  PRED-K4 ID          pos0ρ=+0.816  pos1ρ=+0.797  vel0ρ=+0.565  vel1ρ=+0.702
+  PRED-K4 r/m-OOD     pos0ρ=+0.321  pos1ρ=+0.578  vel0ρ=+0.491  vel1ρ=+0.687
+  PRED-K4 v-OOD       pos0ρ=+0.756  pos1ρ=+0.516  vel0ρ=+0.604  vel1ρ=+0.469
+  PRED-K4 both-OOD    pos0ρ=+0.222  pos1ρ=+0.785  vel0ρ=+0.547  vel1ρ=+0.721
+
+--- [K=4] decoded vel ρ from PRED latents vs horizon (test, aggregate) ---
+  h=  4  n=  100  vel0ρ=+0.452  vel1ρ=-0.055
+  h=  8  n=  100  vel0ρ=+0.579  vel1ρ=+0.783
+  h= 16  n=  100  vel0ρ=+0.590  vel1ρ=+0.868
+  h= 28  n=  100  vel0ρ=+0.447  vel1ρ=+0.740
+
+Total 90s
