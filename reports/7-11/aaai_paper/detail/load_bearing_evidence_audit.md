@@ -346,7 +346,12 @@ Jacobian 是**局部线性**敏感度,只测单步预测对最后一帧历史的
 
 ### 3.4 弱信号:有 slot 确实缓冲了黑盒的损失
 
-按各自干净基准归一化的退化倍数:
+**不是新实验 —— 是把 §3.3 amnesic 的数据换个角度读。**
+
+amnesic 同时跑了两种模型:baseline(擦掉黑盒位置后**无处可退**)和 structpos(擦掉后
+**slot 里还留着一份**)。于是能问:**如果 slot 真能接管,structpos 该伤得更轻。**
+
+按各自干净基准归一化的退化倍数(两个模型本来的误差就不同,必须归一化):
 
 | 域 | 无 slot(baseline) | 有效 slot(structpos) |
 |---|---|---|
@@ -354,8 +359,18 @@ Jacobian 是**局部线性**敏感度,只测单步预测对最后一帧历史的
 | parabola | 2.6× | **2.3×** |
 | collision | 3.05× | **2.9×** |
 
-三域一致:有 slot 的模型退化更少。方向符合"slot 能接管",但幅度小、且被选择性问题淹没,
-**不能单独当证据**。
+三域一致:有 slot 的模型退化更少,方向正是"slot 接管"该有的样子。
+
+**但只算弱信号,三个理由:**
+
+1. **幅度太小** —— 4.3× vs 6.4× 是同一量级,不是"救回来了"
+2. **被 §3.3 的选择性问题淹没** —— amnesic 本身就不干净(删位置伤害还不如删随机),
+   这个差值来自"slot 接管"还是"两次投影删的维度不同",分不出来
+3. **跨模型比较** —— baseline 与 structpos 是**两个不同的模型**,干净基准也不同
+   (0.115 vs 0.146);归一化只是权宜,消不掉模型差异
+
+**定位**:它是唯一一条方向上支持命题 (b) 的旁证(有 slot 时黑盒的损失能被缓冲 ⟹ 两条路
+可互相替代),但因上述三点**不可引用**。真正回答 (b) 的是 §6.5 的剂量阶梯。
 
 ---
 
@@ -430,24 +445,142 @@ Jacobian 是**局部线性**敏感度,只测单步预测对最后一帧历史的
 
 ---
 
-## 6. 对论文的具体改动清单
+## 6. 对论文的具体改动清单(含改写稿)
 
-**必改:**
+### 6.0 先定的一件事:术语
 
-- `0_abstract.tex:2,5` — "decodable, but not load-bearing" / "the injected one is never load-bearing"
-- `1_introduction.tex:19` — "leaves the injected slot bearing none of the load" / "The state is decodable, but not load-bearing"
-- `1_introduction.tex:26` — contribution 2 的 "decodable but not load-bearing"
-- `3_method.tex:64` — Hypothesis 里 "prediction can route around any injected slot"
-- `4_experiments.tex:64,68,124` — 图 caption 与 §4.3 正文
-- `5_conclusion.tex:4` — 同名论断
+原稿把**两个属性合并成了一个词**,所以测出"注入没用"就推断成"没被用"。数据显示要拆开:
 
-**可删的安全网:**
+| 属性 | 定义 | 怎么测 | slot |
+|---|---|---|---|
+| **load-bearing** | 扰动它,预测会变 | steering / patch / Jacobian | ✅ 是 |
+| **marginal / non-redundant** | 提供了 latent 其余部分**没有**的信息 | 注入后误差是否改善 | ❌ 否 |
 
-- `4_experiments.tex:68` 结尾 "we do not intervene on a trained model, so that last step is inference"
-  —— 现在做了干预,但结论与原预期相反,要换成干预的实际结果。
+一句话:**注入的 slot 承重,但冗余 —— 它确实在扛,只是扛的是一份副本。**
 
-**该新增的:**
+建议在 §3.3 加 3–4 句把这两个属性分开定义。**这本身就是贡献** —— "把承重与增量分开测"
+是这轮方法学上的真收获。
 
-- amnesic 的 116–154/190 数字(冗余最硬量化)
-- amnesic 无选择性 → 审稿人点名的这条路做不通(负面结果,进 rebuttal 有力)
-- baseline 的 slot R² 只有 0.04–0.19(干净的阴性对照)
+标题候选(未定):`Load-Bearing but Redundant` / `Redundant, Not Missing` /
+`Decodable but Redundant`(⚠️ 最后这个 "but" 处没有张力,且冗余的对象是**注入的副本**
+而非原生状态,容易误读)。
+
+---
+
+### 6.1 逐处改写稿
+
+#### `0_abstract.tex:2` — 基线谜题
+
+> ~~the physical state is *decodable, but not load-bearing*~~
+>
+> the physical state is decodable **and causally used** — yet the rollout still drifts away
+> from it
+
+理由:剂量阶梯在 baseline 上测出整体替换黑盒 → 跟随 0.961,基线那条通路**是被用的**。
+所以"可解码但没被用"对基线也不成立。改后反而与全文的构造性结论(缺的是演化能力)更顺。
+
+#### `0_abstract.tex:5` — 注入机制
+
+> ~~prediction keeps using the copy it already has and the injected one is never load-bearing~~
+>
+> the injected copy **is used too** — three independent interventions confirm it — and still
+> adds nothing, because it duplicates a state the latent already carries
+
+#### `1_introduction.tex:19` — 机制段
+
+> ~~leaves the injected slot bearing none of the load~~
+>
+> gives prediction a **second** route to the same state. Both are used: steering the slot moves
+> the model's own black-box state by $1.5$–$2.0\times$ (a norm-matched random direction moves
+> it $\approx 0$), and patching the slot from a donor trajectory makes prediction follow the
+> donor $47$–$72\%$ where a model without a slot follows $1.5$–$11\%$.
+
+#### `1_introduction.tex:26` — contribution 2
+
+> ~~a mechanistic account, *decodable but not load-bearing*~~
+>
+> a mechanistic account, ***load-bearing but redundant***: the injected slot is causally used —
+> we verify this by intervention rather than infer it — yet the $190$ black-box dimensions carry
+> the same position, so the copy adds no signal while the constraint still costs capacity and
+> gradient.
+
+#### `3_method.tex:64` — Hypothesis
+
+> ~~so prediction can route around any injected slot~~
+>
+> so an injected slot **duplicates** what the latent already carries. The hypothesis is about
+> redundancy, not disuse: prediction may well read the injected copy (\S\ref{sec:mech} shows it
+> does), but reading a duplicate cannot supply information the representation lacks.
+
+同时把三个 Test 的措辞对齐 —— 现在 Test 1–3 只证了"路存在 / 约束生效 / 不是强度问题",
+**没有一个包含"predictor 在读哪一路"**。新增的干预正是补这一步。
+
+#### `4_experiments.tex:64` — 图 caption
+
+> ~~Decodable, but not load-bearing, in all three domains.~~
+>
+> Decodable and used, yet still drifting, in all three domains.
+
+#### `4_experiments.tex:68` — §4.3 结尾那句安全网
+
+> ~~but we do not intervene on a trained model, so that last step is inference~~
+
+**删掉,换成干预结果。** 但注意:干预结论与原预期**相反**,所以这段要重写而不是补一句。
+建议结构:
+
+1. 三类干预(steering / patch / Jacobian),各自的阴性对照
+2. 结果:slot 承重 —— 与我们自己的原假设相反
+3. 但黑盒副本未被挤掉(Jacobian 显示黑盒仍占总敏感度 96–99%)
+4. 结论:两条路都承重,而预测误差纹丝不动 → 冗余,不是旁路
+
+#### `5_conclusion.tex:4` — 同名论断
+
+同 contribution 2 的改法。
+
+---
+
+### 6.2 该新增的三块
+
+| 内容 | 数字 | 放哪 | 为什么值钱 |
+|---|---|---|---|
+| **冗余的硬量化** | 抹掉位置需删 **116–154 / 190 维(60–80%)** | §4.3 机制节 | 远强于现稿的"随机 2 维对照失败" |
+| **amnesic 不具判别力** | 6 格中 5 格删位置伤害**小于**删同秩随机 | Traps 附录 | 审稿人点名要 amnesic;"做了并量化了为何做不到"比沉默强 |
+| **baseline 的 slot R²** | 仅 **0.04–0.19** | §4.3 或附录 | 干净的阴性对照 —— 没注入就没有 slot 可读 |
+
+### 6.3 amnesic 那段的英文草稿
+
+> We ran amnesic projection with a rank-matched random-ablation control. Erasing position
+> requires removing $116$–$154$ of the $190$ non-slot dimensions; at that rank, removing position
+> is indistinguishable from removing the same number of dimensions at random (in five of six
+> cells it is in fact *less* damaging). The test cannot discriminate in this representation —
+> a direct consequence of how distributed the copy is. We note the control is matched in rank
+> but not in variance: INLP selects directions that linearly predict position, which may be
+> lower-variance than randomly chosen ones.
+
+配套的陷阱记录(进 Traps):
+
+> An earlier run stopped at $24$ removed dimensions and showed position-removal damaging the
+> rollout *less* than random removal — apparent support for the bypass account. The contrast
+> disappears once INLP is run to convergence.
+
+### 6.4 要补的引用(已核对,2026-07-22)
+
+| 用途 | 出处 |
+|---|---|
+| Saliency map 起源 | Simonyan, Vedaldi & Zisserman, arXiv:1312.6034 (2013) |
+| Integrated Gradients | Sundararajan, Taly & Yan, ICML 2017, arXiv:1703.01365 |
+| 显著性方法健全性检验 | Adebayo, Gilmer, Muelly, Goodfellow, Hardt & Kim, NeurIPS 2018, arXiv:1810.03292 |
+| Amnesic probing(已在稿) | Elazar, Ravfogel, Jacovi & Goldberg, TACL 2020, arXiv:2006.00995 |
+| INLP(我们用的投影) | Ravfogel, Elazar, Gonen, Twiton & Goldberg, ACL 2020, arXiv:2004.07667 |
+
+### 6.5 写作时必须一并声明的限制
+
+1. **g 的绝对值不可解释**(§5.4)—— 1.5/2.0 只能定性比较
+2. **命题 (b) 只覆盖 LeWM/uniform 一格** —— 剂量阶梯 6 格里 5 格对照不过
+3. **parabola 在三种方法上都异常** —— steering 三种子不稳、dose ladder 对照脏、
+   DINO Jacobian 唯一失败格
+4. **collision 的 slot 从未真正吸收位置**(R² 0.40–0.43)
+5. **"冗余"是推断而非直接测量** —— 直接测到的是"黑盒单独解码 ≈ 全 latent"与"注入不改善
+   误差"两条,**没有**直接测 $I(\text{pos};\text{slot}\mid\text{bb})\approx 0$
+6. **amnesic 对照秩匹配但非方差匹配**(§3.3)
+7. **Jacobian 是局部线性敏感度**,不等同 rollout 全程因果效应
