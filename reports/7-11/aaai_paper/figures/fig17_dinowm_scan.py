@@ -26,9 +26,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm, LinearSegmentedColormap
 
-# in-repo copy of the logs; the /data1 original is offline (see banner above)
-LOG = "/home/qlib/am/wm/raw_data/runs/dinowm"
+# In-repo copy of the logs. Derived from this file's location rather than
+# hard-coded: the path used to be an absolute one on a machine that no longer
+# exists, which made every figure here unreproducible from a fresh clone.
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[3]                      # figures -> aaai_paper -> 7-11 -> reports -> repo
+LOG = str(REPO / "raw_data" / "runs" / "dinowm")
 PAPER_FIG = HERE.parent / "paper" / "figures"
 PART = {"um": "both-OOD", "par": "r/m-OOD", "col": "both-OOD"}
 

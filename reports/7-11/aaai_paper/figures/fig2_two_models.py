@@ -37,26 +37,29 @@ plt.rcParams.update({"font.size": 11, "axes.edgecolor": MUTED, "axes.labelcolor"
                      "font.family": "DejaVu Sans"})
 
 doms = ["uniform", "parabola\n(r/m-OOD)", "collision", "Physion++\n(sim, h64)"]
+# Every bar is a 3-seed mean (seeds 3072/1234/42); err = sample std over those seeds.
+# Verified against the per-seed logs on 2026-07-19 (all 16 bars have n=3).
 panels = [
     ("LeWM (trainable ViT-tiny)",
-     [0.300, 0.443, 1.153, 1.174],           # TF, 3-seed means
-     [0.136, 0.122, 0.479, 0.141],           # FR
+     [0.300, 0.443, 1.152, 1.174], [0.007, 0.048, 0.048, 0.041],   # TF mean, std
+     [0.136, 0.122, 0.479, 0.141], [0.008, 0.007, 0.079, 0.018],   # FR mean, std
      ["2.2×", "3.6×", "2.4×", "8.3×"]),
     ("frozen DINOv2 + adapter (DINO-WM-style)",
-     [0.594, 0.380, 0.803, 1.030],
-     [0.427, 0.225, 0.479, 0.258],
+     [0.594, 0.380, 0.803, 1.030], [0.078, 0.018, 0.041, 0.034],
+     [0.427, 0.225, 0.479, 0.258], [0.047, 0.023, 0.011, 0.006],
      ["1.4×", "1.7×", "1.7×", "4.0×"]),
 ]
 
 fig, axes = plt.subplots(1, 2, figsize=(13.2, 3.5), sharey=True)
-for ax, (title, tf, fr, mult) in zip(axes, panels):
+for ax, (title, tf, tf_sd, fr, fr_sd, mult) in zip(axes, panels):
     x = np.arange(len(doms)); w = 0.38
-    ax.bar(x - w/2, tf, w, color=VERM, label="teacher-forced")
-    ax.bar(x + w/2, fr, w, color=BLUE, label="free rollout")
-    for xi, (t, f, m) in enumerate(zip(tf, fr, mult)):
-        ax.text(xi - w/2, t + 0.02, f"{t:.2f}", ha="center", va="bottom", fontsize=8.5, color=MUTED)
-        ax.text(xi + w/2, f + 0.02, f"{f:.2f}", ha="center", va="bottom", fontsize=8.5, color=BLUE)
-        ax.text(xi, max(t, f) + 0.13, m, ha="center", fontweight="bold", color=INK, fontsize=11.5)
+    ekw = dict(ecolor=INK, capsize=3, elinewidth=1.1, capthick=1.1)
+    ax.bar(x - w/2, tf, w, yerr=tf_sd, color=VERM, label="teacher-forced", error_kw=ekw)
+    ax.bar(x + w/2, fr, w, yerr=fr_sd, color=BLUE, label="free rollout", error_kw=ekw)
+    for xi, (t, ts, f, fs, m) in enumerate(zip(tf, tf_sd, fr, fr_sd, mult)):
+        ax.text(xi - w/2, t + ts + 0.02, f"{t:.2f}", ha="center", va="bottom", fontsize=8.5, color=MUTED)
+        ax.text(xi + w/2, f + fs + 0.02, f"{f:.2f}", ha="center", va="bottom", fontsize=8.5, color=BLUE)
+        ax.text(xi, max(t + ts, f + fs) + 0.13, m, ha="center", fontweight="bold", color=INK, fontsize=11.5)
     ax.axvline(2.5, color=GRID, lw=1.2)
     ax.set_xticks(x); ax.set_xticklabels(doms, fontsize=9)
     ax.set_title(title, fontsize=10.5)
