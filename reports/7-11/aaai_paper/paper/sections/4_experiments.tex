@@ -28,26 +28,27 @@ Injection degrades or fails to improve prediction in $29$ of $30$ mechanism--dom
 The sole exception is the mechanism's signature, not a usable prior: adding \emph{velocity} to the re-weighted slot helps on parabola (\rmood{} $0.122{\pm}0.007\!\to\!0.096{\pm}0.007$, every seed lower) because there velocity is an extrapolable driving variable ($a{=}g$ makes it linear in time); the same encoding is harmful on uniform ($+0.049$ over baseline, velocity is a redundant constant) and on collision ($+0.017$ over the reweighted slot; velocity jumps discontinuously). A prior that requires knowing the domain's dynamics in advance, and reverses sign across domains, is a diagnostic, not a method---and its best case ($-0.026$ nMSE) is an order of magnitude below the protocol lever of \S\ref{sec:fr}.
 
 \paragraph{From-scratch co-training does not rescue injection.}
-The remaining defense---structure must be baked in during pretraining---does not hold (Table~\ref{tab:scratch}): all six regime--domain cells are positive, so injection costs prediction accuracy whether the structure is co-trained from random initialization or grafted onto a pretrained encoder. Baking it in from the start also produces the single worst failure in the grid: on uniform the penalty is $+0.558$ ($3.9\times$) from scratch against $+0.035$ ($1.27\times$) fine-tuned. The two regimes trade places on the other two domains, so we do not read a general ordering between them---the robust statement is that neither escapes the harm.
+The remaining defense---structure must be baked in during pretraining---does not hold (Table~\ref{tab:scratch}). Co-training from random initialization, over three seeds, leaves injection harmful on uniform ($+0.435$, Welch 95\% CI $[+0.276,+0.594]$) and collision ($+0.147$, $[+0.074,+0.220]$), and at parity on parabola ($-0.029$, $[-0.318,+0.260]$)---a domain whose from-scratch baseline is itself too seed-unstable ($0.343$--$0.666$ across seeds) to resolve an effect of that size. Parity is not a rescue: for this defense to hold, baking the structure in would have to make injection \emph{help}, and in no cell does it. Baking it in from the start also produces the single worst failure in the grid: on uniform the penalty is $+0.435$ from scratch against $+0.037$ fine-tuned, an order of magnitude larger. The two regimes trade places on the other two domains, so we do not read a general ordering between them---the robust statement is that neither escapes the harm.
 
 \begin{table}[tb]
 \centering
 \small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}llccc@{}}
 \toprule
 Domain & Regime & phys.\ off & phys.\ on & $\Delta$ \\
 \midrule
-\multirow{2}{*}{uniform} & scratch & $0.192$ & $0.750$ & $\mathbf{+0.558}$ \\
- & fine-tune &$0.131$ & $0.166$ & $+0.035$ \\
+\multirow{2}{*}{uniform} & scratch & $0.222{\pm}0.028$ & $0.657{\pm}0.095$ & $\mathbf{+0.435}$ \\
+ & fine-tune & $0.136$ & $0.173$ & $+0.037$ \\
 \midrule
-\multirow{2}{*}{parabola (\rmood)} & scratch & $0.343$ & $0.375$ & $+0.03$ \\
- & fine-tune &$0.124$ & $0.198$ & $+0.07$ \\
+\multirow{2}{*}{parabola (\rmood)} & scratch & $0.476{\pm}0.169$ & $0.447{\pm}0.063$ & $-0.029$ \\
+ & fine-tune & $0.122$ & $0.151$ & $+0.029$ \\
 \midrule
-\multirow{2}{*}{collision} & scratch & $0.538$ & $0.635$ & $+0.097$ \\
- & fine-tune &$0.393$ & $0.525$ & $+0.132$ \\
+\multirow{2}{*}{collision} & scratch & $0.502{\pm}0.043$ & $0.648{\pm}0.013$ & $\mathbf{+0.147}$ \\
+ & fine-tune & $0.479$ & $0.536^{\circ}$ & $+0.057$ \\
 \bottomrule
 \end{tabular}
-\caption{Injection on/off $\times$ training regime, per domain (latent nMSE $\downarrow$ on the hardest clean split; injected structure: strict $a{=}g$ head $+$ fixed slot). \emph{Scratch} trains everything from random initialization; \emph{fine-tune} starts the encoder from pretrained weights. $\Delta$ is the cost of switching injection on within a regime: positive in all six regime--domain cells, and amplified from $+0.035$ to $+0.558$ on uniform when physics is baked in from the start.}
+\caption{Injection on/off $\times$ training regime, per domain (latent nMSE $\downarrow$ on the hardest clean split; injected structure: strict $a{=}g$ head $+$ fixed slot). \emph{Scratch} trains everything from random initialization and is reported over three seeds (mean$\pm$std); \emph{fine-tune} starts the encoder from pretrained weights and is read off the three-seed scan (Table~\ref{tab:injection}), so both regimes are three-seed throughout; $^{\circ}$ marks a cell within seed noise there. $\Delta$ is the cost of switching injection on within a regime. From scratch, injection is harmful on uniform (Welch 95\% CI $[+0.276,+0.594]$) and collision ($[+0.074,+0.220]$) and at parity on parabola ($[-0.318,+0.260]$), whose from-scratch baseline is too seed-unstable ($0.343$--$0.666$) to resolve an effect this small. No cell shows injection helping.}
 \label{tab:scratch}
 \end{table}
 

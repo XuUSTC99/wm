@@ -5,13 +5,20 @@
 All training configurations, per-run logs, evaluation protocols, and the exact numbers behind every table and figure are archived alongside the code; the study builds on public assets (LeWM, PhyWorld, Physion, Physion++). We will release the evaluation suite, including the per-horizon/per-partition audit tools and the random-encoder controls.
 
 \paragraph{Hyperparameters.}
-All PhyWorld runs: AdamW, lr $5{\times}10^{-5}$ (from-scratch reruns: $2{\times}10^{-5}$), weight decay $10^{-3}$, bf16, gradient clip $1.0$, $20$ epochs; the from-scratch cells of the pretraining-regime $2{\times}2$ train longer and at a lower learning rate so their baselines converge cleanly---$60$ epochs on uniform motion and collision, $120$ on parabola, which needed the extra budget---with injection on and off sharing the identical budget within each domain, so every $\Delta$ in Table~\ref{tab:scratch} is a within-domain comparison. Batch size $64$ for free rollout ($H{=}8$), $128$ for teacher forcing ($H{=}1$), $48$ for $H{\geq}16$. History size $3$; embedding dimension $192$; SIGReg weight $0.09$. Seeds: $3072/1234/42$ where seed-replicated. Physion++ runs use the readout split ($800$ clips) with the same optimizer.
+All PhyWorld runs: AdamW, lr $5{\times}10^{-5}$ (from-scratch reruns: $2{\times}10^{-5}$), weight decay $10^{-3}$, bf16, gradient clip $1.0$, $20$ epochs; the from-scratch cells of the pretraining-regime $2{\times}2$ train longer and at a lower learning rate so their baselines converge cleanly---$60$ epochs on uniform motion and collision, $120$ on parabola, which needed the extra budget---with injection on and off sharing the identical budget within each domain, so every $\Delta$ in Table~\ref{tab:scratch} is a within-domain comparison. Batch size $64$ for free rollout ($H{=}8$), $128$ for teacher forcing ($H{=}1$), $48$ for $H{\geq}16$. History size $3$; embedding dimension $192$; SIGReg weight $0.09$. Seeds: $3072/1234/42$ where seed-replicated; the from-scratch arm of the pretraining-regime $2{\times}2$ is three-seed in every cell (Table~\ref{tab:scratch}), its fine-tune arm single-seed. Physion++ runs use the readout split ($800$ clips) with the same optimizer.
 
 \paragraph{OOD partitions.}
 ID: radius/mass $\in[0.7,1.5]$, velocity $\in[1.0,4.0]$. OOD draws radius/mass from $[0.3,0.6]\cup[1.5,2.0]$ and velocity from $[0,0.8]\cup[4.5,6.0]$. Collision uses the four-column variant (two objects' masses and velocities). Training sets are ID-only ($1{,}000$ trajectories); evaluation covers all four partitions ($\geq$1{,}600 trajectories per domain).
 
 \paragraph{Probe protocol.}
 Ridge regression ($\alpha{=}1$), trajectory-level 80/20 splits, probing the encoder output (not the projector), pretrained ``paper'' initialization, and $K{=}4$ stacked consecutive latents for velocity. Each choice matters: the naive combination (random init, single frame, through-projector) reads $\rho{=}0.166$ for uniform velocity where the corrected protocol reads $0.939$ (Trap 4, Appendix~\ref{app:traps}). Random-encoder and pixel-statistics controls are run alongside every probe.
+
+\paragraph{From-scratch $2{\times}2$, per seed.}
+Hardest clean split, latent nMSE (uniform/collision both-OOD, parabola \rmood), seeds $3072/1234/42$:
+uniform off $0.192/0.230/0.246$, on $0.750/0.560/0.662$;
+parabola off $0.343/0.420/0.666$, on $0.375/0.494/0.473$;
+collision off $0.538/0.513/0.454$, on $0.635/0.661/0.649$.
+The parabola from-scratch baseline spans $0.343$--$0.666$ across seeds---a spread wider than the effect being measured, which is why that cell is reported as parity rather than as a gain.
 
 \section{Full Injection Results}
 \label{app:injection}

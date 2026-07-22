@@ -81,13 +81,18 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 
 **干净基线定版(2026-07-11;lewm 120ep parabola + 本会话 60ep um/col;数字均已核 h28 无爆点)**:
 
-| 域 | 分区 | scratch_off(干净) | scratch_on | Δ_scratch | Δ_pusht(对照) |
-|---|---|---|---|---|---|
-| **uniform(headline)** | both | 0.192(脏基线 0.349→修好) | **0.750** | **+0.558** | +0.035 |
-| collision | both | 0.538 | 0.635 | +0.097 | — |
-| parabola | **r/m** | 0.343 | 0.375 | +0.03 | +0.07 |
+**⚠️ 2026-07-22 三种子重跑,单种子值已作废**(12 run:3 域 × on/off × seed{1234,42},配已有 3072)。判决分区 nMSE,mean±std:
 
-- **headline 句**:物理在 from-scratch 下伤得更狠——uniform 上 Δ 从后训练嫁接的 +0.035 放大到 **+0.558**(基线越干净、物理伤越明显);三域干净设定全部 Δ>0,"物理要在预训练注入"强/弱假设全灭。C4 定稿 ✅✅。
+| 域 | 分区 | scratch_off | scratch_on | Δ_scratch (Welch 95%CI) | 判决 |
+|---|---|---|---|---|---|
+| **uniform** | both | 0.222±0.028 | **0.657±0.095** | **+0.435** [+0.276,+0.594] | 确证有害 |
+| collision | both | 0.502±0.043 | 0.648±0.013 | **+0.147** [+0.074,+0.220] | 确证有害 |
+| parabola | **r/m** | 0.476±0.169 | 0.447±0.063 | **−0.029** [−0.318,+0.260] | **持平(跨 0)** |
+
+逐种子(3072/1234/42):uniform off 0.192/0.230/0.246、on 0.750/0.560/0.662;parabola off 0.343/0.420/0.666、on 0.375/0.494/0.473;collision off 0.538/0.513/0.454、on 0.635/0.661/0.649。源 `raw_data/runs/pretrain_physics/rollout_pp2_*_scratch_*_s{1234,42}.log` + 汇总 `SEED_RESULTS.md`。
+
+- **headline 句(已改)**:from-scratch 共训**救不回**注入——uniform +0.435、collision +0.147 两域 CI 不跨 0 确证有害,parabola 持平。**⚠️ 旧稿的"三域 Δ 全为正 / all six cells positive"已被三种子推翻**(parabola 单种子 +0.03 → 三种子 −0.029),写作勿再用。论证不受损:堵死"要在预训练注入"这条辩护只需"从头共训不能让注入变好",**持平不是 rescue**。
+- **⚠️ parabola from-scratch 基线极不稳**(0.343–0.666,std 0.169,跨度大于待测效应)→ 该域只能报持平,不能报增益。
 - **⚠️ 勿用 parabola both-OOD 的 "+0.550 / 8.7×"**:scratch_on both=1.201 被 h28 爆点 197 万污染,判决走 r/m(详见 [NOTE_from_lewm_pretrain_caveat.md](NOTE_from_lewm_pretrain_caveat.md))。
 - **副结论(喂 C6)**:120ep 降 LR 后 scratch 的 pred_loss 已收敛到 ~0.008(与 pusht 同量级)但 rollout OOD 仍差 2.8×(r/m 0.343 vs 0.124)→ **训练 loss 收敛 ≠ rollout 泛化好**。
 - 出处:`/data1/.../runs/pretrain_physics/rollout_pp2_par_*.log`、`/data1/.../runs/aaai_p0/rollout_pp2_{um,col}_*.log`、[EXPERIMENT_PLAN.md §6.5-7](../pretrain_physics/EXPERIMENT_PLAN.md)。
