@@ -110,7 +110,7 @@ collision / parabola 核心三臂同样全部落在 baseline error bar 内（col
 
 ![dinowm 30 格注入热力图](../figures/dinowm_injection_heatmap.png)
 
-→ **30 格里 27 格 ≥ baseline（10 差 / 17 持平 / 3 好）**，与 LeWM Fig16 的 29/30 高度一致。三个"好"的格子**全在 uniform**（pw30 0.81×、+vel 0.93×、probe+slot 0.91×）——**已由 §4 shuffle control 证明是加权正则、非物理**。重灾区也对应：`[dyn]a=g` 和 `[free]grounded` 在 collision 上 **1.27×**（最差），与 LeWM 一样是 dyn/grounded 家族最害；**collision 整列几乎全 ≥1**（注入在最复杂域最没用）。
+→ **27 格里 26 格 ≥ baseline（3 格每种子都更差 / 23 格落在噪声内 / 1 格更好但仅差 0.001）**，与 LeWM Fig16 的 26/27 高度一致。三个"好"的格子**全在 uniform**（pw30 0.81×、+vel 0.93×、probe+slot 0.91×）——**已由 §4 shuffle control 证明是加权正则、非物理**。重灾区也对应：`[dyn]a=g` 和 `[free]grounded` 在 collision 上 **1.27×**（最差），与 LeWM 一样是 dyn/grounded 家族最害；**collision 整列几乎全 ≥1**（注入在最复杂域最没用）。
 
 **pw300 三重对照已闭环**（§4）：weakpin(0.1)+pw300 = 0.329±0.084（0.77×），与 shuffle 同数 → 起作用的是加权动作，不是物理量。
 

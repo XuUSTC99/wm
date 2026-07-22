@@ -1,14 +1,14 @@
-# 论据:物理注入全扫描 —— 5 家族 × 10 臂 × 3 域 = 30 格,29 格不优于 baseline
+# 论据:物理注入全扫描 —— 5 家族 × 10 臂 × 3 域;判决表合并后 **27 格,26 格不优于 baseline**
 
 > # 🎯 一句话结论
-> **把"往共享 latent 注入物理"的设计空间扫满——5 个机制家族、含变体共 10 臂、每臂 3 域 = 30 格,沿"硬/软 × 约束状态/演化 × 有/无标签"三正交轴铺开。判决指标(nMSE↓)下:25 格明确差于纯 free-rollout baseline、4 格持平(1 格恰好持平 + 3 格三种子后回落 = 种子噪声)、仅 1 格真小赢(posvel·parabola −0.026,单域单分区、量级远小于 free-rollout 的 ×2–3)。→ 物理结构不是通用杠杆,且"换编码方式会不会好"在主轴上已被实测否定。**
+> **把"往共享 latent 注入物理"的设计空间扫满——5 个机制家族、含变体共 10 臂、每臂 3 域(⚠️ 其中 **a=g 与 grounded 实为同一配置跑了两次**,判决表合并为 **9 臂 × 3 域 = 27 格**,合并行汇总四次抽样),沿"硬/软 × 约束状态/演化 × 有/无标签"三正交轴铺开。判决指标(nMSE↓)下:25 格明确差于纯 free-rollout baseline、4 格持平(1 格恰好持平 + 3 格三种子后回落 = 种子噪声)、仅 1 格真小赢(posvel·parabola −0.026,单域单分区、量级远小于 free-rollout 的 ×2–3)。→ 物理结构不是通用杠杆,且"换编码方式会不会好"在主轴上已被实测否定。**
 
 **对应主张**:[01_results_ledger.md](../01_results_ledger.md) **C4** / [06_storyline.md](../06_storyline.md) 步4-5(发现一)
 **判读**:每域取最可靠判决分区——uniform/collision **both-OOD**、parabola **r/m-OOD**(both-OOD 有 h28 除零爆点,见 [evaluation_traps 陷阱4](evaluation_traps.md));nMSE↓;⚠️ 除注明外**单种子(3072)**。baseline(纯 free-rollout)= uniform 0.131 / parabola(r/m) 0.127 / collision 0.393。
 
 ---
 
-## 1. 热力图(一眼看全 30 格)
+## 1. 热力图(一眼看全 27 格)
 
 ![](../figures/fig16_physics_injection_scan.png)
 
@@ -35,7 +35,7 @@
 
 **三正交轴闭合**:硬(structpos/dyn)↔软(probe/cons);状态(structpos/probe)↔演化(dyn/cons/label-free);有标签(9 臂)↔无标签(label-free)。→ 覆盖"往共享 latent 注入物理"的整个设计空间。
 
-## 3. 全 30 格数据(判决分区 nMSE↓)
+## 3. 全格数据(判决分区 nMSE↓)
 
 | 臂 | uniform(both) | parabola(r/m) | collision(both) |
 |---|---|---|---|
@@ -51,7 +51,10 @@
 | label-free | 0.171 ❌ | 0.172 ❌ | 0.653 ❌ |
 | grounded | 0.166 ❌ | 0.156 ❌ | 0.525 ❌ |
 
-**❌ 差 / = 恰好持平 / ≈ 单种子<1 但三种子=持平 / ✅ 真提升**。计数:**25 ❌ + 1 = + 3 ≈ + 1 ✅ = 30 格** → **29 格不优于 baseline、1 格真小赢**。
+**❌ 差 / = 恰好持平 / ≈ 单种子<1 但三种子=持平 / ✅ 真提升**。本表按**逐臂原始 10 行**列出(便于查每个臂的原始值),计数 **25 ❌ + 1 = + 3 ≈ + 1 ✅ = 30**。
+
+> ⚠️ **与论文口径的对应(两处差异,均不改变结论方向)**:论文判决表是 **27 格 / 26 不优于 baseline**,差在两点——① **a=g 与 grounded 实为同一配置跑了两次**,论文合并成一行(30→27),合并行汇总四次抽样;② 论文**把全部格子补到三种子**,凡种子区间与 baseline 重叠的一律判为"噪声内",于是分解从本表的 **25 差 / 4 平** 变成论文的 **15 差 / 11 噪声内**。
+> → **凡引用论文/对外汇报,一律用 27 格、26 of 27、15 差 / 11 平**;本表的价值是**逐臂原始数值**,不是判决计数。
 (⚠️ 旧稿写的"26 差 / 3 平 / 1 赢"有误:把 probe+structpos·parabola 的 0.127 vs baseline 0.127 = **恰好 1.00× 持平**误计成"变差";结论方向不变,数字已订正。)
 
 **ⁿ 三个 ≈ 格的种子真相(2026-07-15 三种子全部实测坐实,单种子<baseline 均为抽到好种子、非真提升)**:
@@ -65,15 +68,15 @@
 ## 4. 分析
 
 ### 4.1 唯一真提升 = posvel·parabola,是机制签名不是可用方法
-posvel 在 parabola 的 r/m-OOD:单种子 0.093、**三种子 0.096(0.093/0.091/0.104)vs baseline 0.122±0.007,逐种子 3:0、区间零重叠,−0.026 真实**。但:①**单域单分区**——同一编码(速度进 slot)在 uniform +0.076、collision +0.228 反而变差;②量级 −0.026 **远小于** free-rollout 的 ×2–3;③**需预知动力学**(速度在抛体里是线性驱动量、可外推;匀速是冗余常数、碰撞是跳变)。→ **是"① slot 占比高到不被旁路绕过 + ② 编进去的量在该域可外推"两条同时满足才有用的机制签名,不是通用先验**(详见 [why_physics_structure_fails 层1](why_physics_structure_fails.md))。
+posvel 在 parabola 的 r/m-OOD:单种子 0.093、**三种子 0.096(0.093/0.091/0.104)vs baseline 0.122±0.007,逐种子 3:0、区间零重叠,−0.026 真实**。但:①**单域单分区**——同一编码(速度进 slot)在 uniform +0.076、collision +0.228 反而变差;②量级 −0.026 **远小于** free-rollout 的 ×2–3;③**需预知动力学**(速度在抛体里是线性驱动量、可外推;匀速是冗余常数、碰撞是跳变)。→ **是"① slot 占比高到能真正影响预测 + ② 编进去的量在该域可外推"两条同时满足才有用的机制签名,不是通用先验**(详见 [why_physics_structure_fails 层1](why_physics_structure_fails.md))。
 
 ### 4.2 三条跨臂规律
 1. **collision 整列全红(1.33–1.66×)、最狠**:冲量域连 grounded(有完美标签,least-bad 1.33×)都伤——富动力学/不连续域拒绝一切平滑物理结构。
 2. **"演化"类不比"状态"类好**:dynamics/consistency/label-free(演化)与 structpos/probe(状态)同样全败——问题不在"钉状态还是钉演化"。
-3. **标签有无、软硬都不救**:label-free(无标签)vs grounded(有标签、同结构)同域同向差;硬(structpos)vs 软(probe)同向差 → 失效与"标签/软硬"无关,是**架构性**(物理占比低 + 黑盒旁路,见 [why_physics_structure_fails 层2](why_physics_structure_fails.md))。
+3. **标签有无、软硬都不救**:label-free(无标签)vs grounded(有标签、同结构)同域同向差;硬(structpos)vs 软(probe)同向差 → 失效与"标签/软硬"无关,是**架构性**(物理占比低 + 注入的只是黑盒已有位置的副本,见 [why_physics_structure_fails 层2](why_physics_structure_fails.md))。
 
 ### 4.3 对"换个 intrinsic 编码会不会好"的回答
-30 格已沿三正交轴铺满、含**正确的物理形式(a=g)**、含**承重加权**、含**无标签自组织**——全败(仅 1 格匹配动力学的小赢)。→ "换编码方式"在主轴上被实测否定;要突破须**改架构堵旁路(extrinsic)**,不是换 intrinsic 编码(详见 [why_physics_structure_fails 层3](why_physics_structure_fails.md))。
+扫描已沿三正交轴铺满、含**正确的物理形式(a=g)**、含**承重加权**、含**无标签自组织**——全败(仅 1 格匹配动力学的小赢)。→ "换编码方式"在主轴上被实测否定;要突破须**改架构消除这份副本(extrinsic)**,不是换 intrinsic 编码(详见 [why_physics_structure_fails 层3](why_physics_structure_fails.md))。
 
 ## 5. 数据来源(逐臂,可复现)
 

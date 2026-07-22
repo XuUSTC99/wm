@@ -68,7 +68,7 @@ LeWM 原文用 num_preds=1 的单步 teacher forcing;改为自回归多步 free-
 | structpos 单用(无 pos_weight 加权) | 0.131→0.183 ❌ | kinematics_exploration |
 | probe+structpos 组合(pos_weight 加权) | 0.125,打不过 structpos 单用 0.114;pixel 同向:both-OOD 20.02 / h28 21.91,低于 structpos 单用(21.30/22.41)甚至 baseline | 本 session 2×2(**latent+pixel 双尺闭环 ✅✅**) |
 | 速度进 pos_weight 加权 slot([pos,vel]×pw30) | 物理量进 slot **整体有害**——uniform 0.114→**0.207** ❌❌、collision 0.621 ❌;唯一例外 parabola r/m 0.122→0.096(**小提升 −0.026**,三种子 0.093/0.091/0.104,量级很小、单域单分区),**可能**因速度在抛体里是线性驱动量、可外推——不当卖点。附:不同物理量进 slot(**只作可能原因**)——位置 structpos 随复杂度单调变差(0.132/0.160/0.596),加速度净效果 Δ=+0.075/−0.064/+0.025 大体对应速度在该域有无信息价值(数据点少,不拔高成规律) | Arm C + 2026-07-12 三种子;structpos 三域 rollout_{um,par,col}_structpos_fr_pw30 |
-| **2026-07-12 补齐的 9 臂**(probe/组合/posvel 的 par+col 版、plain slot 两域、grounded col) | 全部就位:Table 2 凑满 30 格,28/30 不优于基线;仅有的两个"例外"均在 parabola r/m 单种子(probe 0.115=基线种子下沿=噪声;posvel 0.093 待种子判) | `/data1/.../runs/aaai_p0/rollout_{parabola,collision}_*` |
+| **2026-07-12 补齐的 9 臂**(probe/组合/posvel 的 par+col 版、plain slot 两域、grounded col) | 全部就位:Table 2 凑满 30 格,28/30 不优于基线(⚠️ 当时口径;现行判决表合并 a=g/grounded 且全三种子后为 **27 格 / 26 不优于**);仅有的两个"例外"均在 parabola r/m 单种子(probe 0.115=基线种子下沿=噪声;posvel 0.093 待种子判) | `/data1/.../runs/aaai_p0/rollout_{parabola,collision}_*` |
 
 **pretrain vs post-train 2×2(2026-07-11,60ep 统一,证伪"要在预训练注入"假设)**:
 | 域 | scratch+off | scratch+on(Δ) | pusht+off | pusht+on(Δ) |
