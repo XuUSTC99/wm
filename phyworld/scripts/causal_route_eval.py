@@ -118,7 +118,7 @@ def main():
     ap.add_argument("--ckpt", default=None)
     ap.add_argument("--tag", default="")
     ap.add_argument("--mode", default="steer",
-                    choices=["steer", "patch", "amnesic", "subset", "all"])
+                    choices=["steer", "patch", "amnesic", "subset", "jacobian", "all"])
     ap.add_argument("--max-trajs", type=int, default=150)
     ap.add_argument("--deltas", type=float, nargs="+", default=[-1.0, -0.5, 0.5, 1.0],
                     help="steering magnitudes in units of position std")
@@ -201,6 +201,47 @@ def main():
     print(f"[probe R2 on train]  full={pr_full.r.score((Xtr-pr_full.mu)/pr_full.sd, Ytr):.3f}"
           f"  slot={pr_slot.r.score((Xtr[:, idx_slot]-pr_slot.mu)/pr_slot.sd, Ytr):.3f}"
           f"  bb={pr_bb.r.score((Xtr[:, idx_bb]-pr_bb.mu)/pr_bb.sd, Ytr):.3f}", flush=True)
+
+    # ===================================================================== #
+    # MODE: jacobian -- per-dimension sensitivity, no intervention designed  #
+    # ===================================================================== #
+    if args.mode in ("jacobian", "all"):
+        print("\n=== JACOBIAN: d(predicted position) / d(input latent dim) ===")
+        print("    Every interventional measure of the black box here had to pick a")
+        print("    direction first (the probe pseudo-inverse), and a redundant")
+        print("    distributed code barely moves along any one direction -- which is")
+        print("    why the min-norm patch reads ~0.09 on a channel that reads ~0.96")
+        print("    when replaced wholesale. Differentiating picks no direction.")
+        Wp = torch.from_numpy(pr_full.r.coef_.astype(np.float32)).to(dev)     # (2, D)
+        mu_p = torch.from_numpy(pr_full.mu.astype(np.float32)).to(dev)
+        sd_p = torch.from_numpy(pr_full.sd.astype(np.float32)).to(dev)
+        rsj = np.random.default_rng(0)
+        picks = [(i, k) for i, tr in enumerate(trajs) for k in range(HS, tr["T"])]
+        rsj.shuffle(picks)
+        picks = picks[:400]
+        per_dim = torch.zeros(D, device=dev)
+        for cnt, (i, k) in enumerate(picks, 1):
+            tr = trajs[i]
+            hist = tr["real"][k - HS:k].clone().unsqueeze(0).requires_grad_(True)
+            pred = model.predict(hist, tr["act"][k - HS:k].unsqueeze(0))[0, -1]
+            pos_hat = ((pred - mu_p) / sd_p) @ Wp.T                            # (2,)
+            for c in range(pos_hat.numel()):
+                gr = torch.autograd.grad(pos_hat[c], hist, retain_graph=True)[0]
+                # sensitivity to the LAST history frame only -- that is the one the
+                # patch/steer interventions clamp, so this stays comparable to them.
+                per_dim += gr[0, -1].abs().detach()
+            if cnt % 100 == 0:
+                print(f"    {cnt}/{len(picks)}  t={time.time()-t0:.0f}s", flush=True)
+        per_dim = (per_dim / len(picks)).cpu().numpy()
+        s_mean, b_mean = per_dim[:2].mean(), per_dim[2:].mean()
+        order = np.argsort(-per_dim)
+        print(f"    slot [0:2]    mean |dpos/dz| per dim = {s_mean:.6f}")
+        print(f"    black box     mean |dpos/dz| per dim = {b_mean:.6f}")
+        print(f"    RATIO slot/bb per dim = {s_mean / (b_mean + 1e-12):.2f}")
+        print(f"    totals: slot {per_dim[:2].sum():.6f} vs black box "
+              f"{per_dim[2:].sum():.6f}  (slot share {per_dim[:2].sum() / (per_dim.sum() + 1e-12):.3f})")
+        print(f"    slot dims rank {[int(np.where(order == j)[0][0]) + 1 for j in range(2)]} "
+              f"of {D} by sensitivity")
 
     # ---- rollout with an arbitrary per-step latent intervention ----
     @torch.no_grad()

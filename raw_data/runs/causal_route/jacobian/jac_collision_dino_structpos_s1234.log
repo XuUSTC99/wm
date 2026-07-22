@@ -1,0 +1,29 @@
+[ckpt] /data1/likun-share/junjxu/.stable_worldmodel/dinowm_col_structpos_pw30_s1234/dinowm_col_structpos_pw30_s1234_epoch_20_object.ckpt  tag=jac_collision_dino_structpos_s1234  mode=jacobian  clamp=every-step
+  encoded 50 trajs, t=25s
+  encoded 100 trajs, t=35s
+  encoded 150 trajs, t=43s
+[data] 150 trajs, emb dim=192, t=43s
+[probe R2 on train]  full=0.893  slot=0.422  bb=0.892
+
+=== JACOBIAN: d(predicted position) / d(input latent dim) ===
+    Every interventional measure of the black box here had to pick a
+    direction first (the probe pseudo-inverse), and a redundant
+    distributed code barely moves along any one direction -- which is
+    why the min-norm patch reads ~0.09 on a channel that reads ~0.96
+    when replaced wholesale. Differentiating picks no direction.
+    100/400  t=45s
+    200/400  t=46s
+    300/400  t=48s
+    400/400  t=49s
+    slot [0:2]    mean |dpos/dz| per dim = 0.627492
+    black box     mean |dpos/dz| per dim = 0.327329
+    RATIO slot/bb per dim = 1.92
+    totals: slot 1.254984 vs black box 62.192524  (slot share 0.020)
+    slot dims rank [1, 99] of 192 by sensitivity
+
+[clean rollout] t=49s
+  clean decoded rho from PRED latents (both-OOD, test): +0.828 / +0.876   n=464
+  clean latent nMSE (pred vs real, test focus): 0.4717
+
+[done] t=69s
+[W722 21:56:21.015365166 AllocatorConfig.cpp:28] Warning: PYTORCH_CUDA_ALLOC_CONF is deprecated, use PYTORCH_ALLOC_CONF instead (function operator())
