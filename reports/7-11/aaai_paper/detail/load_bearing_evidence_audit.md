@@ -196,13 +196,19 @@ rolled-out latents**,而且 **linear decodability need not imply use**。
 | 恢复实验的第 4 臂("删黑盒 + 打乱 slot") | 该设计的臂 2 前提就不成立(删位置 ≯ 删随机),补第 4 臂救不回来 |
 | routing index `R = g_bb/(g_bb+g_slot)` | 对冗余通道系统性失效:baseline 里黑盒是**唯一**通路,g_bb 也只有 0.02–0.33,说明它是方法噪声地板而非因果估计 |
 
-### 5.3 可以补且值得补的
+### 5.3 三项后续 —— 已全部跑完(2026-07-22 晚,27 run,0 失败)
 
-| 项 | 成本 | 收益 |
+细节见 [causal_bypass_results.md §6](causal_bypass_results.md);
+复现 `python phyworld/scripts/collect_causal_followup.py`。
+
+| 项 | 结果 | 对论文 |
 |---|---|---|
-| **structdyn 正对照重跑(小 δ)** | 低,推理期 | 该架构位置**只能**过 slot,是 g 的天然标尺。现读出 R=0.00–0.13 方向正确,但增益量级爆炸(加性自检 24–650),δ 取小即可用 |
-| **查 LeWM·parabola 不稳原因** | 低 | 若是 δ 尺度问题,调好就能补上三域一致 |
-| **Test 1 改用 rolled-out latents** | 中 | 现稿 probe 读的是 frame embeddings,论文自己标注了这个限制。用 rollout 潜变量重测能直接消掉一个审稿点 |
+| **Test 1 改用 rolled-out latents** | ✅ **成立**。黑盒 0.841(LeWM)/0.880(DINO)≈ 全 latent 0.866/0.911,随机 2 维 0.471/0.231 失败。而且这 42 个 run 早就跑完了,只是没人读 | **删掉现稿那句自我限制**("the probe here reads frame embeddings, not rolled-out latents"),白赚 |
+| **structdyn 正对照** | ❌ 定量不可用 / ✅ 定性可用。换构造方式没用,δ 变小反而更大(4.5→17.6),collision 还会随构造反号(−228 vs +417)。但 g_bb 全部 ≈0 → R→0 方向正确 | g 的绝对值**必须声明不可解释**;R→0 可作定性正对照 |
+| **LeWM·parabola 不稳原因** | ❌ **是真实差异,不是 δ 伪影**。δ 缩小 20 倍后逐种子值纹丝不动(−0.056 vs −0.097),相对离散度稳定在 1.10;uniform 同阶梯只有 0.02–0.19 | 写成 limitation:该域该 backbone 三个种子学出了**本质不同的模型**(slot 承重 −0.06 / +1.10 / +2.61),不要平均掉 |
+
+> 📌 方法论收获:B2(uniform 同 δ 阶梯)是专门加的对照。没有它,parabola 的 δ 无关性
+> 无法与"方法本身到处都有 δ 依赖"区分开 —— 结论就立不住。
 
 ### 5.4 绝对增益不可解释(写作时必须声明)
 

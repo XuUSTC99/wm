@@ -1,0 +1,47 @@
+[ckpt] /data1/likun-share/junjxu/.stable_worldmodel/uniform_motion_structpos_fr_pw30_id1k/uniform_motion_structpos_fr_pw30_id1k_epoch_20_object.ckpt  tag=B2_uniform_structpos_s3072_d005  mode=steer  clamp=every-step
+  encoded 50 trajs, t=17s
+  encoded 100 trajs, t=24s
+  encoded 150 trajs, t=30s
+[data] 150 trajs, emb dim=192, t=30s
+[probe R2 on train]  full=0.895  slot=0.875  bb=0.885
+
+[clean rollout] t=30s
+  clean decoded rho from PRED latents (both-OOD, test): +0.963 / +0.833   n=377
+  clean latent nMSE (pred vs real, test focus): 0.1110
+
+=== STEERING: causal gain d(predicted position)/d(delta) ===
+    delta is applied so that the *named channel's* decoded position moves by delta; readout is the full-latent probe on the PREDICTED latent.
+  delta=-0.05sd  slot                   g[full]=(+1.261,+0.903)  g[bb]=(+1.475,+0.767)  g[slot]=(+1.385,+0.973)  |v|=  0.21  nMSE=0.1198
+  delta=-0.05sd  blackbox               g[full]=(-0.005,+0.246)  g[bb]=(+0.118,+0.293)  g[slot]=(-0.024,+0.157)  |v|=  0.03  nMSE=0.1104
+  delta=-0.05sd  joint                  g[full]=(+1.259,+1.148)  g[bb]=(+1.597,+1.059)  g[slot]=(+1.365,+1.130)  |v|=  0.21  nMSE=0.1191
+  delta=-0.05sd  rand-bb(norm-matched)  g[full]=(-0.020,-0.027)  g[bb]=(-0.140,-0.028)  g[slot]=(-0.040,-0.037)  |v|=  0.03  nMSE=0.1110
+  delta=-0.03sd  slot                   g[full]=(+1.260,+0.890)  g[bb]=(+1.442,+0.749)  g[slot]=(+1.389,+0.957)  |v|=  0.10  nMSE=0.1145
+  delta=-0.03sd  blackbox               g[full]=(-0.005,+0.245)  g[bb]=(+0.118,+0.293)  g[slot]=(-0.024,+0.157)  |v|=  0.02  nMSE=0.1107
+  delta=-0.03sd  joint                  g[full]=(+1.256,+1.135)  g[bb]=(+1.561,+1.041)  g[slot]=(+1.367,+1.114)  |v|=  0.10  nMSE=0.1142
+  delta=-0.03sd  rand-bb(norm-matched)  g[full]=(-0.017,-0.006)  g[bb]=(-0.099,-0.003)  g[slot]=(-0.044,-0.009)  |v|=  0.02  nMSE=0.1115
+  delta=+0.03sd  slot                   g[full]=(+1.260,+0.849)  g[bb]=(+1.346,+0.697)  g[slot]=(+1.399,+0.909)  |v|=  0.10  nMSE=0.1094
+  delta=+0.03sd  blackbox               g[full]=(-0.005,+0.245)  g[bb]=(+0.118,+0.293)  g[slot]=(-0.024,+0.157)  |v|=  0.02  nMSE=0.1113
+  delta=+0.03sd  joint                  g[full]=(+1.254,+1.095)  g[bb]=(+1.465,+0.991)  g[slot]=(+1.375,+1.066)  |v|=  0.10  nMSE=0.1097
+  delta=+0.03sd  rand-bb(norm-matched)  g[full]=(+0.008,+0.002)  g[bb]=(-0.001,+0.016)  g[slot]=(-0.011,+0.009)  |v|=  0.02  nMSE=0.1112
+  delta=+0.05sd  slot                   g[full]=(+1.280,+0.824)  g[bb]=(+1.303,+0.667)  g[slot]=(+1.420,+0.874)  |v|=  0.21  nMSE=0.1104
+  delta=+0.05sd  blackbox               g[full]=(-0.005,+0.245)  g[bb]=(+0.118,+0.293)  g[slot]=(-0.024,+0.157)  |v|=  0.03  nMSE=0.1116
+  delta=+0.05sd  joint                  g[full]=(+1.275,+1.069)  g[bb]=(+1.424,+0.960)  g[slot]=(+1.397,+1.030)  |v|=  0.21  nMSE=0.1108
+  delta=+0.05sd  rand-bb(norm-matched)  g[full]=(-0.023,-0.002)  g[bb]=(+0.057,-0.002)  g[slot]=(-0.028,+0.018)  |v|=  0.03  nMSE=0.1118
+
+  --- summary (mean over |delta| and signs; per coordinate) ---
+    slot                    read-full=(+1.265,+0.867)  read-bb=(+1.392,+0.720)  read-slot=(+1.398,+0.928)
+    blackbox                read-full=(-0.005,+0.245)  read-bb=(+0.118,+0.293)  read-slot=(-0.024,+0.157)
+    joint                   read-full=(+1.261,+1.112)  read-bb=(+1.512,+1.013)  read-slot=(+1.376,+1.085)
+    rand-bb(norm-matched)   read-full=(-0.013,-0.008)  read-bb=(-0.046,-0.004)  read-slot=(-0.031,-0.005)
+
+  --- ROUTING INDEX, per readout and per coordinate ---
+      R = g_bb / (g_bb + g_slot);  1.0 = position taken entirely from the
+      black box (bypass), 0.0 = entirely from the slot (load-bearing).
+      read-bb is the load-bearing test: read-full and read-slot can be
+      inflated by the predictor simply copying its input slot forward.
+      read-full   R=(-0.004,+0.221)   additivity g_slot+g_bb=(+1.260,+1.112) vs g_joint=(+1.261,+1.112)
+      read-bb     R=(+0.078,+0.289)   additivity g_slot+g_bb=(+1.510,+1.013) vs g_joint=(+1.512,+1.013)
+      read-slot   R=(-0.017,+0.145)   additivity g_slot+g_bb=(+1.375,+1.085) vs g_joint=(+1.376,+1.085)
+
+[done] t=271s
+[W722 19:58:03.866686523 AllocatorConfig.cpp:28] Warning: PYTORCH_CUDA_ALLOC_CONF is deprecated, use PYTORCH_ALLOC_CONF instead (function operator())
