@@ -135,6 +135,46 @@ Unlike the trainable-encoder regime, the core variants (re-weighted slot, probe,
 \label{fig:ladder}
 \end{figure}
 
+\section{Causal Interventions on Trained Models}
+\label{app:causal}
+
+Protocol and full results for Test~4 (\mainref{sec:mech}{4.3}). All three interventions run at inference on existing checkpoints---no retraining---over three seeds ($3072/1234/42$), three domains, and both backbones. Position is read with the same ridge probe used elsewhere, fit on the training split.
+
+\paragraph{Why the readout is the black box.}
+Each intervention perturbs one channel and reads position off the \emph{other}. Reading back the channel just written is partly trivial: the predictor copies its input forward, so the slot readout moves whether or not the perturbation reached the computation. The black-box readout is the one that reflects it (it is also what drives the pixel decoder). Predictions are recorded \emph{before} the per-step perturbation is applied, so every number below is read off what the model itself produced.
+
+\paragraph{Steering.}
+For a target offset $\delta$ (in units of position std), we add the minimum-norm latent offset that moves the named channel's decoded position by $\delta$---for the supervised slot, writing $\text{pos}{+}\delta$ directly, which is better conditioned---and report $g=\Delta(\text{decoded position})/\delta$. Slot gains on the black-box readout, three-seed mean$\pm$std, against a norm-matched random direction in the black box:
+
+\begin{center}\small
+\begin{tabular}{@{}llcc@{}}
+\toprule
+backbone & domain & $g_{\mathrm{slot}}$ & random control \\
+\midrule
+LeWM & uniform & $+1.52{\pm}0.03$ & $-0.017$ \\
+LeWM & collision & $+2.01{\pm}0.20$ & $-0.003$ \\
+LeWM & parabola & $+1.15{\pm}1.40$ & $-0.017$ \\
+DINOv2 & uniform & $+1.69{\pm}0.06$ & $-0.011$ \\
+DINOv2 & parabola & $+0.59{\pm}0.30$ & $+0.001$ \\
+DINOv2 & collision & $+1.94{\pm}0.31$ & $-0.031$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Additivity holds to within $3\%$ ($g_{\mathrm{slot}}{+}g_{\mathrm{bb}}$ vs.\ steering both together), so the perturbation stays in the linear regime. \emph{The magnitudes are not proportions}: values above $1$ reflect probe $R^{2}{<}1$, an unperturbed action input, and the $3$-frame history anchor. They support ``used vs.\ not'' and ``this channel vs.\ that one'', nothing quantitative. LeWM/parabola is excluded: its seeds read $-0.10/+0.90/+2.66$, a spread wider than the effect, and a $20\times$ sweep of $\delta$ leaves the per-seed values essentially unchanged, so this is three different models rather than one noisy measurement.
+
+\paragraph{Counterfactual patching.}
+We replace the slot with a donor trajectory's slot at the same timestep, leaving the black box at its own values, and regress the decoded position on $[\text{own truth},\text{donor truth}]$; the follow-fraction is the donor's share. The control is the same operation on a model with no injected slot, where those two dimensions carry no physical meaning: LeWM/uniform $0.015\!\to\!0.468$, DINOv2/uniform $0.112\!\to\!0.650$, DINOv2/collision $0.091\!\to\!0.721$. The LeWM parabola and collision controls are not clean (a no-slot model follows $0.42$--$0.51$), and we exclude those cells; a collinearity explanation fits parabola (pooled own--donor correlation $0.76$) but not collision ($0.22$), so the cause is unresolved.
+
+\paragraph{Per-dimension Jacobians.}
+$J[c,j]=\partial(\text{decoded position}_c)/\partial(\text{latent}_j)$, averaged over $400$ frames, reported per dimension so a $2$-d slot and a $190$-d black box share a scale. Gradient sensitivity is standard \citep{simonyan2013saliency,sundararajan2017ig}, here applied to an intermediate representation rather than to pixels. Unlike the interventions, it chooses no direction, which matters because a redundant code barely moves along any single one; all six cells are usable here where the black-box replacement below leaves one. Its known weakness is the reason we do not rest on it alone: a gradient is local and linear, so it reports what a small change would do rather than what changing the channel does, and some saliency methods are insensitive to the model they purport to explain \citep{adebayo2018sanity}. The baseline rows answer that second concern directly---the readout tracks whether the model was injected, not the input structure---and the interventions above answer the first. The baseline rows are a built-in control: with no injection those two dimensions are arbitrary and should rank mid-pack, and they do (ratio $0.80$--$0.98$, ranks ${\sim}90$--$162$ of $192$). After injection they rank $1$st--$2$nd on LeWM uniform/parabola and DINOv2 uniform, at $2.3$--$4.0\times$ the per-dimension sensitivity of the black box; DINOv2/parabola is the exception (ratio $0.99$, ranks $111/90$). The slot nonetheless holds only $0.8$--$4.0\%$ of \emph{total} sensitivity---two dimensions against $190$---which is the analytic form of ``both channels carry load''.
+
+\paragraph{Amnesic projection: a limit we quantify.}
+We remove the linearly position-predictive subspace from the black box by iterative nullspace projection \citep{ravfogel2020inlp}, with a rank-matched random-ablation control. Erasing position requires removing $116$--$154$ of the $190$ dimensions---the hardest quantification of redundancy in this paper, and far stronger than the random-$2$-dimension control of Table~\ref{tab:mech}. But at that rank the test loses selectivity: in five of six cells, removing position damages the rollout \emph{less} than removing the same number of dimensions at random (e.g.\ uniform structpos $0.626$ vs.\ $1.099$). The test cannot discriminate in this representation, which follows from how distributed the copy is rather than from how we ran it. Two caveats we state rather than smooth over: the control is matched in rank but not in variance (INLP selects linearly predictive directions, which may be lower-variance than random ones), and an earlier run stopped at $24$ removed dimensions showed position-removal damaging the rollout \emph{less} than random removal---apparent support for a bypass---a contrast that disappears once INLP is run to convergence.
+
+\paragraph{Black-box replacement.}
+Replacing $k$ black-box dimensions outright with a donor's (slot untouched) sidesteps the min-norm problem: on a baseline model, where the black box is the only route position can take, the min-norm patch yields a follow-fraction of $0.089$ while replacing all $190$ yields $0.961$---an order of magnitude apart on the same model and channel. Sweeping $k$ gives the crossing point at which moving the black box buys as much as moving the $2$-d slot. A cell is usable only if its baseline both ignores a patch to the two dimensions it does not have and follows the donor once the whole black box is replaced; only LeWM/uniform passes ($0.015$ and $0.961$), where the crossing sits near $100$ dimensions. The remaining five cells fail one or both controls and their crossings are not quoted.
+
 \section{Augmentation: a Domain-Specific Lever with a Reversal Boundary}
 \label{app:aug}
 
