@@ -42,7 +42,12 @@ base_mean = {d: float(np.mean(v)) for d, v in base_draws.items()}
 ratio = np.full((len(ARMS), len(DOMS)), np.nan)
 value = np.full_like(ratio, np.nan)
 nseed = np.zeros_like(ratio, dtype=int)
-separated = np.zeros_like(ratio, dtype=bool)   # cell's draws clear the baseline's
+# Separation is directional and must be tracked BOTH ways: a cell can clear the
+# baseline by being entirely above it (worse) or entirely below it (better).
+# Testing only the "worse" direction would leave a genuine gain classified as
+# non-separated, and hatch the one cell the figure exists to single out.
+worse_sep = np.zeros_like(ratio, dtype=bool)
+better_sep = np.zeros_like(ratio, dtype=bool)
 
 for i, arm in enumerate(ARMS):
     for j, dom in enumerate(DOMS):
@@ -52,8 +57,8 @@ for i, arm in enumerate(ARMS):
             continue
         value[i, j] = float(np.mean(draws))
         ratio[i, j] = value[i, j] / base_mean[dom]
-        # "clearly worse" = every draw of the cell exceeds every baseline draw
-        separated[i, j] = min(draws) > max(base_draws[dom])
+        worse_sep[i, j] = min(draws) > max(base_draws[dom])
+        better_sep[i, j] = max(draws) < min(base_draws[dom])
 
 # ---- draw ------------------------------------------------------------------
 norm = TwoSlopeNorm(vmin=0.75, vcenter=1.0, vmax=1.7)
@@ -85,7 +90,7 @@ for i in range(len(ARMS)):
         # it un-hatched would read as a second blue win beside the one real
         # one. Only fully separated cells stay solid, so the single solid-blue
         # cell (velocity+slot on parabola) is the sole genuine gain.
-        if n >= 3 and not separated[i, j]:
+        if n >= 3 and not (worse_sep[i, j] or better_sep[i, j]):
             ax.add_patch(plt.Rectangle((j - .5, i - .5), 1, 1, fill=False,
                                        hatch="///", edgecolor=col,
                                        linewidth=0.0, alpha=0.45))
@@ -136,10 +141,10 @@ for i, arm in enumerate(ARMS):
         if nseed[i, j] < 3:
             v = f"n={nseed[i,j]} only"
             short += 1
-        elif separated[i, j]:
+        elif worse_sep[i, j]:
             # every draw above every baseline draw
             v = "worse (seeds separate)"; worse += 1
-        elif max(draws) < min(base_draws[dom]):
+        elif better_sep[i, j]:
             # the mirror condition -- every draw below every baseline draw.
             # Anything weaker than full separation is noise at n=3, in both
             # directions; an asymmetric test would manufacture "gains".
