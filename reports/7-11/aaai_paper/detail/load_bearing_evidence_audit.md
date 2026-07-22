@@ -210,8 +210,21 @@ LeWM 的 parabola / collision:**阴性对照本身就脏** —— 那两维明�
 
 ### 3.2b Jacobian —— 第三类独立方法,也指向 (a) 被推翻
 
-不选方向、不设计干预,直接微分 `∂(预测位置)/∂(输入 latent 每一维)`。因此**不受**那个
-搞垮所有黑盒干预的"必须先选一个位置方向"的问题影响 —— 36 格全部可用。
+**一句话:不动模型,直接问 latent 里哪一维对预测影响最大。**
+
+前两个方法都要**动手改**中间状态(挪一点 / 换掉),这个方法**什么都不改** —— 纯求导。
+
+三步:
+
+1. 拿训好的模型,喂进一段历史
+2. 对 latent 的**每一维**求导:「这一维动一点点,预测出的位置会变多少」
+3. 得到 192 个敏感度数字,排序
+
+看两件事:**① 每维强弱**(slot 每维敏感度 ÷ 黑盒每维敏感度)、**② 排名**(那 2 维在
+192 维里排第几)。
+
+因为不选方向、不设计干预,**不受**那个搞垮所有黑盒干预的"必须先选一个位置方向"的
+问题影响 —— 36 格全部可用(剂量阶梯只剩 1 格)。
 
 baseline 行是内建对照(未注入,dims[0:2] 只是任意两维):**6/6 的比值都在 0.80–0.98、
 排名都在 90–162**,正是随机两维该有的样子。于是 structpos 行可信:
@@ -228,7 +241,42 @@ baseline 行是内建对照(未注入,dims[0:2] 只是任意两维):**6/6 的比
 **注入把那 2 维从第 99 名推到第 1–2 名。** 同时 slot 只占**总敏感度的 0.8–4.0%**
 (仅 2 维 vs 190 维)→ 这是"两条路都承重、slot 强在效率黑盒强在体量"的解析证据。
 
-限制:Jacobian 是**局部线性**敏感度,只测单步预测对最后一帧历史的响应,不等同于 rollout
+#### 这是不是常用方法(引用已查证,2026-07-22)
+
+**是,而且是可解释性里最早的一族**,但有两条成熟批评,恰好决定了我们该怎么用它。
+
+梯度敏感度的谱系:
+
+- **Saliency map** —— Simonyan, Vedaldi & Zisserman, *Deep Inside Convolutional Networks:
+  Visualising Image Classification Models and Saliency Maps*, arXiv:1312.6034 (2013)。
+  对输入求类别分数的梯度。
+- **Integrated Gradients** —— Sundararajan, Taly & Yan, *Axiomatic Attribution for Deep
+  Networks*, ICML 2017, arXiv:1703.01365。沿基线到输入的路径积分梯度,满足 sensitivity 与
+  implementation invariance 两条公理。
+- 我们做的是对**中间表示**求导(不是输入像素),在动力学/世界模型里分析学到的转移算子时属常规操作。
+
+两条必须知道的批评:
+
+1. **梯度 ≠ 因果效应。** 梯度是局部线性的 —— 说的是"变一丁点会怎样",不是"真改掉会怎样"。
+   这正是 amnesic probing 那一系(§3.3)存在的理由:Elazar, Ravfogel, Jacovi & Goldberg,
+   *Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals*, TACL 2020,
+   arXiv:2006.00995 —— 其核心主张就是 **"conventional probing performance is not correlated
+   to task importance"**,要求对"从探针读数推因果"保持怀疑。
+2. **部分显著性方法通不过健全性检验。** Adebayo, Gilmer, Muelly, Goodfellow, Hardt & Kim,
+   *Sanity Checks for Saliency Maps*, NeurIPS 2018, arXiv:1810.03292。其 Model Parameter
+   Randomization Test 把模型权重逐层随机化,发现某些方法的输出几乎不变 —— 即它反映的可能
+   是输入结构而非模型学到的东西。
+
+**→ 所以本研究的用法是站得住的:梯度与干预并用,且结论一致。** 两类方法的弱点不重叠 ——
+梯度的标准批评是"不因果",有 steering/patch 顶上;干预的标准批评是"你的干预设计有偏"
+(我们确实吃过这个亏,最小范数干预废掉 5/6 格),有 Jacobian 顶上。
+
+另外,§3.2b 的 baseline 对照(未注入时 slot 两维排第 99/90 名,正是随机两维该有的位置)
+**直接回应了第 2 条批评** —— 我们的读数对"模型是否被注入过"是敏感的,不是输入结构的产物。
+
+#### 限制
+
+Jacobian 是**局部线性**敏感度,只测单步预测对最后一帧历史的响应,不等同于 rollout
 全程因果效应;与干预法互补,不可互相替代。
 
 ### 3.3 Amnesic —— 本想测命题 (b),但做不了
@@ -255,6 +303,46 @@ baseline 行是内建对照(未注入,dims[0:2] 只是任意两维):**6/6 的比
 
 > 📌 陷阱记录:早期只跑 12 次迭代(24 维)时显示"删位置比删随机伤害小",看着支持旁路;
 > 跑到收敛后对比消失。典型的"干预没做到底就下结论"。
+
+#### ⚠️ 一个必须一起写的混淆因素
+
+**INLP 挑的方向与随机挑的方向,统计性质不同。** INLP 专挑"线性可预测位置"的方向,这些
+可能是**低方差**方向;随机挑则会打到高方差方向。所以"删位置伤害更小"**可能来自选择偏差,
+而非位置真的不重要**。
+
+即:这个对照只做到了**秩匹配**,没做到**方差匹配**。
+
+写作时必须主动交代 —— 它**进一步支持**"该测试不具判别力"这个结论,而不是削弱它。
+(若要补,可加一个"方差匹配的随机对照":按 INLP 所删方向的方差谱去采样随机方向。
+成本低,但目前没做。)
+
+#### 📌 这部分该怎么写进论文
+
+**结论:能写,而且应该写。** 三个理由:
+
+1. **审稿人会点名要 amnesic**(它是该领域标准做法,Elazar et al., TACL 2020)。与其被问
+   "为什么不做",不如主动交代"做了,并量化了它为何在此表示上不能判别"。
+2. **负面结果里包着一个正面数字** —— 116–154/190 是全文"冗余、分布式"最硬的量化,
+   远强于现稿的"随机 2 维对照失败"。这个数字**独立于 amnesic 判不判得出来**,该进正文。
+3. **失败的原因恰恰印证主张** —— 不是执行失误,是位置铺得太开,任何能抹掉它的投影同时
+   抹掉了别的一切。**"做不了"是冗余程度的推论**,自洽。
+
+不要写成"我们失败了",写成"我们跑了标准测试并刻画了它的判别边界":
+
+> We ran amnesic projection with a rank-matched random-ablation control. Erasing position
+> requires removing 116–154 of the 190 non-slot dimensions; at that rank, removing position
+> is indistinguishable from removing the same number of dimensions at random (in five of six
+> cells it is in fact *less* damaging). The test cannot discriminate in this representation —
+> a direct consequence of how distributed the copy is. We note the control is matched in rank
+> but not in variance: INLP selects directions that linearly predict position, which may be
+> lower-variance than randomly chosen ones.
+
+**放置建议:**
+
+| 位置 | 写什么 |
+|---|---|
+| §4.3 机制节 | 116–154/190 这个冗余量化(正面结果) |
+| Traps 附录 | amnesic 不具判别力 + 迭代不到底的陷阱 + 方差不匹配的坑 |
 
 ### 3.4 弱信号:有 slot 确实缓冲了黑盒的损失
 
