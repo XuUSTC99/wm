@@ -43,16 +43,15 @@ Variant & What it does, and what it tests \\
 \midrule
 \multicolumn{2}{@{}l}{\emph{Group 2: inject the evolution} --- how it \emph{changes} (a dynamics rule)} \\
 \ \ free MLP & \emph{hard.} attach $z{+}v{+}a$ update with learned $a$: upgrade from pinning state to pinning evolution \\
-\ \ strict $a{=}g$ & \emph{hard.} exact gravitational form, one learnable constant: closes the ``your physics was wrong'' objection \\
+\ \ strict $a{=}g$ & \emph{hard.} exact gravitational form, one learnable constant: closes the ``your physics was wrong'' objection. Doubles as Group 3's labeled control (grounded prior)---the two specifications coincide \\
 \ \ consistency & \emph{soft.} finite-difference velocity of the rolled-out positions must match ground truth; assumes no form for $a$, designed for collision impulses \\
 \addlinespace[2pt]
 \midrule
-\multicolumn{2}{@{}l}{\emph{Group 3: drop the labels} --- is ground truth \emph{needed}? (plus a control)} \\
-\ \ label-free & \emph{hard.} the kinematic head is attached but nothing pins the slot to ground truth: the only injection available for raw video \\
-\ \ grounded & \emph{hard.} same structure $+$ true labels (identical to strict $a{=}g$): isolates the label variable \\
+\multicolumn{2}{@{}l}{\emph{Group 3: drop the labels} --- is ground truth \emph{needed}?} \\
+\ \ label-free & \emph{hard.} the kinematic head is attached but nothing pins the slot to ground truth: the only injection available for raw video. Its labeled control is exactly strict $a{=}g$ above \\
 \bottomrule
 \end{tabular}
-\caption{Ten injection variants in three groups, following the \textbf{target} axis (state / evolution / label-free prior with labeled control). Per variant, \emph{hard} forces a latent dimension to equal the physical quantity; \emph{soft} adds an auxiliary loss that only encourages it. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
+\caption{Nine injection variants in three groups, following the \textbf{target} axis (state / evolution / label-free prior). Per variant, \emph{hard} forces a latent dimension to equal the physical quantity; \emph{soft} adds an auxiliary loss that only encourages it. Adding labels to the label-free prior yields exactly the strict $a{=}g$ specification, so that variant serves two roles---the correct-physics test and the labeled control---and appears once. All variants use the strongest training protocol (\S\ref{sec:protocol}).}
 \label{tab:mechanisms}
 \end{table}
 
