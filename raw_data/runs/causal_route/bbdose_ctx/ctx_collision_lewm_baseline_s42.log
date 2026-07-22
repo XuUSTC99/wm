@@ -1,0 +1,103 @@
+[ckpt] /data1/likun-share/junjxu/.stable_worldmodel/collision_baseline_fr_s42/collision_baseline_fr_s42_epoch_20_object.ckpt  tag=ctx_collision_lewm_baseline_s42  mode=patch  clamp=ctx-only
+  encoded 50 trajs, t=20s
+  encoded 100 trajs, t=30s
+  encoded 150 trajs, t=39s
+[data] 150 trajs, emb dim=192, t=39s
+[probe R2 on train]  full=0.810  slot=0.049  bb=0.810
+
+[clean rollout] t=39s
+  clean decoded rho from PRED latents (both-OOD, test): +0.278 / +0.673   n=464
+  clean latent nMSE (pred vs real, test focus): 0.3448
+
+=== COUNTERFACTUAL PATCHING of the slot ===
+  zero         nMSE=0.3453
+      read-full rho vs OWN pos = +0.299/+0.685   (clean +0.278/+0.673)
+      read-bb   rho vs OWN pos = +0.297/+0.661   (clean +0.274/+0.649)
+      read-slot rho vs OWN pos = +0.217/+0.565   (clean +0.197/+0.537)
+  donor-slot   nMSE=0.3537
+      read-full rho vs OWN pos = +0.284/+0.683   (clean +0.278/+0.673)
+        coord0: beta_own=+0.363 beta_donor=+0.351  -> follow-fraction(donor) = 0.492
+        coord1: beta_own=+0.706 beta_donor=+0.040  -> follow-fraction(donor) = 0.054
+      read-bb   rho vs OWN pos = +0.281/+0.657   (clean +0.274/+0.649)
+        coord0: beta_own=+0.359 beta_donor=+0.354  -> follow-fraction(donor) = 0.497
+        coord1: beta_own=+0.681 beta_donor=+0.038  -> follow-fraction(donor) = 0.053
+      read-slot rho vs OWN pos = +0.229/+0.567   (clean +0.197/+0.537)
+        coord0: beta_own=+0.020 beta_donor=+0.001  -> follow-fraction(donor) = 0.047
+        coord1: beta_own=+0.202 beta_donor=+0.014  -> follow-fraction(donor) = 0.067
+  donor-rand2  nMSE=0.3492
+      read-full rho vs OWN pos = +0.230/+0.682   (clean +0.278/+0.673)
+        coord0: beta_own=+0.265 beta_donor=+0.354  -> follow-fraction(donor) = 0.572
+        coord1: beta_own=+0.755 beta_donor=+0.065  -> follow-fraction(donor) = 0.079
+      read-bb   rho vs OWN pos = +0.226/+0.657   (clean +0.274/+0.649)
+        coord0: beta_own=+0.260 beta_donor=+0.358  -> follow-fraction(donor) = 0.579
+        coord1: beta_own=+0.720 beta_donor=+0.061  -> follow-fraction(donor) = 0.078
+      read-slot rho vs OWN pos = +0.229/+0.544   (clean +0.197/+0.537)
+        coord0: beta_own=+0.021 beta_donor=+0.000  -> follow-fraction(donor) = 0.015
+        coord1: beta_own=+0.205 beta_donor=+0.002  -> follow-fraction(donor) = 0.012
+  freeze       nMSE=0.3449
+      read-full rho vs OWN pos = +0.277/+0.673   (clean +0.278/+0.673)
+      read-bb   rho vs OWN pos = +0.274/+0.649   (clean +0.274/+0.649)
+      read-slot rho vs OWN pos = +0.197/+0.537   (clean +0.197/+0.537)
+  donor-bb     nMSE=0.3454
+      read-full rho vs OWN pos = +0.278/+0.674   (clean +0.278/+0.673)
+        coord0: beta_own=+0.343 beta_donor=+0.369  -> follow-fraction(donor) = 0.518
+        coord1: beta_own=+0.712 beta_donor=+0.036  -> follow-fraction(donor) = 0.048
+      read-bb   rho vs OWN pos = +0.274/+0.650   (clean +0.274/+0.649)
+        coord0: beta_own=+0.339 beta_donor=+0.373  -> follow-fraction(donor) = 0.523
+        coord1: beta_own=+0.687 beta_donor=+0.035  -> follow-fraction(donor) = 0.048
+      read-slot rho vs OWN pos = +0.197/+0.537   (clean +0.197/+0.537)
+        coord0: beta_own=+0.019 beta_donor=-0.001  -> follow-fraction(donor) = 0.051
+        coord1: beta_own=+0.210 beta_donor=+0.010  -> follow-fraction(donor) = 0.046
+  donor-bbk2   nMSE=0.3491
+      read-full rho vs OWN pos = +0.275/+0.669   (clean +0.278/+0.673)
+        coord0: beta_own=+0.342 beta_donor=+0.316  -> follow-fraction(donor) = 0.481
+        coord1: beta_own=+0.711 beta_donor=+0.014  -> follow-fraction(donor) = 0.020
+      read-bb   rho vs OWN pos = +0.273/+0.649   (clean +0.274/+0.649)
+        coord0: beta_own=+0.339 beta_donor=+0.320  -> follow-fraction(donor) = 0.486
+        coord1: beta_own=+0.688 beta_donor=+0.013  -> follow-fraction(donor) = 0.018
+      read-slot rho vs OWN pos = +0.198/+0.537   (clean +0.197/+0.537)
+        coord0: beta_own=+0.019 beta_donor=-0.001  -> follow-fraction(donor) = 0.051
+        coord1: beta_own=+0.209 beta_donor=+0.010  -> follow-fraction(donor) = 0.046
+  donor-bbk10  nMSE=0.4024
+      read-full rho vs OWN pos = +0.255/+0.602   (clean +0.278/+0.673)
+        coord0: beta_own=+0.356 beta_donor=+0.282  -> follow-fraction(donor) = 0.442
+        coord1: beta_own=+0.701 beta_donor=+0.046  -> follow-fraction(donor) = 0.061
+      read-bb   rho vs OWN pos = +0.256/+0.592   (clean +0.274/+0.649)
+        coord0: beta_own=+0.356 beta_donor=+0.285  -> follow-fraction(donor) = 0.445
+        coord1: beta_own=+0.690 beta_donor=+0.037  -> follow-fraction(donor) = 0.050
+      read-slot rho vs OWN pos = +0.190/+0.551   (clean +0.197/+0.537)
+        coord0: beta_own=+0.018 beta_donor=-0.002  -> follow-fraction(donor) = 0.122
+        coord1: beta_own=+0.212 beta_donor=+0.001  -> follow-fraction(donor) = 0.006
+  donor-bbk40  nMSE=0.5953
+      read-full rho vs OWN pos = +0.132/+0.414   (clean +0.278/+0.673)
+        coord0: beta_own=+0.195 beta_donor=+0.202  -> follow-fraction(donor) = 0.509
+        coord1: beta_own=+0.522 beta_donor=-0.083  -> follow-fraction(donor) = 0.137
+      read-bb   rho vs OWN pos = +0.130/+0.391   (clean +0.274/+0.649)
+        coord0: beta_own=+0.191 beta_donor=+0.198  -> follow-fraction(donor) = 0.510
+        coord1: beta_own=+0.486 beta_donor=-0.090  -> follow-fraction(donor) = 0.156
+      read-slot rho vs OWN pos = +0.206/+0.521   (clean +0.197/+0.537)
+        coord0: beta_own=+0.017 beta_donor=+0.004  -> follow-fraction(donor) = 0.177
+        coord1: beta_own=+0.172 beta_donor=+0.004  -> follow-fraction(donor) = 0.020
+  donor-bbk100  nMSE=1.1497
+      read-full rho vs OWN pos = -0.323/-0.121   (clean +0.278/+0.673)
+        coord0: beta_own=-0.424 beta_donor=+0.381  -> follow-fraction(donor) = 0.474
+        coord1: beta_own=-0.107 beta_donor=+0.169  -> follow-fraction(donor) = 0.612
+      read-bb   rho vs OWN pos = -0.321/-0.115   (clean +0.274/+0.649)
+        coord0: beta_own=-0.418 beta_donor=+0.369  -> follow-fraction(donor) = 0.469
+        coord1: beta_own=-0.110 beta_donor=+0.138  -> follow-fraction(donor) = 0.557
+      read-slot rho vs OWN pos = +0.058/+0.221   (clean +0.197/+0.537)
+        coord0: beta_own=+0.006 beta_donor=+0.017  -> follow-fraction(donor) = 0.725
+        coord1: beta_own=+0.076 beta_donor=+0.067  -> follow-fraction(donor) = 0.470
+  donor-bbk190  nMSE=2.3197
+      read-full rho vs OWN pos = +0.256/+0.310   (clean +0.278/+0.673)
+        coord0: beta_own=+0.272 beta_donor=+0.322  -> follow-fraction(donor) = 0.542
+        coord1: beta_own=+0.375 beta_donor=+0.400  -> follow-fraction(donor) = 0.517
+      read-bb   rho vs OWN pos = +0.264/+0.319   (clean +0.274/+0.649)
+        coord0: beta_own=+0.274 beta_donor=+0.308  -> follow-fraction(donor) = 0.529
+        coord1: beta_own=+0.368 beta_donor=+0.377  -> follow-fraction(donor) = 0.506
+      read-slot rho vs OWN pos = -0.060/-0.011   (clean +0.197/+0.537)
+        coord0: beta_own=+0.001 beta_donor=+0.038  -> follow-fraction(donor) = 0.978
+        coord1: beta_own=+0.030 beta_donor=+0.137  -> follow-fraction(donor) = 0.818
+
+[done] t=214s
+[W722 21:45:52.164213164 AllocatorConfig.cpp:28] Warning: PYTORCH_CUDA_ALLOC_CONF is deprecated, use PYTORCH_ALLOC_CONF instead (function operator())
