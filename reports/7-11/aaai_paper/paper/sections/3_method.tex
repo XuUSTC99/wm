@@ -56,7 +56,7 @@ Variant & What it does, and what it tests \\
 \label{tab:mechanisms}
 \end{table}
 
-Orthogonally, we cross injection with the \emph{training regime}: fine-tuning a pretrained encoder vs.\ from-scratch co-training; with injection on/off this gives a $2{\times}2$ per domain. This closes the remaining escape hatch---``structure must be baked in during pretraining, as extrinsic architectures do.''
+Orthogonally, we cross injection with the \emph{training regime}: fine-tuning a pretrained encoder vs.\ from-scratch co-training; with injection on/off this gives a $2{\times}2$ per domain. The design targets one specific objection. If injection is only ever added to an encoder that has already learned a black-box representation, the constraint arrives after the representation is settled and never gets to shape it---which is precisely what extrinsic architectures do differently, binding the physical state from initialization. Under that reading our negative result would say nothing about physics injection as such, only about grafting it late. Co-training everything from random initialization removes the asymmetry: the constraint is present from the first gradient step. For the objection to hold, injection would have to \emph{help} in that regime, or at least stop hurting; both outcomes are visible in the $\Delta$ column of \S\ref{sec:scan}.
 
 \subsection{Mechanistic Hypothesis and Its Tests}
 \label{sec:mechtests}
