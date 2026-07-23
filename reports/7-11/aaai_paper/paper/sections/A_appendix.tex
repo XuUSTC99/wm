@@ -84,24 +84,25 @@ $\Delta$ (adding velocity) & $+0.075$ & $-0.064$ & $+0.025$ \\
 Position is an output variable with the same role in every domain, so pinning it degrades monotonically with dynamics complexity and never flips sign. The marginal effect of adding velocity ($+0.075/{-}0.064/{+}0.025$) tracks velocity's role in each domain---redundant constant (uniform), linear driver (parabola), discontinuous jump (collision). The parabola gain ($0.122\pm0.007\!\to\!0.096\pm0.007$, every seed lower) is thus the sole seed-robust structural gain in the grid: a fixed form landing on a matching domain, not a portable prior.
 
 \paragraph{Physion++ per-scenario (all ten scenarios, FR at $20$ epochs).}
-Rollout nMSE: bouncy\_platform $0.041$, bouncy\_wall $0.094$, friction\_cloth $0.071$, friction\_collision $0.062$, friction\_platform $0.041$, mass\_collision $0.083$, mass\_dominoes $0.058$, mass\_waterpush $0.122$; deformable scenes are the common hard case for every method (deform\_clothhang $1.375$, deform\_clothhit $0.772$). Injection variants degrade the mass scenarios by $3.6$--$8.5\times$ in every seed (Table~\ref{tab:pp}) while leaving the deformable failure in place.
+Rollout nMSE: bouncy\_platform $0.041$, bouncy\_wall $0.094$, friction\_cloth $0.071$, friction\_collision $0.062$, friction\_platform $0.041$, mass\_collision $0.083$, mass\_dominoes $0.058$, mass\_waterpush $0.122$; deformable scenes are the common hard case for every method (deform\_clothhang $1.375$, deform\_clothhit $0.772$). Injection variants---slot, consistency, and probe alike---degrade the mass scenarios by $3.6$--$11.9\times$ in every seed (Table~\ref{tab:pp}) while leaving the deformable failure in place.
 
-\begin{table}[tb]
+\begin{table*}[t]
 \centering
 \small
-\begin{tabular}{@{}lcccc@{}}
+\setlength{\tabcolsep}{8pt}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-Scenario & FR & $+$slot & $+$cons. & $+$cons.+acc. \\
+Scenario & FR & $+$slot & $+$cons. & $+$c.+acc. & $+$probe & $+$pr.slot \\
 \midrule
-friction\_platform$^{\circ}$ & $0.220{\pm}0.231$ & $0.160{\pm}0.059$ & $0.171{\pm}0.120$ & $0.134{\pm}0.058$ \\
-mass\_collision & $\mathbf{0.171{\pm}0.079}$ & $0.616{\pm}0.112$ & $0.725{\pm}0.100$ & $0.726{\pm}0.212$ \\
-mass\_dominoes & $\mathbf{0.069{\pm}0.013}$ & $0.424{\pm}0.122$ & $0.585{\pm}0.021$ & $0.478{\pm}0.139$ \\
-mass\_waterpush & $\mathbf{0.122{\pm}0.002}$ & $0.440{\pm}0.073$ & $0.591{\pm}0.064$ & $0.780{\pm}0.609$ \\
+friction\_platform$^{\circ}$ & $0.220{\pm}0.231$ & $0.160{\pm}0.059$ & $0.171{\pm}0.120$ & $0.134{\pm}0.058$ & $0.212{\pm}0.041$ & $0.208{\pm}0.025$ \\
+mass\_collision & $\mathbf{0.171{\pm}0.079}$ & $0.616{\pm}0.112$ & $0.725{\pm}0.100$ & $0.726{\pm}0.212$ & $0.666{\pm}0.077$ & $0.864{\pm}0.112$ \\
+mass\_dominoes & $\mathbf{0.069{\pm}0.013}$ & $0.424{\pm}0.122$ & $0.585{\pm}0.021$ & $0.478{\pm}0.139$ & $0.320{\pm}0.055$ & $0.683{\pm}0.182$ \\
+mass\_waterpush & $\mathbf{0.122{\pm}0.002}$ & $0.440{\pm}0.073$ & $0.591{\pm}0.064$ & $0.780{\pm}0.609$ & $0.510{\pm}0.048$ & $0.479{\pm}0.170$ \\
 \bottomrule
 \end{tabular}
-\caption{Physion++ direct training: per-scenario rollout nMSE ($\downarrow$) at $20$ epochs, three-seed mean$\pm$std ($3072/1234/42$). On the three mass scenarios injection is worse in \emph{every} seed---the baseline's worst draw beats the best injected draw---degrading prediction $3.6$--$8.5\times$. $^{\circ}$friction\_platform is unresolved and we draw no conclusion from it: its own baseline spans $0.041$--$0.480$ across seeds, a $12\times$ spread that swamps the effect, and on the mean the injected arms sit \emph{below} it. The single-seed version of this table read that cell as a $3\times$ degradation; three seeds show it was seed luck. Deformable-object scenes remain the hardest category for every method including the baseline.}
+\caption{Physion++ direct training: per-scenario rollout nMSE ($\downarrow$) at $20$ epochs, three-seed mean$\pm$std ($3072/1234/42$). On the three mass scenarios every injection variant---spanning all three mechanism families (slot, consistency, probe)---is worse in \emph{every} seed, the baseline's worst draw beating the best injected draw, degrading prediction $3.6$--$11.9\times$. $^{\circ}$friction\_platform is unresolved and we draw no conclusion from it: its own baseline spans $0.041$--$0.480$ across seeds, a $12\times$ spread that swamps the effect, and on the mean the injected arms sit \emph{below} it. The single-seed version of this table read that cell as a $3\times$ degradation; three seeds show it was seed luck. Deformable-object scenes remain the hardest category for every method including the baseline.}
 \label{tab:pp}
-\end{table}
+\end{table*}
 
 \paragraph{Physion++ horizons.}
 Overall nMSE at horizons $16/32/64$: baseline ($H{=}8$) $0.016/0.140/0.280$; $H{=}20$ $0.022/0.033/0.220$; $H{=}16{+}$scale $0.010/0.035/0.136$; $H{=}20{+}$scale $0.012/0.024/0.087$; $H{=}28{+}$scale reaches horizon-$64$ nMSE $0.014$. Free rollout is the main long-horizon lever (horizon-$32$ cosine $0.91$ vs.\ $0.79$--$0.87$ for every physics-augmented variant); geometric scale jitter acts as an amplitude stabilizer for long rollouts: without it, $H{=}20$ explodes on friction-collision (nMSE $24.6$ at cosine $0.99$); with it, $0.019$.

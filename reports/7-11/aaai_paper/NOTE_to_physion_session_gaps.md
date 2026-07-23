@@ -1,5 +1,8 @@
 # NOTE → Physion/Physion++ session:论文五章重构后的实验缺口清点(2026-07-16)
 
+> **✅ P0 已完成(2026-07-23)**:probe / probe+slot 两臂 ×3 种子已在 Physion++ 跑完,三 mass 场景 3.9–11.9× 差于 FR、区间分离;论文 tab:pp 已加两列、§4.1 与 limitation 已升级为三族全覆盖。以下为历史记录。
+
+
 **背景**:06_storyline 已重构为五章交付版(动机单线 = "物理注入对 latent WM 是否有效");其 §4.1 现在**明确宣称"Physion++ 上注入同样失败"**。本 NOTE 是对你 session 已跑实验的完整清点 + 缺口,**按优先级排列**。清点基于 `raw_data/runs/physionpp/` 的 67 个 log(2026-07-15 迁移归档)。
 
 ## 已有覆盖(够用,勿重跑)

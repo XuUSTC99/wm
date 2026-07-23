@@ -144,7 +144,7 @@
 
 **两条独立于 phyworld·nMSE 的旁证**(换数据集/指标/任务仍成立):
 - **迁移(换指标 AUC + 换任务)**:phyworld→Physion zero-shot 上 **pos_weight 0.551 全配置最差**、低于 free-rollout 0.603、连 random 架构先验 0.607 都够不着 → [detail/real_data_physion.md](detail/real_data_physion.md)。
-- **照片级仿真(换数据集)**:Physion++ 上 structpos/cons/consacc 的逐场景 rollout nMSE 全部差于纯 FR(如 mass_dominoes 0.058 → 0.45/0.59/0.60,**3–10×**;单种子但差距远超种子噪声带;口径 = per-scenario 聚合,源 `raw_data/runs/physionpp/eval_pp_{struct,cons,consacc}_e20.log`)。⚠️ **probe 族在 Physion++ 上未跑**——已请另一 session 补(P0,见 [NOTE_to_physion_session_gaps.md](NOTE_to_physion_session_gaps.md));补齐前,"照片级仿真同样成立"的措辞只覆盖 slot 与 consistency 两族。
+- **照片级仿真(换数据集)**:Physion++ 上 **三族全覆盖**(slot / consistency / probe)——三个 mass 场景逐种子全差于纯 FR、区间零重叠、**3.6–11.9×**(三种子,如 mass_dominoes FR 0.069±0.013 → +slot 0.42 / +cons 0.59 / +probe 0.32;probe 0.32±0.055 vs FR 0.069±0.013 仍 4.6× 且分离)。friction_platform 因 FR 自身基线极不稳(0.041–0.480,12× 跨度)判为 unresolved、不下结论。→ **P0 已补(2026-07-23,6 run:probe / probe+slot ×3 种子,batch 64 与既有臂同口径)**,论文 tab:pp 已加两列、limitation 里"probe 未测"已删。源 `raw_data/runs/physionpp/rollout_pp_probe{,slot}_s{3072,1234,42}.log` + `probe_eval.log`。
 
    ![](figures/fig16_physics_injection_scan.png)
 
