@@ -111,6 +111,34 @@ def random_proj(d, rank, rng):
     return np.eye(d) - Q @ Q.T
 
 
+def variance_matched_proj(X, P_target, rank, rng, tol=0.05, tries=400):
+    """Rank-matched control that also matches the VARIANCE the real projection removes.
+
+    The plain rank-matched control samples directions uniformly, but INLP picks
+    linearly-predictive directions, which need not carry average variance. If they
+    carry less, the control removes more variance than the test and the comparison
+    is unfair in the test's favour. Here we resample random rank-`rank` subspaces
+    and keep the one whose removed variance is closest to the target's, so the two
+    ablations differ in *what* they remove rather than in *how much*.
+
+    Returns (P, removed_var_ratio_of_control, removed_var_ratio_of_target).
+    """
+    tot = float(np.sum(X * X))
+    if tot <= 0:
+        return random_proj(X.shape[1], rank, rng), float("nan"), float("nan")
+    tgt = float(np.sum((X - X @ P_target) ** 2)) / tot     # variance INLP removes
+    best, best_gap, best_v = None, np.inf, np.nan
+    for _ in range(tries):
+        P = random_proj(X.shape[1], rank, rng)
+        v = float(np.sum((X - X @ P) ** 2)) / tot
+        gap = abs(v - tgt)
+        if gap < best_gap:
+            best, best_gap, best_v = P, gap, v
+            if gap <= tol * max(tgt, 1e-9):
+                break
+    return best, best_v, tgt
+
+
 # --------------------------------------------------------------------------- #
 def main():
     ap = argparse.ArgumentParser()
@@ -531,6 +559,13 @@ def main():
         print(f"    R2 trace every 5 removals: "
               + " -> ".join(f"{r:.3f}" for r in trace[::5]))
         P_rand = random_proj(len(idx_bb), rank, rs)
+        # variance-matched counterpart of the same control (see docstring above):
+        # answers whether the INLP-vs-random gap is about WHICH directions were
+        # removed or merely about HOW MUCH variance went with them.
+        P_vm, v_ctrl, v_tgt = variance_matched_proj(Xbb, P_am, rank, rs)
+        print(f"  variance removed: INLP {v_tgt:.3f} of total; "
+              f"rank-matched random {float(np.sum((Xbb - Xbb @ P_rand)**2))/max(float(np.sum(Xbb*Xbb)),1e-9):.3f}; "
+              f"variance-matched random {v_ctrl:.3f}")
 
         mu_t = torch.from_numpy(pr_bb.mu.astype(np.float32)).to(dev)
         sd_t = torch.from_numpy(pr_bb.sd.astype(np.float32)).to(dev)
@@ -557,6 +592,7 @@ def main():
 
         for name, fn in [("bb: position removed (INLP)", mk_proj(P_am)),
                          (f"bb: random rank-{rank} (control)", mk_proj(P_rand)),
+                         (f"bb: random rank-{rank}, var-matched (control)", mk_proj(P_vm)),
                          ("slot: position removed", fn_slot_am)]:
             Pp, _, _, _ = run_all(fn)
             line = f"  {name:32s} nMSE={nmse(Pp[m_focus], Rreal[m_focus]):.4f}"
