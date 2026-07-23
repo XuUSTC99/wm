@@ -65,7 +65,7 @@ First, \emph{zero-shot transfer}: on Physion OCP, no synthetic-trained configura
 \label{fig:presence}
 \end{figure}
 
-The puzzle of \S\ref{sec:intro} localizes here: position is linearly decodable at every horizon, yet the rollout drifts away from it, the further the harder the dynamics (Figure~\ref{fig:presence}). Decodability alone cannot settle what the model \emph{does} with that state \citep{elazar2021amnesic}, so we measure four things: the redundant copy \emph{exists} (Test 1), the constraint \emph{acts} (Test 2), its strength is \emph{not} the limit (Test 3), and---by intervention---which channel prediction actually reads (Test 4).
+The puzzle of \S\ref{sec:intro} localizes here: position is linearly decodable at every horizon, yet the rollout drifts away from it, the further the harder the dynamics (Figure~\ref{fig:presence}). Decodability alone cannot settle what the model \emph{does} with that state \citep{elazar2021amnesic}. We therefore conduct four tests to uncover the effect and mechanism of physical injection.
 
 \begin{table}[tb]
 \centering
@@ -81,29 +81,29 @@ The puzzle of \S\ref{sec:intro} localizes here: position is linearly decodable a
 \ the pinned slot itself ($2$ d) & $0.92$ & $0.85$ & $0.51$ \\
 \ random-$2$-d control & \multicolumn{3}{c}{$0.2$--$0.5$} \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{The cost}: what injection does to the encoder} \\
-\ loss ratio $(\lambda\,\mathcal{L}_{\mathrm{phys}})/\mathcal{L}_{\mathrm{pred}}$ & $44\times$ & $125\times$ & $15\times$ \\
-\ effective dim, $\lambda{=}1\!\to\!10$ & $41\!\to\!4$ & $13\!\to\!3$ & $28\!\to\!17$ \\
-\ \quad collapse & $-90\%$ & $-75\%$ & $-39\%$ \\
+\multicolumn{4}{@{}l}{\emph{The cost}: what injection does to the encoder, $\lambda{=}1\!\to\!10$} \\
+\ loss ratio $(\lambda\,\mathcal{L}_{\mathrm{phys}})/\mathcal{L}_{\mathrm{pred}}$ & $11\!\to\!44\times$ & $21\!\to\!125\times$ & $3\!\to\!15\times$ \\
+\ effective dim & $41\!\to\!4$ & $13\!\to\!3$ & $28\!\to\!17$ \\
+\ \quad collapse & $-90\%$ & $-77\%$ & $-39\%$ \\
 \bottomrule
 \end{tabular}
-\caption{Why injection cannot help. \emph{Top}---the $190$ non-slot dimensions decode position as well as all $192$, undiminished by pinning the slot, while a random-2-d control fails: the redundancy is distributed, and an injected slot is a second carrier of a state the predictor already had. \emph{Bottom}---the constraint still dominates optimization and collapses the encoder's participation ratio by $39$--$90\%$: strong action on a quantity the latent already encodes.}
+\caption{Why injection cannot help. \emph{Top}---the $190$ non-slot dimensions decode position as well as all $192$, undiminished by pinning the slot, while a random-2-d control fails: the position exists in latent space, and an injected slot is a second carrier. \emph{Bottom}---the constraint dominates optimization and collapses the encoder's participation ratio by $39$--$90\%$: strong action on a quantity the latent already encodes.}
 \label{tab:mech}
 \end{table}
 
-\paragraph{Test 1: the physical constraint is injected.}
-Probing \emph{only the $190$ non-slot dimensions} decodes position as well as the full latent in all three domains, undiminished by pinning the slot, while a random-2-dimension control fails (Table~\ref{tab:mech}, top). Position is thus a redundant, distributed copy, and the same table holds on the latents the predictor actually produces during rollout (\appref{app:causal}{D}). What Test 1 alone cannot say is whether either copy is \emph{used}---that is Test 4's job.
+\paragraph{Test 1: the physical constraint is injected but redundant.}
+Probing \emph{only the $190$ non-slot dimensions} decodes position as well as the full latent in all three domains, undiminished by pinning the slot, while a random-2-dimension control fails (Table~\ref{tab:mech}, top). Thus, the position is injected but a redundant copy.
 
-\paragraph{Test 2: the constraint acts harmfully.}
-Both measurements move (Table~\ref{tab:mech}, bottom): at $\lambda{=}10$ the weighted physical loss outweighs the prediction loss by one to two orders of magnitude, and the encoder's effective dimensionality collapses with it; at $\lambda{=}1$, the setting of \S\ref{sec:scan}, the ratio is milder ($3$--$20\times$) yet the harm persists. The constraint demonstrably reshapes the representation---against prediction.
+\paragraph{Test 2: the redundant constraint acts harmfully.}
+Both measurements move (Table~\ref{tab:mech}, bottom): at $\lambda{=}10$ the weighted physical loss outweighs the prediction loss by one to two orders of magnitude, and the encoder's effective dimensionality collapses with it; at $\lambda{=}1$, the setting of \S\ref{sec:scan}, the ratio is milder ($3$--$21\times$) yet the harm still persists.
 
 \paragraph{Test 3: re-weighting the physical loss does not help.}
-Sweeping $w{=}1\!\to\!300$ (\appref{app:injection}{B}) moves the harm systematically, but weighting rescues only $2$ of $4$ decision cells, to \emph{parity} and never a net gain: uniform both-OOD returns exactly to baseline ($0.132{\pm}0.017$ vs.\ $0.136{\pm}0.008$), uniform \rmood{} never recovers, collision worsens monotonically. Insufficient physical loss is not the root cause; what the sweep cannot fix is what stays constant across it---the redundant copy---which is why the extrinsic port (\S\ref{sec:external}), removing that copy by construction, is the informative test.
+Sweeping $w{=}1\!\to\!300$ (\appref{app:injection}{B}) moves the harm systematically, but weighting rescues only $2$ of $4$ decision cells, to \emph{parity} and never a net gain: uniform both-OOD returns exactly to baseline ($0.132{\pm}0.017$ vs.\ $0.136{\pm}0.008$), uniform \rmood{} never recovers, collision worsens monotonically. Thus, insufficient physical loss is not the root cause.
 
-\paragraph{Test 4: the injected slot is load-bearing---and that is the point.}
-Intervening on trained models overturns the natural reading of Tests 1--3. \emph{Steering}: offsetting the position the slot decodes moves the model's own black-box state by $1.5$--$2.0\times$ the offset (norm-matched random direction: ${\approx}0$; additive to within $3\%$, so the perturbation stays linear). \emph{Counterfactual patching}: replacing the slot with a donor trajectory's makes prediction follow the donor $47$--$72\%$ of the way, vs.\ $1.5$--$11\%$ for the same operation on a model with no injected slot. \emph{Jacobians}: differentiating predicted position w.r.t.\ each latent coordinate---no intervention designed---moves the two injected dimensions from sensitivity rank ${\sim}99$ of $192$ to ranks $1$--$2$. Three methods with disjoint failure modes agree wherever their validity controls pass (three seeds, both backbones; excluded cells and full protocol: \appref{app:causal}{D}).
+\paragraph{Test 4: the injected slot is load-bearing.}
+We conduct three disjoint interventions to examine whether the injected slot is load-bearing (three seeds, both backbones; excluded cells and full protocol: \appref{app:causal}{D}). \emph{Steering} the position the slot decodes moves the model's own black-box state by $1.5$--$2.0\times$ the offset, while a norm-matched random direction moves it ${\approx}0$ (additive to within $3\%$, so the perturbation stays linear). \emph{Patching} the slot with a donor trajectory's makes prediction follow the donor $47$--$72\%$ of the way, against $1.5$--$11\%$ for the same operation on a model with no injected slot. \emph{Jacobians} of predicted position w.r.t.\ each latent coordinate---which perturb nothing---rank the two injected dimensions $1$--$2$ of $192$, up from ${\sim}99$ without injection. From the above results, we conclude that the injected slot is load-bearing, since injecting wrong physical quantities into the slot indeed impairs model performance.
 
-So prediction does not route around the slot; it reads it. What the same interventions also show is that the black box keeps its own copy: pinning the slot leaves black-box decodability undiminished (Table~\ref{tab:mech}), and the black box still holds $96$--$99\%$ of total Jacobian sensitivity by sheer dimension count. Both channels are load-bearing, and prediction error does not move---which is what the redundancy hypothesis predicts and what a starved slot would not. The injected slot is \emph{load-bearing but redundant}: it carries load, and the load it carries is a duplicate.
+Together, the four tests establish that the injected slot is load-bearing but redundant: it is written into the latent (Test 1) yet duplicates state the black box already carries, so it competes for capacity and gradient without adding new signal (Tests 2–3); the injection sits on the prediction pathway (Test 4), where a mis-specified constraint degrades performance while a correct one yields no gain.
 
 \subsection{Free Rollout Reduces Error by $2.2$--$8.3\times$}
 \label{sec:fr}
