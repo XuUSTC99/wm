@@ -5,7 +5,7 @@
 \label{sec:setup}
 
 \paragraph{Model.}
-The compact backbone of \S\ref{sec:prelim} allows the complete factorial anatomy (${\sim}200$ training runs). The full $27$-cell scan, its baselines, the re-weighting sweep, and the training-regime $2{\times}2$ are all three-seed ($3072/1234/42$); the few remaining single-seed results (Physion++ variants) are marked as such.
+The compact backbone of \S\ref{sec:prelim} allows the complete factorial anatomy (${\sim}200$ training runs). Every headline result---the $27$-cell scan and its baselines, the re-weighting sweep, the training-regime $2{\times}2$, and the Physion++ injection table---is three-seed ($3072/1234/42$).
 
 \paragraph{Datasets and OOD protocol.}
 All benchmarks are \emph{visual} world-modeling tasks (RGB video), not the numerical/tabular sequences of prior physics-injection work (\S\ref{sec:related}), so injected state is always a small fraction of a high-dimensional visual latent. \emph{PhyWorld} \citep{kang2024how} provides three single-mechanism domains---\emph{uniform motion}, \emph{parabola}, \emph{collision} (zero/constant/impulsive acceleration)---each with $1{,}000$ ID trajectories, evaluated on four partitions (ID, \rmood{}, \vood{}, \bothood{}) whose single-variable OOD ranges isolate physical extrapolation. Two \emph{realistic-simulation} benchmarks (rendered, not camera video) add realism: \emph{Physion} \citep{bear2021physion} for zero-shot object-contact prediction, and \emph{Physion++} \citep{tung2023physionpp} (ten physical-property scenarios) for direct training with rollout to horizon $64$.
@@ -53,7 +53,7 @@ Domain & Regime & phys.\ off & phys.\ on & $\Delta$ \\
 \end{table}
 
 \paragraph{Two corroborations independent of PhyWorld nMSE.}
-First, \emph{zero-shot transfer}: on Physion OCP, no synthetic-trained configuration exceeds the random-encoder prior ($0.607$ mean AUC), and the physics-structured variant is the \emph{worst} of all ($0.551$, below free rollout's $0.603$)---``more structure, worse transfer,'' with most apparent zero-shot competence owed to the architecture, not the learning (\appref{app:traps}{F}). Second, \emph{realistic simulation}: trained directly on Physion++, every injection variant we ported (fixed slot, consistency, consistency$+$acceleration) degrades per-scenario rollout nMSE by $3$--$10\times$ against the identically trained free-rollout model (\appref{app:injection}{B}); the probe variants have not been run there, so this covers the slot and consistency mechanisms only.
+First, \emph{zero-shot transfer}: on Physion OCP, no synthetic-trained configuration exceeds the random-encoder prior ($0.607$ mean AUC), and the physics-structured variant is the \emph{worst} of all ($0.551$, below free rollout's $0.603$)---``more structure, worse transfer,'' with most apparent zero-shot competence owed to the architecture, not the learning (\appref{app:traps}{F}). Second, \emph{realistic simulation}: trained directly on Physion++ over three seeds, every injection variant we ported degrades rollout nMSE $3.6$--$8.5\times$ against the identically trained free-rollout model, worse in \emph{every} seed on all three mass scenarios (the fourth is too baseline-unstable to resolve; \appref{app:injection}{B}). The probe variants have not been run there, so this covers the slot and consistency mechanisms only.
 
 \subsection{Mechanism: Load-Bearing but Redundant}
 \label{sec:mech}
