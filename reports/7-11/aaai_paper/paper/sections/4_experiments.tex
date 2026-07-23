@@ -108,12 +108,12 @@ Together, the four tests establish that the injected slot is load-bearing but re
 \subsection{Free Rollout Reduces Error by $2.2$--$8.3\times$}
 \label{sec:fr}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\linewidth]{figures/fig2_free_rollout_2models.pdf}
+\includegraphics[width=0.82\textwidth]{figures/fig2_free_rollout_2models.pdf}
 \caption{Teacher forcing vs.\ free rollout (hardest clean split, nMSE $\downarrow$; solid = LeWM, hatched = frozen DINOv2; three-seed means $\pm$ std, every interval disjoint). The physics-free protocol switch is worth $2.2$--$8.3\times$ on LeWM and $1.4$--$4.0\times$ on frozen DINOv2---backbone-independent, largest where dynamics are hardest.}
 \label{fig:fr}
-\end{figure}
+\end{figure*}
 
 Replacing teacher forcing with free rollout cuts the hardest-split error $2.2$--$3.6\times$ across the three domains and $8.3\times$ on Physion++, every interval disjoint over three seeds, and the whole pattern replicates on frozen DINOv2 (Figure~\ref{fig:fr}; \appref{app:crossbackbone}{C}). The gain is not an OOD patch: \emph{every} partition improves, including ID ($2.0$--$4.6\times$). The horizon must match dynamics complexity---collision improves markedly at $H{\approx}20$ while smooth domains degrade with excess horizon, and realistic-simulation scenes have the largest appetite: $H{=}8\!\to\!28$ drives horizon-$64$ nMSE from $0.280$ to $0.014$, ${\sim}19\times$ (\appref{app:aug}{E}).
 
