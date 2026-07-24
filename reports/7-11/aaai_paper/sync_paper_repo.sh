@@ -60,8 +60,10 @@ if [ "$YES" != "-y" ]; then
   [ "$a" = "y" ] || { echo "aborted"; exit 1; }
 fi
 # Default the paper-repo commit message to the monorepo's latest commit
-# subject, so the two repos read the same. Override with MSG=... if needed.
-: "${MSG:=$(git -C "$SRC" log -1 --format='%s' 2>/dev/null)}"
+# subject, so the two repos read the same. Read from $SRC/.. (the aaai_paper
+# dir, tracked by the wm monorepo), NOT $SRC itself: paper/ contains a nested
+# .git whose HEAD would otherwise be picked up. Override with MSG=... if needed.
+: "${MSG:=$(git -C "$SRC/.." log -1 --format='%s' 2>/dev/null)}"
 : "${MSG:=Sync paper source from the monorepo}"
 git -c user.name="XuUSTC99" -c user.email="noreply@github.com" \
     commit -q -m "$MSG"
