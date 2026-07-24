@@ -59,7 +59,11 @@ if [ "$YES" != "-y" ]; then
   read -r -p "commit and push to the paper repo? [y/N] " a
   [ "$a" = "y" ] || { echo "aborted"; exit 1; }
 fi
+# Default the paper-repo commit message to the monorepo's latest commit
+# subject, so the two repos read the same. Override with MSG=... if needed.
+: "${MSG:=$(git -C "$SRC" log -1 --format='%s' 2>/dev/null)}"
+: "${MSG:=Sync paper source from the monorepo}"
 git -c user.name="XuUSTC99" -c user.email="noreply@github.com" \
-    commit -q -m "${MSG:-Sync paper source from the monorepo}"
+    commit -q -m "$MSG"
 git push -q origin main
 echo "  pushed: $(git log -1 --oneline)"
