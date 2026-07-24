@@ -30,6 +30,7 @@ Two things this fixes across every figure:
 Import and call `apply()` before creating figures.
 """
 import glob
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -39,12 +40,19 @@ from matplotlib.colors import LinearSegmentedColormap
 # The URW base-35 Nimbus Roman that the AAAI template uses for body text.
 # matplotlib does not index /usr/share/fonts/opentype by default, so register
 # the family explicitly; without this the serif request silently falls back.
-_NIMBUS_GLOB = "/usr/share/fonts/opentype/urw-base35/NimbusRoman-*.otf"
-for _f in glob.glob(_NIMBUS_GLOB):
-    try:
-        fm.fontManager.addfont(_f)
-    except Exception:
-        pass
+# System path first; on hosts without the urw-base35 package the same OTFs are
+# picked up from the per-user font dir (install: drop NimbusRoman-*.otf there).
+_NIMBUS_GLOBS = [
+    "/usr/share/fonts/opentype/urw-base35/NimbusRoman-*.otf",
+    os.path.expanduser("~/.local/share/fonts/urw-base35/NimbusRoman-*.otf"),
+    os.path.expanduser("~/.fonts/NimbusRoman-*.otf"),
+]
+for _g in _NIMBUS_GLOBS:
+    for _f in glob.glob(_g):
+        try:
+            fm.fontManager.addfont(_f)
+        except Exception:
+            pass
 NIMBUS_AVAILABLE = any(f.name == "Nimbus Roman" for f in fm.fontManager.ttflist)
 
 # --- palette -----------------------------------------------------------
