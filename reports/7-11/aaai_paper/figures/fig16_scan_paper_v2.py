@@ -26,14 +26,14 @@ DOMS = ["uniform", "parabola", "collision"]
 
 ROWS = [
     ("[slot] structpos", "[slot] structpos"),
-    ("[slot] +reweight (w=30)", "[slot] +reweight (w=30)"),
+    ("[slot] +reweight (w=30)", "[slot] +reweight\n(w=30)"),
     ("[slot] +velocity", "[slot] +velocity"),
     ("[probe] probe", "[probe] probe"),
     ("[probe] +slot", "[probe] +slot"),
     ("[dyn] free MLP", "[dyn] free MLP"),
     # merged row: same configuration under two names; CELLS already pools the
     # duplicate seed-3072 runs for this arm (4 draws per domain)
-    ("[dyn] strict a=g", "[dyn] strict a=g\n(= [free] grounded)"),
+    ("[dyn] strict a=g", "[dyn] strict a=g\n([free] grounded)"),
     ("[cons] consistency", "[cons] consistency"),
     ("[free] label-free", "[free] label-free"),
 ]
@@ -47,5 +47,11 @@ scan_heatmap.draw(
     get_draws=lambda key, j: resolve(CELLS[(key, DOMS[j])], DOMS[j]),
     get_base=lambda j: resolve(BASELINE[DOMS[j]], DOMS[j]),
     outs=outs,
-    cbar_label="nMSE / baseline  (both three-seed means)",
+    cbar_label="nMSE / baseline",
+    annotation_newline=False,
+    annotation_fontsize=8.5,
+    tick_fontsize=8.5,
+    cbar_label_fontsize=8.0,
+    cbar_tick_fontsize=7.5,
+    cbar_orientation="horizontal",
 )

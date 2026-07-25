@@ -22,12 +22,12 @@ PARTITION = {"um": "both-OOD", "par": "r/m-OOD", "col": "both-OOD"}
 # (key(s), display label) -- 9 rows; the a=g row pools its duplicate launch.
 ROWS = [
     (["structpos_plain"], "[slot] structpos"),
-    (["structpos_pw30"], "[slot] +reweight (w=30)"),
+    (["structpos_pw30"], "[slot] +reweight\n(w=30)"),
     (["posvel_pw30"], "[slot] +velocity"),
     (["probeF2"], "[probe] probe"),
     (["probe_structpos_pw30"], "[probe] +slot"),
     (["dyn_mlp"], "[dyn] free MLP"),
-    (["grounded_const", "grounded2_const"], "[dyn] strict a=g\n(= [free] grounded)"),
+    (["grounded_const", "grounded2_const"], "[dyn] strict a=g\n([free] grounded)"),
     (["cons"], "[cons] consistency"),
     (["labelfree_const"], "[free] label-free"),
 ]

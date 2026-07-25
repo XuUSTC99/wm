@@ -25,5 +25,11 @@ scan_heatmap.draw(
     get_draws=lambda keys, j: draws(list(keys), DOMS[j]),
     get_base=lambda j: baseline_draws(DOMS[j]),
     outs=outs,
-    cbar_label="nMSE / baseline  (both three-seed means)",
+    cbar_label="nMSE / baseline",
+    annotation_newline=False,
+    annotation_fontsize=8.5,
+    tick_fontsize=8.5,
+    cbar_label_fontsize=8.0,
+    cbar_tick_fontsize=7.5,
+    cbar_orientation="horizontal",
 )

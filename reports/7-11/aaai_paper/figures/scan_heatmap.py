@@ -39,7 +39,10 @@ def verdicts(cell_draws, base_draws):
             min(d) > max(bd), max(d) < min(bd))
 
 
-def draw(rows, get_draws, get_base, outs, cbar_label="nMSE / baseline (seed means)"):
+def draw(rows, get_draws, get_base, outs, cbar_label="nMSE / baseline (seed means)",
+         annotation_newline=True, annotation_fontsize=5.9,
+         tick_fontsize=6.2, cbar_label_fontsize=6.0,
+         cbar_tick_fontsize=5.8, cbar_orientation="vertical"):
     """rows: [(row_key, label)] resolved by get_draws(row_key, dom_index).
 
     get_base(dom_index) -> baseline draws. Writes .pdf (+ .png for the first
@@ -71,19 +74,25 @@ def draw(rows, get_draws, get_base, outs, cbar_label="nMSE / baseline (seed mean
                 continue
             col = _ink_or_white(SCAN_CMAP(NORM(ratio[i, j])))
             noise_marker = "°" if not (wsep[i, j] or bsep[i, j]) else ""
-            ax.text(j, i, f"{ratio[i, j]:.2f}×{noise_marker}\n({mean[i, j]:.3f})",
-                    ha="center", va="center", fontsize=5.9, color=col)
+            separator = "\n" if annotation_newline else " "
+            ax.text(j, i,
+                    f"{ratio[i, j]:.2f}×{noise_marker}{separator}({mean[i, j]:.3f})",
+                    ha="center", va="center", fontsize=annotation_fontsize, color=col)
 
     ax.set_xticks(range(3))
-    ax.set_xticklabels(COLS, fontsize=6.2)
+    ax.set_xticklabels(COLS, fontsize=tick_fontsize)
     ax.set_yticks(range(R))
-    ax.set_yticklabels([lab for _, lab in rows], fontsize=6.2)
+    ax.set_yticklabels([lab for _, lab in rows], fontsize=tick_fontsize)
     ax.tick_params(length=0, pad=2.5)
     for sp in ax.spines.values():
         sp.set_visible(False)
-    cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.03)
-    cb.set_label(cbar_label, fontsize=6.0)
-    cb.ax.tick_params(labelsize=5.8, length=2, width=0.6)
+    if cbar_orientation == "horizontal":
+        cb = fig.colorbar(im, ax=ax, orientation="horizontal",
+                          fraction=0.045, pad=0.10, aspect=35)
+    else:
+        cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.03)
+    cb.set_label(cbar_label, fontsize=cbar_label_fontsize)
+    cb.ax.tick_params(labelsize=cbar_tick_fontsize, length=2, width=0.6)
     cb.outline.set_visible(False)
 
     for k, out in enumerate(outs):
