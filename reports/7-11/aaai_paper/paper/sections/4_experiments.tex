@@ -19,7 +19,7 @@ Verdicts use two scale-aware, \emph{external} metrics---latent nMSE ($\|\hat{\la
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig16_scan_paper.pdf}
-\caption{Every injection variant $\times$ domain vs.\ the free-rollout baseline (nMSE ratio; every cell and the baseline are three-seed means). Warm = worse, blue = better; \emph{hatched} = within noise (the cell's seeds overlap the baseline's), solid = separated in every seed. Injection fails to improve on baseline in $26$ of $27$ cells ($15$ worse, $11$ within noise); the sole seed-robust gain is velocity$+$slot on parabola ($0.79\times$). Strict $a{=}g$ and the grounded prior are one configuration launched twice; the merged row pools all four draws.}
+\caption{Every injection variant $\times$ domain vs.\ the free-rollout baseline (nMSE ratio; every cell and the baseline are three-seed means). Warm = worse, blue = better; $^{\circ}$ = within noise (the cell's seeds overlap the baseline's). Injection fails to improve on baseline in $26$ of $27$ cells ($15$ worse, $11$ within noise); the sole seed-robust gain is velocity$+$slot on parabola ($0.79\times$). Strict $a{=}g$ and the grounded prior are one configuration launched twice; the merged row pools all four draws.}
 \label{fig:scan}
 \end{figure}
 
@@ -127,4 +127,3 @@ The faithful extrinsic port (PIWM; \S\ref{sec:external}) learns the correct phys
 
 \paragraph{Cross-backbone replication.}
 On the frozen-DINOv2 variant every primary finding replicates across three seeds. Presence is even stronger---the physics-naive frozen encoder decodes position at $\rho{=}0.95$ (vs.\ $0.90$ for LeWM), with the same redundant black-box copy---so both the state and its duplication are properties of generic visual features, not of our training. The protocol lever transfers ($1.4$--$4.0\times$; Figure~\ref{fig:fr}); injection still never wins ($26$ of $27$ cells fail to improve on baseline; on this backbone the one cell below $1.0$ reaches only $0.97\times$, a $0.001$ nMSE gap within seed noise), and the apparent uniform gains dissolve under content-free controls into capacity-restriction regularization, not physics (Trap~5, \appref{app:traps}{F}). One difference: with the encoder frozen, injection is largely inert rather than harmful---the losses reshape only the adapter, bounding damage but foreclosing benefit. Across every control the same sentence survives: physical state in a latent world model is \emph{load-bearing but redundant}.
-

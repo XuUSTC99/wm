@@ -2,8 +2,8 @@
 
 Same drawing routine, verdict rule, and row merge as paper figure 2
 (scan_heatmap.py + the a=g/grounded pooling documented in dino_resolve.py), so
-the two scans read identically: warm = worse, blue = better, hatched = the
-cell's seeds overlap the baseline's.
+the two scans read identically: warm = worse, blue = better, and a degree
+marker means the cell's seeds overlap the baseline's.
 
 Every value is parsed from raw_data/runs/dinowm at draw time; the previous
 version of this figure classified cells by a +/-5% ratio threshold and marked

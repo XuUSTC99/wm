@@ -7,7 +7,8 @@ cannot drift apart again.
 
 Verdict rule (shared): a cell is WORSE if every draw exceeds every baseline
 draw, BETTER if every draw is below every baseline draw, otherwise within
-noise. Hatched = within noise; solid = separated in every draw.
+noise. A degree marker denotes within noise; unmarked cells are separated in
+every draw.
 """
 import pathlib
 import sys
@@ -69,12 +70,9 @@ def draw(rows, get_draws, get_base, outs, cbar_label="nMSE / baseline (seed mean
                 ax.text(j, i, "no data", ha="center", va="center", fontsize=5.6, color="#888")
                 continue
             col = _ink_or_white(SCAN_CMAP(NORM(ratio[i, j])))
-            ax.text(j, i, f"{ratio[i, j]:.2f}×\n({mean[i, j]:.3f})",
+            noise_marker = "°" if not (wsep[i, j] or bsep[i, j]) else ""
+            ax.text(j, i, f"{ratio[i, j]:.2f}×{noise_marker}\n({mean[i, j]:.3f})",
                     ha="center", va="center", fontsize=5.9, color=col)
-            if not (wsep[i, j] or bsep[i, j]):
-                ax.add_patch(plt.Rectangle((j - .5, i - .5), 1, 1, fill=False,
-                                           hatch="///", edgecolor=col,
-                                           linewidth=0.0, alpha=0.45))
 
     ax.set_xticks(range(3))
     ax.set_xticklabels(COLS, fontsize=6.2)
