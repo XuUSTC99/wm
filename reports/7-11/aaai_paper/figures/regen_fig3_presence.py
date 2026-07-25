@@ -22,7 +22,9 @@ aggregate/per-scene cosine (not a per-horizon curve), and its probe number is
 baseline *velocity* decodability (0.44) under the probe-injection variant -- not
 a flat, high position-decodability band. A 4th panel would require new runs.
 """
-import sys, pathlib
+import pathlib
+import re
+import sys
 import numpy as np
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -39,53 +41,90 @@ BAND = "#C7CBD1"   # neutral grey-blue: the probe band must not read as data
 
 H = [1, 4, 8, 16, 28]
 DOMS = ["uniform", "parabola", "collision"]
-TF = {"uniform": [0.99, 0.96, 0.91, 0.84, 0.84],
-      "parabola": [0.98, 0.88, 0.84, 0.52, 0.57],
-      "collision": [0.99, 0.88, 0.64, 0.36, 0.24]}
-FR = {"uniform": [0.99, 0.98, 0.97, 0.95, 0.95],
-      "parabola": [0.98, 0.94, 0.94, 0.79, 0.93],
-      "collision": [1.00, 0.98, 0.95, 0.76, 0.48]}
+HERE = pathlib.Path(__file__).resolve().parent
+RUNS = HERE.parents[3] / "raw_data" / "runs"
+
+
+def _log_path(dom, mode, seed):
+    if seed == 3072:
+        name = "uniform_motion" if dom == "uniform" else dom
+        return RUNS / "structdyn_eval" / f"rollout_{name}_baseline_{mode}_id1k.log"
+    name = "uniform" if dom == "uniform" else dom
+    return RUNS / "aaai_p0" / f"rollout_{name}_baseline_{mode}_s{seed}.log"
+
+
+def _horizon_cosines(path):
+    values = {}
+    in_section = False
+    for line in path.read_text().splitlines():
+        if "latent fidelity vs horizon" in line:
+            in_section = True
+            continue
+        if in_section and not line.strip():
+            break
+        if in_section and (match := re.match(
+                r"\s*h=\s*(\d+).*?cos=([+\-\d.]+)", line)):
+            values[int(match.group(1))] = float(match.group(2))
+    missing = set(H) - values.keys()
+    if missing:
+        raise ValueError(f"missing horizons {sorted(missing)} in {path}")
+    return [values[h] for h in H]
+
+
+def _seed_curves(mode):
+    return {dom: np.asarray([
+        _horizon_cosines(_log_path(dom, mode, seed))
+        for seed in (3072, 1234, 42)
+    ]) for dom in DOMS}
+
+
+TF_SEEDS = _seed_curves("tf")
+FR_SEEDS = _seed_curves("fr")
 # per-domain band = the two position coordinates' decodability rho (pos0, pos1)
 PROBE = {"uniform": (0.862, 0.955), "parabola": (0.831, 0.893),
          "collision": (0.796, 0.889)}
 
-fig, axes = plt.subplots(1, 3, figsize=(3.4, 1.72), sharey=True)
+fig, axes = plt.subplots(1, 3, figsize=(3.4, 1.68), sharey=True)
 
 for ax, dom in zip(axes, DOMS):
     lo, hi = PROBE[dom]
+    tf_mean = TF_SEEDS[dom].mean(axis=0)
+    fr_mean = FR_SEEDS[dom].mean(axis=0)
     ax.axhspan(lo, hi, color=BAND, alpha=0.65, lw=0, zorder=1)
-    ax.plot(H, TF[dom], color=SIENNA, marker="o", ms=2.6, lw=1.4,
-            mec="white", mew=0.4, zorder=4)
-    ax.plot(H, FR[dom], color=BLUE, marker="o", ms=2.6, lw=1.4,
-            mec="white", mew=0.4, zorder=3)
-    ax.set_title(dom, fontsize=7.4, pad=2.0)
+    ax.plot(H, tf_mean, color=SIENNA, marker="s", ms=2.6, lw=1.4,
+            mfc=SIENNA, mec=SIENNA, mew=0, zorder=4)
+    ax.plot(H, fr_mean, color=BLUE, marker="^", ms=2.9, lw=1.4,
+            mfc=BLUE, mec=BLUE, mew=0, zorder=3)
+    ax.set_title(dom, fontsize=8.5, pad=2.5)
     ax.set_xticks([1, 8, 28])
     ax.set_xlim(0.4, 29)
     ax.set_ylim(0.10, 1.04)
-    ax.tick_params(labelsize=6.2, length=2.2, width=0.6)
+    ax.tick_params(labelsize=7.5, length=2.4, width=0.6)
     ax.grid(True, axis="y", color="#EAE8E4", lw=0.6)
     ax.set_axisbelow(True)
     fig_style.despine(ax)
 
 axes[0].set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-axes[0].set_ylabel("agreement with truth\n(latent cosine, $\\uparrow$)",
-                   fontsize=6.8, linespacing=1.25)
-fig.supxlabel("rollout horizon (steps)", fontsize=7.2, y=0.14)
+fig.supxlabel("rollout horizon (steps)", fontsize=8.0, y=0.14)
 
-key = [Line2D([], [], color=SIENNA, marker="o", ms=3, lw=1.6, mec="white",
-              mew=0.4, label="teacher forcing"),
-       Line2D([], [], color=BLUE, marker="o", ms=3, lw=1.6, mec="white",
-              mew=0.4, label="free rollout"),
-       Patch(facecolor=BAND, alpha=0.65, label="decodable (probe $\\rho$)")]
-fig.legend(handles=key, fontsize=6.2, loc="lower center", ncol=3,
-           columnspacing=1.2, handlelength=1.6, handletextpad=0.5,
+key = [Line2D([], [], color=SIENNA, marker="s", ms=3, lw=1.6,
+              mfc=SIENNA, mec=SIENNA, mew=0, label="teacher forcing"),
+       Line2D([], [], color=BLUE, marker="^", ms=3.3, lw=1.6,
+              mfc=BLUE, mec=BLUE, mew=0, label="free rollout"),
+       Patch(facecolor=BAND, alpha=0.65, label="real-frame probe $\\rho$")]
+fig.legend(handles=key, fontsize=8.0, loc="lower center", ncol=3,
+           columnspacing=0.8, handlelength=1.4, handletextpad=0.4,
            borderpad=0.0, bbox_to_anchor=(0.5, -0.02))
 
 fig.tight_layout(pad=0.3, rect=(0, 0.10, 1, 1))
-here = pathlib.Path(__file__).resolve().parent
-for out in [here / "fig1_thesis_presence_not_use",
-            here.parent / "paper" / "figures" / "fig1_thesis_presence_not_use"]:
+for out in [HERE / "fig1_thesis_presence_not_use",
+            HERE.parent / "paper" / "figures" / "fig1_thesis_presence_not_use"]:
     fig.savefig(str(out) + ".pdf"); fig.savefig(str(out) + ".png")
     print("wrote", out)
 print("  per-domain bands:", {d: PROBE[d] for d in DOMS})
-print("  TF@h28:", ", ".join(f"{d} {TF[d][-1]:.2f}" for d in DOMS))
+print("  TF@h28 mean±std:", ", ".join(
+    f"{d} {TF_SEEDS[d][:, -1].mean():.3f}±{TF_SEEDS[d][:, -1].std(ddof=1):.3f}"
+    for d in DOMS))
+print("  FR@h28 mean±std:", ", ".join(
+    f"{d} {FR_SEEDS[d][:, -1].mean():.3f}±{FR_SEEDS[d][:, -1].std(ddof=1):.3f}"
+    for d in DOMS))
