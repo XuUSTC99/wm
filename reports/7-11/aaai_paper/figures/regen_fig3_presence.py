@@ -105,6 +105,7 @@ for ax, dom in zip(axes, DOMS):
     fig_style.despine(ax)
 
 axes[0].set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+axes[0].set_ylabel("latent cosine, $\\uparrow$", fontsize=8.0, linespacing=1.25)
 fig.supxlabel("rollout horizon (steps)", fontsize=8.0, y=0.14)
 
 key = [Line2D([], [], color=SIENNA, marker="s", ms=3, lw=1.6,
