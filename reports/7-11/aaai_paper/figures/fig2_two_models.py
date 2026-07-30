@@ -85,7 +85,7 @@ h = [Patch(facecolor=VERM, label="LeWM TF"),
      Patch(facecolor=BLUE, label="LeWM FR"),
      Patch(facecolor=VERM_L, edgecolor=VERM, hatch=HATCH, label="DINO TF"),
      Patch(facecolor=BLUE_L, edgecolor=BLUE, hatch=HATCH, label="DINO FR")]
-ax.legend(handles=h, frameon=False, fontsize=5.5, loc="upper left",
+ax.legend(handles=h, frameon=False, fontsize=7.5, loc="upper left",
           ncol=2, columnspacing=0.8, handlelength=1.1, bbox_to_anchor=(0, 1.0))
 
 fig.tight_layout()

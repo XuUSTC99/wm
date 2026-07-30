@@ -22,7 +22,7 @@ from fig_style import BLUE, SIENNA, INK, CAT
 
 import matplotlib.pyplot as plt
 
-fig_style.apply(base=8.0)
+fig_style.apply(base=9.0)
 
 hz = np.array([16, 32, 64])
 series = {
@@ -44,11 +44,11 @@ ax.set_xticks(hz)
 # §4.4, and in the appendix text, so printing them here too was a fourth copy.
 ax.set_xlim(13, 67)
 ax.set_ylim(0.0055, 0.46)   # headroom so the np8 curve stops short of the frame
-ax.set_xlabel("rollout horizon (steps)", fontsize=7.6)
-ax.set_ylabel("nMSE  (log, $\\downarrow$)", fontsize=7.6)
-ax.legend(fontsize=6.4, loc="upper left", bbox_to_anchor=(0.005, 1.0),
+ax.set_xlabel("rollout horizon (steps)", fontsize=9.0)
+ax.set_ylabel("nMSE  (log, $\\downarrow$)", fontsize=9.0)
+ax.legend(fontsize=9.0, loc="upper left", bbox_to_anchor=(0.005, 1.0),
           handlelength=1.6, labelspacing=0.3)
-ax.tick_params(labelsize=6.8, length=2.5, width=0.7)
+ax.tick_params(labelsize=9.0, length=2.5, width=0.7)
 ax.grid(True, color="#EAE8E4", lw=0.7, which="both")
 ax.set_axisbelow(True)
 fig_style.despine(ax)

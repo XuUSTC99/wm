@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
-fig_style.apply(base=8.0)
+fig_style.apply(base=9.0)
 
 BAND = "#C7CBD1"   # neutral grey-blue: the probe band must not read as data
 
@@ -95,25 +95,25 @@ for ax, dom in zip(axes, DOMS):
             mfc=SIENNA, mec=SIENNA, mew=0, zorder=4)
     ax.plot(H, fr_mean, color=BLUE, marker="^", ms=2.9, lw=1.4,
             mfc=BLUE, mec=BLUE, mew=0, zorder=3)
-    ax.set_title(dom, fontsize=8.5, pad=2.5)
+    ax.set_title(dom, fontsize=9.0, pad=2.5)
     ax.set_xticks([1, 8, 28])
     ax.set_xlim(0.4, 29)
     ax.set_ylim(0.10, 1.04)
-    ax.tick_params(labelsize=7.5, length=2.4, width=0.6)
+    ax.tick_params(labelsize=9.0, length=2.4, width=0.6)
     ax.grid(True, axis="y", color="#EAE8E4", lw=0.6)
     ax.set_axisbelow(True)
     fig_style.despine(ax)
 
 axes[0].set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
-axes[0].set_ylabel("latent cosine, $\\uparrow$", fontsize=8.0, linespacing=1.25)
-fig.supxlabel("rollout horizon (steps)", fontsize=8.0, y=0.14)
+axes[0].set_ylabel("latent cosine, $\\uparrow$", fontsize=9.0, linespacing=1.25)
+fig.supxlabel("rollout horizon (steps)", fontsize=9.0, y=0.14)
 
 key = [Line2D([], [], color=SIENNA, marker="s", ms=3, lw=1.6,
               mfc=SIENNA, mec=SIENNA, mew=0, label="teacher forcing"),
        Line2D([], [], color=BLUE, marker="^", ms=3.3, lw=1.6,
               mfc=BLUE, mec=BLUE, mew=0, label="free rollout"),
        Patch(facecolor=BAND, alpha=0.65, label="real-frame probe $\\rho$")]
-fig.legend(handles=key, fontsize=8.0, loc="lower center", ncol=3,
+fig.legend(handles=key, fontsize=9.0, loc="lower center", ncol=3,
            columnspacing=0.8, handlelength=1.4, handletextpad=0.4,
            borderpad=0.0, bbox_to_anchor=(0.5, -0.02))
 

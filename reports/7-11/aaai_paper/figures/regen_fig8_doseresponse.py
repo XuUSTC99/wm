@@ -14,7 +14,7 @@ _HERE = pathlib.Path(__file__).resolve().parent
 import numpy as np
 import matplotlib.pyplot as plt
 
-fig_style.apply(base=8.0)
+fig_style.apply(base=10.5)
 GRAY, ORANGE, SKY, BLUE = CAT
 VERM = fig_style.SIENNA
 GRID = "#EAE8E4"
@@ -36,28 +36,28 @@ PARTS = [("ID", GRAY, "."), ("r/m-OOD", ORANGE, "s"), ("v-OOD", SKY, "^"), ("bot
 JUDGED = {("uniform","both-OOD"), ("uniform","r/m-OOD"),
           ("parabola","r/m-OOD"), ("collision","both-OOD")}
 
-fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.5), sharey=True)
+fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.35), sharey=True)
 for ax, dom in zip(axes, ["uniform", "parabola", "collision"]):
     d = lbr[dom]
     ax.axhline(1.0, color=INK, ls="--", lw=1.0, zorder=1)
     for part, c, mk in PARTS:
         r = np.array(d[part]) / d["base"][part]
         judged = (dom, part) in JUDGED
-        ax.plot(W, r, color=c, marker=mk, ms=4.5, lw=2.0 if judged else 1.0,
-                alpha=1.0 if judged else 0.45, ls="-" if judged else ":",
+        ax.plot(W, r, color=c, marker=mk, ms=4.5, lw=2.0 if judged else 1.1,
+                alpha=1.0 if judged else 0.55, ls="-" if judged else ":",
                 label=part if ax is axes[0] else None, zorder=3 if judged else 2)
-    ax.set_xscale("log"); ax.set_xticks(W); ax.set_xticklabels(W, fontsize=7.5)
-    ax.set_title(dom, fontsize=9.5, fontweight="bold")
-    ax.set_xlabel("slot weight $w$ (log)", fontsize=8)
+    ax.set_xscale("log"); ax.set_xticks(W); ax.set_xticklabels(W, fontsize=10.5)
+    ax.set_title(dom, fontsize=10.5, fontweight="bold", pad=4)
     ax.grid(True, color=GRID, lw=0.6, alpha=0.7); ax.set_axisbelow(True)
-    ax.tick_params(labelsize=7.5)
-axes[0].set_ylabel("nMSE / baseline", fontsize=8.5)
+    ax.tick_params(labelsize=10.5)
 axes[0].set_ylim(0.55, 1.85)
-axes[0].text(1.15, 1.03, "worse", fontsize=7, color=VERM, va="bottom")
-axes[0].text(1.15, 0.97, "better", fontsize=7, color=BLUE, va="top")
-axes[0].legend(frameon=False, fontsize=7.2, loc="upper left", ncol=2,
-               columnspacing=0.8, handlelength=1.6, borderpad=0.2)
-fig.tight_layout(pad=0.4)
+fig.supxlabel("slot weight $w$ (log scale)", fontsize=10.5, y=0.04)
+fig.supylabel("nMSE / baseline", fontsize=10.5, x=0.025)
+handles, labels = axes[0].get_legend_handles_labels()
+fig.legend(handles, labels, frameon=False, fontsize=10.5, loc="upper center",
+           ncol=4, columnspacing=1.4, handlelength=1.8,
+           bbox_to_anchor=(0.5, 1.0), borderaxespad=0)
+fig.subplots_adjust(left=0.09, right=0.99, bottom=0.23, top=0.76, wspace=0.10)
 for out in [str(_HERE / "fig8_lbr_ablation"),
             str(_HERE.parent / "paper" / "figures" / "fig8_lbr_ablation")]:
     fig.savefig(out + ".pdf"); fig.savefig(out + ".png")

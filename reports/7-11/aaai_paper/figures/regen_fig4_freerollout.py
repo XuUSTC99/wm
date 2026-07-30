@@ -20,7 +20,7 @@ from fig_style import BLUE, SIENNA, INK, MUTED
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-fig_style.apply(base=8.0)
+fig_style.apply(base=9.0)
 
 doms = ["uniform", "parabola\n(r/m-OOD)", "collision", "Physion++\n(sim, h64)"]
 LEWM_TF = [0.300, 0.443, 1.152, 1.174]; LEWM_TF_E = [0.007, 0.048, 0.048, 0.041]
@@ -44,20 +44,21 @@ ax.bar(x + 1.5 * w, DINO_FR, w, color=BLUE, hatch="////", edgecolor="white",
 for xs, tf, fr, mult, e in [(x - w, LEWM_TF, LEWM_FR, LEWM_X, LEWM_TF_E),
                             (x + w, DINO_TF, DINO_FR, DINO_X, DINO_TF_E)]:
     for xi, t, f, m, ei in zip(xs, tf, fr, mult, e):
-        ax.text(xi, max(t, f) + ei + 0.05, m, ha="center", fontsize=6.2, color=INK)
+        ax.text(xi, max(t, f) + ei + 0.05, m, ha="center",
+                fontsize=9.0, fontweight="semibold", color=INK)
 
 key = [Patch(facecolor=SIENNA, label="teacher forcing"),
        Patch(facecolor=BLUE, label="free rollout"),
        Patch(facecolor="0.68", edgecolor="0.45", label="LeWM (trainable ViT-tiny)"),
        Patch(facecolor="0.68", hatch="////", edgecolor="white",
              label="frozen DINOv2 + adapter")]
-ax.legend(handles=key, fontsize=6.8, ncol=2, loc="upper left",
+ax.legend(handles=key, fontsize=9.0, ncol=2, loc="upper left",
           columnspacing=1.0, handlelength=1.5, borderpad=0.2)
 
-ax.set_xticks(x); ax.set_xticklabels(doms, fontsize=6.4)
-ax.set_ylabel("rollout error (nMSE, $\\downarrow$)", fontsize=7.4)
+ax.set_xticks(x); ax.set_xticklabels(doms, fontsize=9.0)
+ax.set_ylabel("rollout error (nMSE, $\\downarrow$)", fontsize=9.0)
 ax.set_ylim(0, 1.95)
-ax.tick_params(labelsize=6.6, length=2.5, width=0.7)
+ax.tick_params(labelsize=9.0, length=2.5, width=0.7)
 ax.grid(True, axis="y", color="#EAE8E4", lw=0.7)
 ax.set_axisbelow(True)
 fig_style.despine(ax)
