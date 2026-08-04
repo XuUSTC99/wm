@@ -58,7 +58,27 @@ wm:
   # piwm_dynamics_conclusion.md. For a teacher-forced baseline set free_rollout=false
   # AND num_preds=1 (the TF loss path requires num_preds=1).
   free_rollout: true
+  # Set false for passive-video datasets (PhyWorld/Physion). Their stored action
+  # is synthetic/placeholder and may contain privileged future displacement.
+  use_action: true
 
+# Gauge-Invariant Physics Projection. Fit the frozen decoder/covariance artifact
+# first, then enable this block. Projection happens after every predictor step
+# and the corrected latent is fed into the next free-rollout step.
+gipp:
+  enabled: false
+  state_path: null
+  alpha: 1.0
+  eps: 1.0e-4
+  gate: constant
+  gate_threshold: 0.15
+  gate_temperature: 0.05
+  horizon_start: 8.0
+  horizon_temperature: 2.0
+  physics: constant_velocity  # constant_velocity | gravity
+  gravity: null               # e.g. [0.0, -0.012] in normalized state units
+  freeze_projector: true      # W/Sigma are fitted in this projector coordinate system
+  shadow: false               # correct recurrent memory; keep raw output/supervision
 predictor:
   depth: 6
   heads: 16

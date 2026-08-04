@@ -17,6 +17,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _SWM = Path(os.environ.get('STABLEWM_HOME', str(Path.home() / '.stable_worldmodel')))
 # Datasets in new stable_worldmodel layout live under <SWM>/datasets/<name>.h5
 _DS = _SWM / 'datasets'
+_RAW = Path(os.environ.get('PHYWORLD_RAW', str(_SWM.parent / 'phyworld_raw')))
 sys.path.insert(0, str(_ROOT / 'le-wm'))
 from sklearn.linear_model import Ridge
 from scipy.stats import pearsonr
@@ -26,21 +27,21 @@ DOMAINS = {
         "ckpt": str(_SWM / "collision_paperinit_id1k/lewm_collision_paperinit_id1k_epoch_20_object.ckpt"),
         "train_h5": str(_DS / "phyworld_collision_id1k.h5"),
         "eval_h5": str(_DS / "phyworld_collision_eval.h5"),
-        "src_hdf5": str(_ROOT / "phyworld/data/collision_eval.hdf5"),
+        "src_hdf5": str(_RAW / "collision_eval.hdf5"),
         "ncol": 4,
     },
     "uniform_motion": {
         "ckpt": str(_SWM / "uniform_paperinit_id1k/lewm_uniform_paperinit_id1k_epoch_20_object.ckpt"),
         "train_h5": str(_DS / "phyworld_uniform_motion_id1k.h5"),
         "eval_h5": str(_DS / "phyworld_uniform_motion.h5"),
-        "src_hdf5": str(_ROOT / "phyworld/data/uniform_motion_eval.hdf5"),
+        "src_hdf5": str(_RAW / "uniform_motion_eval.hdf5"),
         "ncol": 2,
     },
     "parabola": {
         "ckpt": str(_SWM / "parabola_paperinit_id1k/lewm_parabola_paperinit_id1k_epoch_20_object.ckpt"),
         "train_h5": str(_DS / "phyworld_parabola_id1k.h5"),
         "eval_h5": str(_DS / "phyworld_parabola.h5"),
-        "src_hdf5": str(_ROOT / "phyworld/data/parabola_eval.hdf5"),
+        "src_hdf5": str(_RAW / "parabola_eval.hdf5"),
         "ncol": 2,
     },
 }
@@ -73,11 +74,15 @@ def main():
     ap.add_argument("--max-trajs", type=int, default=400, help="cap eval trajs for speed")
     ap.add_argument("--ckpt", default=None, help="override ckpt (e.g. +probe model); norm/data still per-domain")
     ap.add_argument("--tag", default="", help="label for this run in the header")
+    ap.add_argument("--use-action", action="store_true",
+                    help="privileged legacy upper bound; default is leak-free action-free rollout")
     args = ap.parse_args()
     cfg = DOMAINS[args.domain]
     ckpt_path = args.ckpt or cfg["ckpt"]
     dev = 'cuda'
     t0 = time.time()
+    gate_scores = []
+    gate_horizons = []
 
     # ---- action norm stats from ID-only TRAIN h5 (must match FT) ----
     with h5py.File(cfg["train_h5"], 'r') as f:
@@ -89,6 +94,8 @@ def main():
 
     # ---- load model ----
     model = torch.load(ckpt_path, map_location='cpu', weights_only=False).to(dev).eval()
+    if hasattr(model, "use_action"):
+        model.use_action = bool(args.use_action)
     for p in model.parameters(): p.requires_grad_(False)
 
     # ---- load eval data ----
@@ -128,15 +135,25 @@ def main():
         # real_emb: (T, D) tensor; act_norm: (T, A) tensor (normalized)
         T = real_emb.size(0)
         emb_hist = real_emb[:HS].clone()           # (HS, D)
-        act_emb_all = model.action_encoder(act_norm.unsqueeze(0))[0]  # (T, A_emb)
+        if args.use_action:
+            act_emb_all = model.action_encoder(act_norm.unsqueeze(0))[0]
+        else:
+            act_emb_all = torch.zeros(T, real_emb.size(-1), device=real_emb.device)
         preds = []
         for k in range(HS, T):
-            e_in = emb_hist[-HS:].unsqueeze(0)             # (1, HS, D)
-            a_in = act_emb_all[k - HS:k].unsqueeze(0)      # (1, HS, A_emb)
-            p = model.predict(e_in, a_in)[0, -1]           # (D,)  predicts frame k
+            e_in = emb_hist[-HS:].unsqueeze(0)
+            a_in = act_emb_all[k - HS:k].unsqueeze(0)
+            step = k - HS + 1
+            gipp = getattr(model, "gipp", None)
+            shadow = bool(gipp is not None and getattr(gipp, "shadow", False))
+            p = model.predict(e_in, a_in, rollout_step=step, apply_gipp=not shadow)[0, -1]
+            p_memory = gipp(p, e_in, rollout_step=step).squeeze(0) if shadow else p
+            if gipp is not None and hasattr(gipp, "last_gate_score"):
+                gate_scores.extend(gipp.last_gate_score.float().cpu().reshape(-1).tolist())
+                gate_horizons.extend([step] * gipp.last_gate_score.numel())
             preds.append(p)
-            emb_hist = torch.cat([emb_hist, p.unsqueeze(0)], 0)
-        return torch.stack(preds, 0)  # (T-HS, D), aligned to frames HS..T-1
+            emb_hist = torch.cat([emb_hist, p_memory.unsqueeze(0)], 0)
+        return torch.stack(preds, 0)
 
     # ---- pass 1: encode all selected trajs, collect real & predicted embs ----
     real_E, pred_E, meta = [], [], []  # meta: (ep, frame_k, partition, in_train)
@@ -151,7 +168,11 @@ def main():
         frames = pixels[rows[0]:rows[0] + T] if np.all(np.diff(rows) == 1) else pixels[:][rows]
         real_emb = encode_frames(frames)  # (T, D)
         raw_act = np.nan_to_num(action[rows]).astype(np.float64)
-        act_norm = torch.from_numpy(((raw_act - a_mean) / a_std).astype(np.float32)).to(dev)
+        if args.use_action:
+            act_np = ((raw_act - a_mean) / a_std).astype(np.float32)
+        else:
+            act_np = np.zeros_like(raw_act, dtype=np.float32)
+        act_norm = torch.from_numpy(act_np).to(dev)
         pred = ar_rollout(real_emb, act_norm)  # (T-HS, D)
 
         part = int(parts[ep])
@@ -161,7 +182,10 @@ def main():
         if cfg["ncol"] == 4:
             pos_t = proprio[rows][:, [0, 2]]; vel_t = state[rows][:, [0, 2]]
         else:
-            pos_t = proprio[rows][:, :2]; vel_t = action[rows][:, :2]
+            pos_t = proprio[rows][:, :2]
+            vel_t = np.empty_like(pos_t)
+            vel_t[:-1] = pos_t[1:] - pos_t[:-1]
+            vel_t[-1] = vel_t[-2]
         for j, k in enumerate(range(HS, T)):
             real_E.append(re[k]); pred_E.append(pe[j])
             pos_all.append(pos_t[k]); vel_all.append(vel_t[k])
@@ -207,7 +231,8 @@ def main():
         nmse = ((p - r) ** 2).sum(1) / ((r - r.mean(0)) ** 2).sum(1).mean()
         return cos.mean(), nmse.mean()
 
-    print(f"\n=== {args.domain} AR ROLLOUT (LeWM ID-only FT, history_size={HS}) ===")
+    protocol = "privileged-action" if args.use_action else "action-free"
+    print(f"\n=== {args.domain} AR ROLLOUT ({protocol}, history_size={HS}) ===")
     print(f"--- latent fidelity (pred vs real emb), test trajs, by partition ---")
     for p in range(4):
         m = te & (part_arr == p)
@@ -296,6 +321,16 @@ def main():
         rhos = [pearsonr(vel_all[m][:, d], pv[:, d])[0] for d in range(vel_all.shape[1])]
         print(f"  h={h:3d}  n={m.sum():5d}  " + "  ".join(f"vel{d}ρ={r:+.3f}" for d, r in enumerate(rhos)))
 
+    if gate_scores:
+        q = np.percentile(np.asarray(gate_scores), [10, 25, 50, 75, 90, 95, 99])
+        print("\n--- GIPP innovation score percentiles ---")
+        print("  " + "  ".join(f"p{p}={v:.4f}" for p, v in zip([10,25,50,75,90,95,99], q)))
+        gh = np.asarray(gate_horizons)
+        gs = np.asarray(gate_scores)
+        for h in [1, 2, 4, 8, 16, 28]:
+            if np.any(gh == h):
+                qh = np.percentile(gs[gh == h], [50, 75, 90])
+                print(f"  h={h}: p50={qh[0]:.4f} p75={qh[1]:.4f} p90={qh[2]:.4f}")
     print(f"\nTotal {time.time()-t0:.0f}s")
 
 

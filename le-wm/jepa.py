@@ -25,6 +25,12 @@ class JEPA(nn.Module):
         self.action_encoder = action_encoder
         self.projector = projector or nn.Identity()
         self.pred_proj = pred_proj or nn.Identity()
+        # Passive-video protocol switch.  When false the predictor receives a
+        # constant zero action embedding, so future frame displacement cannot
+        # leak through a synthetic "action" column.
+        self.use_action = True
+        # Optional post-predictor, pre-writeback GIPP module.
+        self.gipp = None
         # Optional structured 2nd-order integrator for the physical slot.
         # Attached post-construction in train.py when dynamics.enabled=true;
         # None -> pure black-box prediction (baseline behavior).
@@ -44,11 +50,14 @@ class JEPA(nn.Module):
         info["emb"] = rearrange(emb, "(b t) d -> b t d", b=b)
 
         if "action" in info:
-            info["act_emb"] = self.action_encoder(info["action"])
+            if self.use_action:
+                info["act_emb"] = self.action_encoder(info["action"])
+            else:
+                info["act_emb"] = torch.zeros_like(info["emb"])
 
         return info
 
-    def predict(self, emb, act_emb, action=None):
+    def predict(self, emb, act_emb, action=None, rollout_step=None, apply_gipp=True):
         """Predict next state embedding
         emb: (B, T, D)
         act_emb: (B, T, A_emb)
@@ -64,6 +73,9 @@ class JEPA(nn.Module):
             P = dyn.pos_dim
             pos_next = dyn(emb[..., :P], action)
             preds = torch.cat([pos_next, preds[..., P:]], dim=-1)
+        gipp = getattr(self, "gipp", None)
+        if gipp is not None and apply_gipp:
+            preds = gipp(preds, emb, rollout_step=rollout_step)
         return preds
 
     ####################
@@ -99,20 +111,20 @@ class JEPA(nn.Module):
         # rollout predictor autoregressively for n_steps
         HS = history_size
         for t in range(n_steps):
-            act_emb = self.action_encoder(act)
+            act_emb = self.action_encoder(act) if self.use_action else torch.zeros_like(emb)
             emb_trunc = emb[:, -HS:]  # (BS, HS, D)
             act_trunc = act_emb[:, -HS:]  # (BS, HS, A_emb)
-            pred_emb = self.predict(emb_trunc, act_trunc, action=act[:, -HS:])[:, -1:]  # (BS, 1, D)
+            pred_emb = self.predict(emb_trunc, act_trunc, action=act[:, -HS:], rollout_step=t + 1)[:, -1:]  # (BS, 1, D)
             emb = torch.cat([emb, pred_emb], dim=1)  # (BS, T+1, D)
 
             next_act = act_future[:, t : t + 1, :]  # (BS, 1, action_dim)
             act = torch.cat([act, next_act], dim=1)  # (BS, T+1, action_dim)
 
         # predict the last state
-        act_emb = self.action_encoder(act)  # (BS, T, A_emb)
+        act_emb = self.action_encoder(act) if self.use_action else torch.zeros_like(emb)
         emb_trunc = emb[:, -HS:]  # (BS, HS, D)
         act_trunc = act_emb[:, -HS:]  # (BS, HS, A_emb)
-        pred_emb = self.predict(emb_trunc, act_trunc, action=act[:, -HS:])[:, -1:]  # (BS, 1, D)
+        pred_emb = self.predict(emb_trunc, act_trunc, action=act[:, -HS:], rollout_step=n_steps + 1)[:, -1:]  # (BS, 1, D)
         emb = torch.cat([emb, pred_emb], dim=1)
 
         # unflatten batch and sample dimensions

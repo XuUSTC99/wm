@@ -98,6 +98,9 @@ def main():
     ap.add_argument("--dst", default=None)
     ap.add_argument("--img-size", type=int, default=224)
     ap.add_argument("--limit", type=int, default=0, help="cap total trajectories (0 = all)")
+    ap.add_argument("--action-mode", choices=["constant", "future_acceleration"],
+                    default="constant", help="constant is the leak-free passive-video protocol; "
+                    "future_acceleration reproduces the privileged legacy protocol")
     ap.add_argument("--mass-from-init", action="store_true", default=True,
                     help="use init_streams cols 0,1 as masses (default: True)")
     args = ap.parse_args()
@@ -168,7 +171,10 @@ def main():
                 # flatten ball x xy: (T, 2, 2) -> (T, 4) as (x1, y1, x2, y2)
                 d_proprio[lo:hi]     = pos2.reshape(T, 4)
                 d_state[lo:hi]       = vel.reshape(T, 4)
-                d_action[lo:hi]      = acc.reshape(T, 4)
+                if args.action_mode == "constant":
+                    d_action[lo:hi] = 0.0
+                else:
+                    d_action[lo:hi] = acc.reshape(T, 4)
                 d_mass[lo:hi]        = np.tile(np.array([m1, m2], np.float32), (T, 1))
                 d_coll[lo:hi]        = coll_mask
                 d_episode_idx[lo:hi] = ep_i

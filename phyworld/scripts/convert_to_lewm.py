@@ -77,6 +77,9 @@ def main():
                     help="square resize target (default 224 — matches le-wm img_size)")
     ap.add_argument("--limit", type=int, default=0,
                     help="cap total trajectories for a quick test (0 = all)")
+    ap.add_argument("--action-mode", choices=["constant", "future_velocity"],
+                    default="constant", help="constant is the leak-free passive-video protocol; "
+                    "future_velocity reproduces the privileged legacy protocol")
     args = ap.parse_args()
     if args.dst is None:
         stablewm_home = os.environ.get("STABLEWM_HOME") or os.path.expanduser("~/.stable_worldmodel")
@@ -105,7 +108,7 @@ def main():
         N = n_traj * T
         S = args.img_size
 
-        # writer
+        # write
         os.makedirs(os.path.dirname(args.dst), exist_ok=True)
         with h5py.File(args.dst, "w") as out:
             d_pixels = out.create_dataset(
@@ -131,14 +134,17 @@ def main():
 
                 pos = np.asarray(f[f"position_streams/{g}"][ti], dtype=np.float32)  # (T, 2)
                 # velocity as action: a[t] = pos[t+1] - pos[t], a[T-1] = a[T-2] (no future)
-                vel = np.empty_like(pos)
-                vel[:-1] = pos[1:] - pos[:-1]
-                vel[-1]  = vel[-2]
+                if args.action_mode == "constant":
+                    action = np.zeros_like(pos)
+                else:
+                    action = np.empty_like(pos)
+                    action[:-1] = pos[1:] - pos[:-1]
+                    action[-1] = action[-2]
 
                 lo, hi = offset, offset + T
                 d_pixels[lo:hi]      = frames
                 d_proprio[lo:hi]     = pos
-                d_action[lo:hi]      = vel
+                d_action[lo:hi]      = action
                 d_episode_idx[lo:hi] = ep_i
                 d_step_idx[lo:hi]    = np.arange(T, dtype=np.int64)
                 d_ep_len[ep_i]       = T

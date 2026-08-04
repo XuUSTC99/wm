@@ -12,6 +12,7 @@ from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
 from omegaconf import OmegaConf, open_dict
 
 from jepa import JEPA
+from gipp import GaugeInvariantPhysicsProjection
 from module import ARPredictor, Embedder, MLP, SIGReg, SecondOrderDynamics
 from utils import get_column_normalizer, get_img_preprocessor, ModelObjectCallBack
 
@@ -127,13 +128,19 @@ def lejepa_forward(self, batch, stage, cfg):
         # long-horizon drift that 1-step teacher forcing masks. Needs num_preds>1.
         emb_hist = ctx_emb.clone()
         preds = []
+        _gipp = getattr(self.model, "gipp", None)
+        _shadow = _gipp is not None and bool(getattr(_gipp, "shadow", False))
         for k in range(ctx_len, emb.size(1)):
             e_in = emb_hist[:, -ctx_len:]
             a_in = act_emb[:, k - ctx_len:k]
             a_raw = batch["action"][:, k - ctx_len:k]
-            p = self.model.predict(e_in, a_in, action=a_raw)[:, -1:]  # (B,1,D)
+            rollout_step = k - ctx_len + 1
+            p = self.model.predict(
+                e_in, a_in, action=a_raw, rollout_step=rollout_step,
+                apply_gipp=not _shadow)[:, -1:]  # (B,1,D)
             preds.append(p)
-            emb_hist = torch.cat([emb_hist, p], dim=1)
+            p_memory = _gipp(p, e_in, rollout_step=rollout_step) if _shadow else p
+            emb_hist = torch.cat([emb_hist, p_memory], dim=1)
         pred_emb = torch.cat(preds, dim=1)   # (B, H, D), H = T - ctx_len
         tgt_emb = emb[:, ctx_len:]           # (B, H, D)
     else:
@@ -265,10 +272,18 @@ def run(cfg):
 
     dataset = swm.data.HDF5Dataset(**cfg.data.dataset, transform=None)
     transforms = [get_img_preprocessor(source='pixels', target='pixels', img_size=cfg.img_size)]
+    _predictor_use_action = bool(cfg.wm.get("use_action", True))
     
     with open_dict(cfg):
         for col in cfg.data.dataset.keys_to_load:
             if col.startswith("pixels"):
+                continue
+
+            # A passive dataset still carries a schema-mandated action column.
+            # When the predictor is action-free, leave that constant placeholde
+            # unnormalized (zero variance is expected, not an error).
+            if col == "action" and not _predictor_use_action:
+                setattr(cfg.wm, "action_dim", dataset.get_dim(col))
                 continue
 
             normalizer = get_column_normalizer(dataset, col, col)
@@ -347,6 +362,35 @@ def run(cfg):
         projector=projector,
         pred_proj=predictor_proj,
     )
+    world_model.use_action = bool(cfg.wm.get("use_action", True))
+    print(f"[protocol] predictor use_action={world_model.use_action}", flush=True)
+
+    _gipp_cfg = cfg.get("gipp", None)
+    if _gipp_cfg is not None and bool(_gipp_cfg.get("enabled", False)):
+        _state_path = _gipp_cfg.get("state_path", None)
+        if not _state_path:
+            raise ValueError("gipp.enabled=true requires gipp.state_path")
+        world_model.gipp = GaugeInvariantPhysicsProjection.from_npz(
+            _state_path,
+            alpha=float(_gipp_cfg.get("alpha", 1.0)),
+            eps=float(_gipp_cfg.get("eps", 1e-4)),
+            gate=str(_gipp_cfg.get("gate", "constant")),
+            gate_threshold=float(_gipp_cfg.get("gate_threshold", 0.15)),
+            gate_temperature=float(_gipp_cfg.get("gate_temperature", 0.05)),
+            physics=str(_gipp_cfg.get("physics", "constant_velocity")),
+            gravity=_gipp_cfg.get("gravity", None),
+            horizon_start=float(_gipp_cfg.get("horizon_start", 8.0)),
+            horizon_temperature=float(_gipp_cfg.get("horizon_temperature", 2.0)),
+        )
+        world_model.gipp.shadow = bool(_gipp_cfg.get("shadow", False))
+        print(f"[gipp] loaded frozen projection from {_state_path}; "
+              f"alpha={world_model.gipp.alpha} physics={world_model.gipp.physics} "
+              f"shadow={world_model.gipp.shadow}", flush=True)
+        if bool(_gipp_cfg.get("freeze_projector", True)):
+            for p in world_model.projector.parameters():
+                p.requires_grad_(False)
+            world_model.projector.eval()
+            print("[gipp] froze representation projector to preserve decoder coordinates", flush=True)
 
     # Deep-supervision linear probe head (PIWM-style). Built unconditionally for
     # ckpt consistency; only contributes to loss when loss.probe.enabled=true.
@@ -390,9 +434,21 @@ def run(cfg):
     init_ckpt = cfg.get("init_from_ckpt")
     if init_ckpt:
         ck = torch.load(init_ckpt, map_location="cpu", weights_only=False)
+        if isinstance(ck, torch.nn.Module):
+            ck = ck.state_dict()
         if isinstance(ck, dict) and "state_dict" in ck:
             ck = ck["state_dict"]
-        ck = _remap_old_vit_keys(ck)
+        # Transformers has used both ViT naming layouts across releases.  Score
+        # the raw and remapped checkpoint keys against the actual instantiated
+        # model and select the compatible representation instead of assuming a
+        # package version.
+        _raw_ck = ck
+        _mapped_ck = _remap_old_vit_keys(ck)
+        _target_keys = set(world_model.state_dict())
+        _raw_score = sum(k in _target_keys for k in _raw_ck)
+        _mapped_score = sum(k in _target_keys for k in _mapped_ck)
+        ck = _mapped_ck if _mapped_score > _raw_score else _raw_ck
+        print(f"[init_from_ckpt] key_match raw={_raw_score} remapped={_mapped_score}", flush=True)
         prefixes = tuple(cfg.get("init_load_prefixes", ["encoder.", "projector.", "pred_proj."]))
         filtered = {k: v for k, v in ck.items() if k.startswith(prefixes)}
         missing, unexpected = world_model.load_state_dict(filtered, strict=False)
