@@ -1,36 +1,48 @@
-# 明日实验查看入口
+# 当前实验状态
 
-更新时间：2026-08-05 01:35（Asia/Shanghai）
+更新时间：2026-08-06 21:55（Asia/Shanghai）
 
-## 当前结论
+## 一句话结论
 
-当前最可信的结果是 Shadow-State Writeback，alpha=0.75。它在匀速域三个种子上保持 h1 完全不变，同时使 h16 平均改善 10.3%、h28 平均改善 5.0%，且两个长程节点均为三种子一致改善。OOD 仅作为附加指标，不作为当前主线判据。
+零训练 Shadow-State Writeback alpha=0.75 是当前唯一跨三个随机种子稳定改善 h16 与 h28、同时保持 h1 不变的配置。加入 5 epoch correction-aware 微调后结果反而不稳定，因此训练版已否决，零训练版保留为 ICLR 主方法候选。
 
-## 今晚任务队列
+## 已完成实验
 
-第一优先级是 6 个已启动的训练感知实验：三个 Shadow 微调与三个等训练量对照，全部 5 epoch，结束后自动评测 500 条轨迹。当前使用 GPU 2、4、5、6；GPU 2 与 4 各并行两个任务，以利用 80GB 显存。没有抢占 GPU 0、1、3、7 上已有的其他进程。
+- action-free 匀速、抛体与碰撞基线；
+- 固定输出投影 alpha=0.25/0.5/1.0；
+- innovation 门控与 horizon 门控；
+- Shadow 写回 alpha=0.5/0.65/0.75/1.0；
+- alpha=0.75 三种子 5 epoch 训练感知版本；
+- 三种子相同训练预算继续训练对照；
+- 每个最终训练实验均完成 500 条轨迹评测。
 
-第二优先级是在上述任务完成后汇总逐种子 h1、h8、h16、h28、ID 和 OOD 指标，判断收益来自 shadow 训练还是普通继续训练。只有 Shadow 相对等训练量对照仍在 h16/h28 稳定占优，才升级为论文主结果。
+## 当前可信结果
 
-第三优先级是补更长预测范围。现有标准轨迹只能可靠评到 h28；将先审计原始 HDF5 是否含更长帧序列。如果数据足够，则补 h64/h128；如果不足，则生成独立长轨迹测试集，绝不把无真值的自回归稳定性当精度。
+零训练 Shadow alpha=0.75：
 
-第四优先级是完成碰撞域基线汇总以及 shadow 适用性测试。抛体域已有直接物理投影失败证据，不在长程主线确认前继续烧大量 GPU。
+| 指标 | 基线均值 | Shadow 均值 | 相对改善 |
+|---|---:|---:|---:|
+| h1 | 0.0148 | 0.0148 | 0.0% |
+| h16 | 0.6735 | 0.6043 | 10.3% |
+| h28 | 1.5517 | 1.4746 | 5.0% |
 
-## 文件位置
+训练感知 Shadow 相对等训练量对照：
 
-- 当前人工结论：reports/iclr_gipp/RESULTS.md
-- 自动指标表：reports/iclr_gipp/AUTO_RESULTS.md 与 metrics.csv
-- 方法与创新性：reports/iclr_gipp/NOVELTY_AND_METHOD.md
-- 实验设计：reports/iclr_gipp/EXPERIMENT_DESIGN.md
-- 实际实现：reports/iclr_gipp/IMPLEMENTATION.md
-- 训练日志：runs/iclr_gipp/finetune/
-- 评测日志：runs/iclr_gipp/eval/
-- 模型权重：/data1/likun-share/junjxu/.stable_worldmodel/iclr_gipp/finetune/
+| 指标 | 对照均值 | Shadow 均值 | 相对变化 |
+|---|---:|---:|---:|
+| h16 | 0.6605 | 0.7451 | +12.8% 退化 |
+| h28 | 1.5404 | 1.5155 | -1.6% 改善但种子不一致 |
+| both-OOD | 0.7708 | 0.8008 | +3.9% 退化 |
 
-## 明日判决规则
+## 文件入口
 
-- 通过：Shadow 相对等训练量对照在三个种子的 h16、h28 均值上改善，并且至少两个种子同向，h1 基本不变。
-- 条件通过：h16 稳定改善但 h28 方差较大；继续做长轨迹与校正强度自适应。
-- 否决：收益可被普通继续训练解释，或 h28 只由单个种子贡献。
+- 详细人工判决：`reports/iclr_gipp/RESULTS.md`
+- 自动全量指标：`reports/iclr_gipp/AUTO_RESULTS.md`
+- 机器可读指标：`reports/iclr_gipp/metrics.csv`
+- 方法与创新性：`reports/iclr_gipp/NOVELTY_AND_METHOD.md`
+- 实现说明：`reports/iclr_gipp/IMPLEMENTATION.md`
+- 原始评测日志：`runs/iclr_gipp/eval/`
+- 训练日志：`runs/iclr_gipp/finetune/`
+- 模型权重：`/data1/likun-share/junjxu/.stable_worldmodel/iclr_gipp/finetune/`
 
-所有文档使用中文；所有代码、训练和数据操作均在远程主机完成。
+所有结果均来自远程主机，未在本地执行或保存训练产物。
