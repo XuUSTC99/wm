@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 PARTS = ("ID", "r/m-OOD", "v-OOD", "both-OOD")
@@ -83,6 +84,50 @@ def context_features(context, train, pca_dim):
     return PCA(n_components=dim, random_state=0).fit(
         scaled[train]).transform(scaled)
 
+def routed_split_conformal(
+        features, target, train, parts, fallback, delta=0.1):
+    historical = np.flatnonzero(train)
+    fit, calibration = train_test_split(
+        historical,
+        test_size=0.25,
+        random_state=0,
+        stratify=parts[historical],
+    )
+    model = ExtraTreesRegressor(
+        n_estimators=500,
+        min_samples_leaf=4,
+        max_features="sqrt",
+        n_jobs=-1,
+        random_state=0,
+    ).fit(features[fit], target[fit])
+    prediction = model.predict(features)
+    candidate = prediction.argmin(1)
+    predicted_gain = (
+        prediction[:, fallback]
+        - prediction[np.arange(len(train)), candidate]
+    )
+    actual_gain = (
+        target[:, fallback]
+        - target[np.arange(len(train)), candidate]
+    )
+    level = min(
+        1.0,
+        np.ceil((len(calibration) + 1) * (1 - delta))
+        / len(calibration),
+    )
+    overestimation = (
+        predicted_gain[calibration] - actual_gain[calibration])
+    try:
+        quantile = np.quantile(overestimation, level, method="higher")
+    except TypeError:
+        quantile = np.quantile(
+            overestimation, level, interpolation="higher")
+    accept = (
+        (candidate != fallback)
+        & (predicted_gain - quantile > 0)
+    )
+    return np.where(accept, candidate, fallback)
+
 
 def selections(data, pca_dim):
     losses, train = data["losses"], data["train"]
@@ -108,6 +153,9 @@ def selections(data, pca_dim):
         "baseline": np.full(len(train), TAGS.index("baseline")),
         "history_best_fixed": np.full(len(train), best_fixed),
         "historical_all": historical(all_indices),
+        "routed_split_conformal": routed_split_conformal(
+            x, target, train, data["parts"],
+            fallback=TAGS.index("baseline")),
         "historical_small_alpha": historical(small_indices),
         "oracle_all": target.argmin(1),
         "oracle_small_alpha": small_indices[
@@ -235,6 +283,10 @@ def main():
             "small_alpha_tags": SMALL_ALPHA_TAGS,
             "long_horizon": "h>=16",
             "historical_feedback_episodes": 400,
+            "routed_split_fit_episodes": 300,
+            "routed_split_calibration_episodes": 100,
+            "routed_split_conformal_delta": 0.1,
+            "routed_split_guarantee": "marginal, not partition-conditional",
             "held_out_test_episodes": 100,
             "base_model_updated": False,
             "selector": "ExtraTreesRegressor",

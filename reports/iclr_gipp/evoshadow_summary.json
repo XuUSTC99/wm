@@ -19,7 +19,11 @@
     "dual_memory_gauge": "three-latent mean",
     "dual_memory_uses_historical_partition_labels": true,
     "id_probability_threshold": 0.5,
-    "candidate_conformal_delta": 0.1
+    "candidate_conformal_delta": 0.1,
+    "routed_split_conformal_delta": 0.1,
+    "routed_split_fit_episodes": 300,
+    "routed_split_calibration_episodes": 100,
+    "routed_split_guarantee": "marginal, not partition-conditional"
   },
   "seeds": {
     "1234": {
@@ -319,6 +323,43 @@
           },
           "long_gain_vs_fixed_pct": 0.0,
           "long_gain_vs_baseline_pct": 11.546554787976268
+        },
+        "routed_split_conformal": {
+          "long": 106.87982177734375,
+          "h16": 78.6619644165039,
+          "h28": 116.00439453125,
+          "all": 67.52406311035156,
+          "choice_counts": {
+            "baseline": 2,
+            "a050": 2,
+            "a065": 5,
+            "a075": 62,
+            "a100": 29
+          },
+          "by_partition": {
+            "ID": {
+              "n": 14,
+              "all": 27.534448623657227,
+              "long": 44.66006088256836
+            },
+            "r/m-OOD": {
+              "n": 16,
+              "all": 49.05647277832031,
+              "long": 78.890380859375
+            },
+            "v-OOD": {
+              "n": 29,
+              "all": 88.67389678955078,
+              "long": 139.7354736328125
+            },
+            "both-OOD": {
+              "n": 41,
+              "all": 73.42626953125,
+              "long": 115.80892181396484
+            }
+          },
+          "long_gain_vs_fixed_pct": 10.215244451354877,
+          "long_gain_vs_baseline_pct": 20.58229044202975
         },
         "oracle": {
           "long": 99.04426574707031,
@@ -621,6 +662,43 @@
           "long_gain_vs_baseline_pct": 19.918677041929243
         },
         "candidate_conformal_safe": {
+          "long": 118.88216400146484,
+          "h16": 78.69073486328125,
+          "h28": 137.5019989013672,
+          "all": 72.13442993164062,
+          "choice_counts": {
+            "baseline": 0,
+            "a050": 0,
+            "a065": 0,
+            "a075": 100,
+            "a100": 0
+          },
+          "by_partition": {
+            "ID": {
+              "n": 14,
+              "all": 21.058399200439453,
+              "long": 34.0394401550293
+            },
+            "r/m-OOD": {
+              "n": 16,
+              "all": 51.5086555480957,
+              "long": 86.75614166259766
+            },
+            "v-OOD": {
+              "n": 29,
+              "all": 95.76498413085938,
+              "long": 158.56100463867188
+            },
+            "both-OOD": {
+              "n": 41,
+              "all": 80.90982818603516,
+              "long": 132.32432556152344
+            }
+          },
+          "long_gain_vs_fixed_pct": 0.0,
+          "long_gain_vs_baseline_pct": 12.66820569384008
+        },
+        "routed_split_conformal": {
           "long": 118.88216400146484,
           "h16": 78.69073486328125,
           "h28": 137.5019989013672,
@@ -994,6 +1072,43 @@
           "long_gain_vs_fixed_pct": 0.0,
           "long_gain_vs_baseline_pct": 6.507901219313763
         },
+        "routed_split_conformal": {
+          "long": 119.01482391357422,
+          "h16": 92.68672180175781,
+          "h28": 134.86045837402344,
+          "all": 77.59651947021484,
+          "choice_counts": {
+            "baseline": 0,
+            "a050": 0,
+            "a065": 0,
+            "a075": 91,
+            "a100": 9
+          },
+          "by_partition": {
+            "ID": {
+              "n": 14,
+              "all": 37.46509552001953,
+              "long": 61.90144729614258
+            },
+            "r/m-OOD": {
+              "n": 16,
+              "all": 58.86211013793945,
+              "long": 90.7294692993164
+            },
+            "v-OOD": {
+              "n": 29,
+              "all": 107.5011978149414,
+              "long": 171.58775329589844
+            },
+            "both-OOD": {
+              "n": 41,
+              "all": 77.45883178710938,
+              "long": 112.36939239501953
+            }
+          },
+          "long_gain_vs_fixed_pct": 9.259650713160067,
+          "long_gain_vs_baseline_pct": 15.16494301080789
+        },
         "oracle": {
           "long": 94.02584838867188,
           "h16": 83.4344253540039,
@@ -1284,6 +1399,42 @@
           "long_mean": 135.3342030843099,
           "long_std": 2.65439648619099,
           "gain_vs_fixed_pct_mean": 0.0
+        }
+      }
+    },
+    "routed_split_conformal": {
+      "long_mean": 114.92560323079427,
+      "long_std": 6.9681668364489155,
+      "h16_mean": 83.34647369384766,
+      "h16_std": 8.088904930374778,
+      "h28_mean": 129.45561726888022,
+      "h28_std": 11.723735707631967,
+      "all_mean": 72.41833750406902,
+      "all_std": 5.042226384505082,
+      "long_gain_vs_fixed_pct_mean": 6.491631721504981,
+      "long_gain_vs_fixed_pct_std": 5.642185007056804,
+      "long_gain_vs_baseline_pct_mean": 16.13847971555924,
+      "long_gain_vs_baseline_pct_std": 4.045863892545777,
+      "by_partition": {
+        "ID": {
+          "long_mean": 46.866982777913414,
+          "long_std": 14.061498450448903,
+          "gain_vs_fixed_pct_mean": 1.2655041806159542
+        },
+        "r/m-OOD": {
+          "long_mean": 85.45866394042969,
+          "long_std": 6.025246061517338,
+          "gain_vs_fixed_pct_mean": 2.80877601860735
+        },
+        "v-OOD": {
+          "long_mean": 156.6280771891276,
+          "long_std": 16.013871684504057,
+          "gain_vs_fixed_pct_mean": 3.0662508524928414
+        },
+        "both-OOD": {
+          "long_mean": 120.16754659016927,
+          "long_std": 10.667616738274614,
+          "gain_vs_fixed_pct_mean": 11.079750525951203
         }
       }
     },

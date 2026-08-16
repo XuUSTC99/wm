@@ -22,7 +22,11 @@
     "dual_memory_gauge": "three-latent mean",
     "dual_memory_uses_historical_partition_labels": true,
     "id_probability_threshold": 0.5,
-    "candidate_conformal_delta": 0.1
+    "candidate_conformal_delta": 0.1,
+    "routed_split_conformal_delta": 0.1,
+    "routed_split_fit_episodes": 300,
+    "routed_split_calibration_episodes": 100,
+    "routed_split_guarantee": "marginal, not partition-conditional"
   },
   "seeds": {
     "1234": {
@@ -343,6 +347,46 @@
           },
           "long_gain_vs_fixed_pct": 0.0,
           "long_gain_vs_baseline_pct": 11.546554787976268
+        },
+        "routed_split_conformal": {
+          "long": 106.00566101074219,
+          "h16": 78.18506622314453,
+          "h28": 114.91437530517578,
+          "all": 67.11233520507812,
+          "choice_counts": {
+            "baseline": 1,
+            "a050": 1,
+            "a065": 6,
+            "a075": 60,
+            "a100": 30,
+            "const_acc": 2,
+            "damp095": 0,
+            "damp099": 0
+          },
+          "by_partition": {
+            "ID": {
+              "n": 14,
+              "all": 27.575897216796875,
+              "long": 44.745243072509766
+            },
+            "r/m-OOD": {
+              "n": 16,
+              "all": 48.79631042480469,
+              "long": 78.4313735961914
+            },
+            "v-OOD": {
+              "n": 29,
+              "all": 87.53738403320312,
+              "long": 137.2348175048828
+            },
+            "both-OOD": {
+              "n": 41,
+              "all": 73.31331634521484,
+              "long": 115.59564208984375
+            }
+          },
+          "long_gain_vs_fixed_pct": 10.94958615809016,
+          "long_gain_vs_baseline_pct": 21.231840981265883
         },
         "oracle": {
           "long": 95.60455322265625,
@@ -666,6 +710,46 @@
           "long_gain_vs_baseline_pct": 19.395329338364036
         },
         "candidate_conformal_safe": {
+          "long": 118.88216400146484,
+          "h16": 78.69073486328125,
+          "h28": 137.5019989013672,
+          "all": 72.13442993164062,
+          "choice_counts": {
+            "baseline": 0,
+            "a050": 0,
+            "a065": 0,
+            "a075": 100,
+            "a100": 0,
+            "const_acc": 0,
+            "damp095": 0,
+            "damp099": 0
+          },
+          "by_partition": {
+            "ID": {
+              "n": 14,
+              "all": 21.058399200439453,
+              "long": 34.0394401550293
+            },
+            "r/m-OOD": {
+              "n": 16,
+              "all": 51.5086555480957,
+              "long": 86.75614166259766
+            },
+            "v-OOD": {
+              "n": 29,
+              "all": 95.76498413085938,
+              "long": 158.56100463867188
+            },
+            "both-OOD": {
+              "n": 41,
+              "all": 80.90982818603516,
+              "long": 132.32432556152344
+            }
+          },
+          "long_gain_vs_fixed_pct": 0.0,
+          "long_gain_vs_baseline_pct": 12.66820569384008
+        },
+        "routed_split_conformal": {
           "long": 118.88216400146484,
           "h16": 78.69073486328125,
           "h28": 137.5019989013672,
@@ -1066,6 +1150,46 @@
           "long_gain_vs_fixed_pct": 0.0,
           "long_gain_vs_baseline_pct": 6.507901219313763
         },
+        "routed_split_conformal": {
+          "long": 119.6450424194336,
+          "h16": 92.319091796875,
+          "h28": 135.9808349609375,
+          "all": 77.82927703857422,
+          "choice_counts": {
+            "baseline": 0,
+            "a050": 0,
+            "a065": 0,
+            "a075": 91,
+            "a100": 9,
+            "const_acc": 0,
+            "damp095": 0,
+            "damp099": 0
+          },
+          "by_partition": {
+            "ID": {
+              "n": 14,
+              "all": 37.46509552001953,
+              "long": 61.90144729614258
+            },
+            "r/m-OOD": {
+              "n": 16,
+              "all": 58.86211013793945,
+              "long": 90.7294692993164
+            },
+            "v-OOD": {
+              "n": 29,
+              "all": 107.5011978149414,
+              "long": 171.58775329589844
+            },
+            "both-OOD": {
+              "n": 41,
+              "all": 78.02653503417969,
+              "long": 113.90656280517578
+            }
+          },
+          "long_gain_vs_fixed_pct": 8.779153868580122,
+          "long_gain_vs_baseline_pct": 14.715716426235128
+        },
         "oracle": {
           "long": 92.57081604003906,
           "h16": 82.59526062011719,
@@ -1359,6 +1483,42 @@
           "long_mean": 135.3342030843099,
           "long_std": 2.65439648619099,
           "gain_vs_fixed_pct_mean": 0.0
+        }
+      }
+    },
+    "routed_split_conformal": {
+      "long_mean": 114.8442891438802,
+      "long_std": 7.663974577663654,
+      "h16_mean": 83.0649642944336,
+      "h16_std": 8.018296706095768,
+      "h28_mean": 129.46573638916016,
+      "h28_std": 12.624779878508262,
+      "all_mean": 72.35868072509766,
+      "all_std": 5.361989078635767,
+      "long_gain_vs_fixed_pct_mean": 6.57624667555676,
+      "long_gain_vs_fixed_pct_std": 5.797668439481983,
+      "long_gain_vs_baseline_pct_mean": 16.205254367113696,
+      "long_gain_vs_baseline_pct_std": 4.471912878399877,
+      "by_partition": {
+        "ID": {
+          "long_mean": 46.89537684122721,
+          "long_std": 14.054898324086027,
+          "gain_vs_fixed_pct_mean": 1.2043397339064439
+        },
+        "r/m-OOD": {
+          "long_mean": 85.30566151936848,
+          "long_std": 6.276042460438902,
+          "gain_vs_fixed_pct_mean": 2.9987636577108563
+        },
+        "v-OOD": {
+          "long_mean": 155.79452514648438,
+          "long_std": 17.342753701501127,
+          "gain_vs_fixed_pct_mean": 3.6186866814602485
+        },
+        "both-OOD": {
+          "long_mean": 120.60884348551433,
+          "long_std": 10.180993930478582,
+          "gain_vs_fixed_pct_mean": 10.758815120938133
         }
       }
     },

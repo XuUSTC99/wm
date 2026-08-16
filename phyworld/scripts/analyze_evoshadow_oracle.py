@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
 from sklearn.linear_model import Ridge
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
 
 TAGS = ("baseline", "a050", "a065", "a075", "a100")
@@ -174,6 +174,47 @@ def choose(data, pca_dim, warmup, safety_margin, id_threshold,
     safe_gain = lower_gain[np.arange(len(train)), conformal_safe]
     conformal_safe[safe_gain <= 0] = fixed
 
+    # Split-conformal calibration after routing a single candidate. The first
+    # 300 historical episodes fit the router; the remaining stratified 100
+    # calibrate the marginal gain overestimation of that routed action. Unlike
+    # candidate-wise Bonferroni calibration, this pays for one action only.
+    route_fit, route_calibration = train_test_split(
+        historical_indices,
+        test_size=0.25,
+        random_state=0,
+        stratify=data["parts"][historical_indices],
+    )
+    routed_model = ExtraTreesRegressor(
+        n_estimators=500, min_samples_leaf=4, max_features="sqrt",
+        n_jobs=-1, random_state=0,
+    ).fit(dynamics_x[route_fit], target[route_fit])
+    routed_prediction = routed_model.predict(dynamics_x)
+    routed_candidate = routed_prediction.argmin(1)
+    routed_predicted_gain = (
+        routed_prediction[:, fixed]
+        - routed_prediction[np.arange(len(train)), routed_candidate]
+    )
+    routed_actual_gain = (
+        target[:, fixed]
+        - target[np.arange(len(train)), routed_candidate]
+    )
+    routed_level = min(
+        1.0,
+        np.ceil((len(route_calibration) + 1) * (1 - conformal_delta))
+        / len(route_calibration),
+    )
+    routed_quantile = higher_quantile(
+        routed_predicted_gain[route_calibration]
+        - routed_actual_gain[route_calibration],
+        routed_level,
+    )
+    routed_split_safe = routed_candidate.copy()
+    routed_accept = (
+        (routed_candidate != fixed)
+        & (routed_predicted_gain - routed_quantile > 0)
+    )
+    routed_split_safe[~routed_accept] = fixed
+
     test_ids = np.flatnonzero(~train)
     prequential = np.full(len(train), fixed, dtype=np.int64)
     for pos, ep in enumerate(test_ids):
@@ -191,6 +232,7 @@ def choose(data, pca_dim, warmup, safety_margin, id_threshold,
         "historical_gated_posthoc": historical_gated,
         "dual_memory_supervised": dual_memory,
         "candidate_conformal_safe": conformal_safe,
+        "routed_split_conformal": routed_split_safe,
         "oracle": target.argmin(1),
     }
 
@@ -307,6 +349,10 @@ def main():
             "dual_memory_uses_historical_partition_labels": True,
             "id_probability_threshold": args.id_threshold,
             "candidate_conformal_delta": args.conformal_delta,
+            "routed_split_conformal_delta": args.conformal_delta,
+            "routed_split_fit_episodes": 300,
+            "routed_split_calibration_episodes": 100,
+            "routed_split_guarantee": "marginal, not partition-conditional",
         },
         "seeds": seeds,
         "aggregate": aggregate(seeds),
