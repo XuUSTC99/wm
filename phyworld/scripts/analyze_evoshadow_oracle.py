@@ -18,16 +18,25 @@ TYPED_SPECS = (
     ("damp095", "uniform_s{seed}_damp095_a075.npz"),
     ("damp099", "uniform_s{seed}_damp099_a075.npz"),
 )
+CONTROL_SPECS = (
+    ("shuf11", "uniform_s{seed}_shuf11_a075.npz"),
+    ("shuf23", "uniform_s{seed}_shuf23_a075.npz"),
+    ("shuf47", "uniform_s{seed}_shuf47_a075.npz"),
+)
 PARTS = ("ID", "r/m-OOD", "v-OOD", "both-OOD")
 
 
-def load_seed(root, seed, typed_dir=None):
+def load_seed(root, seed, typed_dir=None, control_dir=None):
     tags = list(TAGS)
     paths = [root / f"s{seed}_{tag}.npz" for tag in tags]
     if typed_dir is not None:
         for tag, pattern in TYPED_SPECS:
             tags.append(tag)
             paths.append(typed_dir / pattern.format(seed=seed))
+    if control_dir is not None:
+        for tag, pattern in CONTROL_SPECS:
+            tags.append(tag)
+            paths.append(control_dir / pattern.format(seed=seed))
     bundles = []
     for tag, path in zip(tags, paths):
         if not path.is_file():
@@ -307,6 +316,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--typed-dir", type=Path)
+    parser.add_argument("--control-dir", type=Path)
     parser.add_argument("--seeds", type=int, nargs="+", default=[1234, 3072, 42])
     parser.add_argument("--output-json", type=Path)
     parser.add_argument("--pca-dim", type=int, default=64)
@@ -319,7 +329,8 @@ def main():
     seeds = {}
     loaded_tags = None
     for seed in args.seeds:
-        data = load_seed(args.input_dir, seed, args.typed_dir)
+        data = load_seed(
+            args.input_dir, seed, args.typed_dir, args.control_dir)
         loaded_tags = data["tags"]
         seeds[str(seed)] = {
             "audit": {
