@@ -38,10 +38,22 @@ SMALL_ALPHA_TAGS = (
     "impulse_d250a025",
     "impulse_d300a010",
 )
+ORTHOGONAL_TAGS = (
+    "ortho11", "ortho23", "ortho47",
+    "ortho59", "ortho71", "ortho89",
+)
 
 
-def load_seed(root, seed):
-    paths = [root / f"collision_s{seed}_{tag}.npz" for tag in TAGS]
+def load_seed(root, seed, orthogonal_dir=None):
+    if orthogonal_dir is None:
+        tags = TAGS
+        paths = [root / f"collision_s{seed}_{tag}.npz" for tag in tags]
+    else:
+        tags = ("baseline",) + ORTHOGONAL_TAGS
+        paths = [root / f"collision_s{seed}_baseline.npz"] + [
+            orthogonal_dir / f"collision_s{seed}_{tag}_a075.npz"
+            for tag in ORTHOGONAL_TAGS
+        ]
     bundles = []
     for path in paths:
         if not path.is_file():
@@ -52,7 +64,7 @@ def load_seed(root, seed):
         "meta", "episode_ids", "episode_parts",
         "episode_context", "episode_in_train",
     )
-    for tag, bundle in zip(TAGS[1:], bundles[1:]):
+    for tag, bundle in zip(tags[1:], bundles[1:]):
         for field in aligned:
             if not np.array_equal(bundle[field], ref[field]):
                 raise ValueError(
@@ -74,6 +86,7 @@ def load_seed(root, seed):
         "train": ref["episode_in_train"].astype(bool),
         "ids": ids,
         "horizons": horizons,
+        "tags": tags,
     }
 
 
@@ -146,21 +159,25 @@ def selections(data, pca_dim):
         local = model.predict(x).argmin(1)
         return np.asarray(candidate_indices)[local]
 
-    all_indices = np.arange(len(TAGS))
-    small_indices = np.array([TAGS.index(tag) for tag in SMALL_ALPHA_TAGS])
+    tags = data["tags"]
+    all_indices = np.arange(len(tags))
     best_fixed = int(target[train].mean(0).argmin())
-    return {
-        "baseline": np.full(len(train), TAGS.index("baseline")),
+    output = {
+        "baseline": np.full(len(train), tags.index("baseline")),
         "history_best_fixed": np.full(len(train), best_fixed),
         "historical_all": historical(all_indices),
         "routed_split_conformal": routed_split_conformal(
             x, target, train, data["parts"],
-            fallback=TAGS.index("baseline")),
-        "historical_small_alpha": historical(small_indices),
-        "oracle_all": target.argmin(1),
-        "oracle_small_alpha": small_indices[
-            target[:, small_indices].argmin(1)],
+            fallback=tags.index("baseline")),
     }
+    if all(tag in tags for tag in SMALL_ALPHA_TAGS):
+        small_indices = np.array([tags.index(tag) for tag in SMALL_ALPHA_TAGS])
+        output["historical_small_alpha"] = historical(small_indices)
+    output["oracle_all"] = target.argmin(1)
+    if all(tag in tags for tag in SMALL_ALPHA_TAGS):
+        output["oracle_small_alpha"] = small_indices[
+            target[:, small_indices].argmin(1)]
+    return output
 
 
 def collision_phases(eval_h5, episode_ids, horizons):
@@ -205,7 +222,7 @@ def summarize(data, choices, phases):
             "all": float(frames[test].mean()),
             "choice_counts": {
                 tag: int((choice[test] == index).sum())
-                for index, tag in enumerate(TAGS)
+                for index, tag in enumerate(data["tags"])
             },
             "by_partition": {},
             "by_phase": {},
@@ -262,6 +279,7 @@ def aggregate(seed_results):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=Path, required=True)
+    parser.add_argument("--orthogonal-dir", type=Path)
     parser.add_argument("--eval-h5", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--seeds", nargs="+", type=int, default=[1234, 3072])
@@ -269,8 +287,10 @@ def main():
     args = parser.parse_args()
 
     seed_results = {}
+    loaded_tags = None
     for seed in args.seeds:
-        data = load_seed(args.input_dir, seed)
+        data = load_seed(args.input_dir, seed, args.orthogonal_dir)
+        loaded_tags = data["tags"]
         phases = collision_phases(
             args.eval_h5, data["ids"], data["horizons"])
         choice = selections(data, args.pca_dim)
@@ -279,8 +299,9 @@ def main():
         }
     result = {
         "protocol": {
-            "expert_tags": TAGS,
-            "small_alpha_tags": SMALL_ALPHA_TAGS,
+            "expert_tags": loaded_tags,
+            "small_alpha_tags": (
+                SMALL_ALPHA_TAGS if args.orthogonal_dir is None else []),
             "long_horizon": "h>=16",
             "historical_feedback_episodes": 400,
             "routed_split_fit_episodes": 300,

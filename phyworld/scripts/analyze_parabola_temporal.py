@@ -21,12 +21,24 @@ TAGS = (
     "k3_gravity_a010",
     "k3_gravity_a025",
 )
+ORTHOGONAL_TAGS = (
+    "ortho11", "ortho23", "ortho47",
+    "ortho59", "ortho71", "ortho89",
+)
 
 
-def load_seed(root, seed):
+def load_seed(root, seed, orthogonal_dir=None):
+    if orthogonal_dir is None:
+        tags = TAGS
+        paths = [root / f"parabola_s{seed}_{tag}.npz" for tag in tags]
+    else:
+        tags = ("baseline",) + ORTHOGONAL_TAGS
+        paths = [root / f"parabola_s{seed}_baseline.npz"] + [
+            orthogonal_dir / f"parabola_s{seed}_{tag}_a075.npz"
+            for tag in ORTHOGONAL_TAGS
+        ]
     bundles = []
-    for tag in TAGS:
-        path = root / f"parabola_s{seed}_{tag}.npz"
+    for path in paths:
         if not path.is_file():
             raise FileNotFoundError(path)
         bundles.append(np.load(path, allow_pickle=False))
@@ -35,7 +47,7 @@ def load_seed(root, seed):
         "meta", "episode_ids", "episode_parts",
         "episode_context", "episode_in_train",
     )
-    for tag, bundle in zip(TAGS[1:], bundles[1:]):
+    for tag, bundle in zip(tags[1:], bundles[1:]):
         for field in aligned:
             if not np.array_equal(bundle[field], ref[field]):
                 raise ValueError(
@@ -53,6 +65,7 @@ def load_seed(root, seed):
         "parts": ref["episode_parts"],
         "train": ref["episode_in_train"].astype(bool),
         "horizons": horizons,
+        "tags": tags,
     }
 
 
@@ -127,7 +140,7 @@ def selections(data, pca_dim):
             features, target, train, data["parts"], fallback=0),
         "oracle": target.argmin(1),
     }
-    for index, tag in enumerate(TAGS[1:], start=1):
+    for index, tag in enumerate(data["tags"][1:], start=1):
         output["fixed_" + tag.removeprefix("k3_gravity_")] = np.full(
             len(train), index, dtype=np.int64)
     return output
@@ -148,7 +161,7 @@ def summarize(data, choices):
             "all": float(frames[test].mean()),
             "choice_counts": {
                 tag: int((choice[test] == index).sum())
-                for index, tag in enumerate(TAGS)
+                for index, tag in enumerate(data["tags"])
             },
             "by_partition": {},
         }
@@ -196,6 +209,7 @@ def aggregate(seed_results):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=Path, required=True)
+    parser.add_argument("--orthogonal-dir", type=Path)
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument(
         "--seeds", nargs="+", type=int, default=[1234, 3072, 42])
@@ -203,15 +217,17 @@ def main():
     args = parser.parse_args()
 
     seed_results = {}
+    loaded_tags = None
     for seed in args.seeds:
-        data = load_seed(args.input_dir, seed)
+        data = load_seed(args.input_dir, seed, args.orthogonal_dir)
+        loaded_tags = data["tags"]
         choice = selections(data, args.pca_dim)
         seed_results[str(seed)] = {
             "metrics": summarize(data, choice),
         }
     result = {
         "protocol": {
-            "expert_tags": TAGS,
+            "expert_tags": loaded_tags,
             "temporal_history_size": 3,
             "long_horizon": "h>=16",
             "historical_feedback_episodes": 400,
