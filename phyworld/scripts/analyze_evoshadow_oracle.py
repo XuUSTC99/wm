@@ -23,10 +23,21 @@ CONTROL_SPECS = (
     ("shuf23", "uniform_s{seed}_shuf23_a075.npz"),
     ("shuf47", "uniform_s{seed}_shuf47_a075.npz"),
 )
+ORTHOGONAL_CONTROL_SPECS = (
+    ("ortho11", "uniform_s{seed}_ortho11_a075.npz"),
+    ("ortho23", "uniform_s{seed}_ortho23_a075.npz"),
+    ("ortho47", "uniform_s{seed}_ortho47_a075.npz"),
+)
+EVOLVED_CONTROL_SPECS = (
+    ("evo08", "uniform_s{seed}_evo08_a075.npz"),
+    ("evo16", "uniform_s{seed}_evo16_a075.npz"),
+    ("evo32", "uniform_s{seed}_evo32_a075.npz"),
+)
 PARTS = ("ID", "r/m-OOD", "v-OOD", "both-OOD")
 
 
-def load_seed(root, seed, typed_dir=None, control_dir=None):
+def load_seed(root, seed, typed_dir=None, control_dir=None,
+              orthogonal_control_dir=None, evolved_control_dir=None):
     tags = list(TAGS)
     paths = [root / f"s{seed}_{tag}.npz" for tag in tags]
     if typed_dir is not None:
@@ -37,6 +48,14 @@ def load_seed(root, seed, typed_dir=None, control_dir=None):
         for tag, pattern in CONTROL_SPECS:
             tags.append(tag)
             paths.append(control_dir / pattern.format(seed=seed))
+    if orthogonal_control_dir is not None:
+        for tag, pattern in ORTHOGONAL_CONTROL_SPECS:
+            tags.append(tag)
+            paths.append(orthogonal_control_dir / pattern.format(seed=seed))
+    if evolved_control_dir is not None:
+        for tag, pattern in EVOLVED_CONTROL_SPECS:
+            tags.append(tag)
+            paths.append(evolved_control_dir / pattern.format(seed=seed))
     bundles = []
     for tag, path in zip(tags, paths):
         if not path.is_file():
@@ -317,6 +336,8 @@ def main():
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--typed-dir", type=Path)
     parser.add_argument("--control-dir", type=Path)
+    parser.add_argument("--orthogonal-control-dir", type=Path)
+    parser.add_argument("--evolved-control-dir", type=Path)
     parser.add_argument("--seeds", type=int, nargs="+", default=[1234, 3072, 42])
     parser.add_argument("--output-json", type=Path)
     parser.add_argument("--pca-dim", type=int, default=64)
@@ -330,7 +351,8 @@ def main():
     loaded_tags = None
     for seed in args.seeds:
         data = load_seed(
-            args.input_dir, seed, args.typed_dir, args.control_dir)
+            args.input_dir, seed, args.typed_dir, args.control_dir,
+            args.orthogonal_control_dir, args.evolved_control_dir)
         loaded_tags = data["tags"]
         seeds[str(seed)] = {
             "audit": {

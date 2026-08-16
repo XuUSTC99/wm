@@ -13,10 +13,12 @@
 |---|---:|---|---|
 | uniform_motion | 3 seeds × 500 条 | 路由后 split-conformal：16.33% 覆盖，长程改善 6.58%，四分区均值为正 | 主证据已完成 |
 | parabola | 3 seeds × 500 条 | K=3 时序解码修复单帧注入失败；安全路由改善 2.42%，四分区均值为正 | 跨域证据已完成 |
-| collision | 2 seeds × 500 条 | 冲量专家历史路由改善 9.01%，但 r/m-OOD 尚不安全 | 探索性证据；seed42 训练中 |
+| collision | 3 seeds × 500 条 | 冲量专家历史路由改善 7.88%，但 r/m-OOD 退化 17.85% | 三种子完成；条件安全未过 |
 | α-only 自进化 | 3 seeds × 500 条 | 历史反馈改善 11.62%，oracle 22.21%，但无拒绝路由伤害 ID | 机制审计已完成 |
 | typed physics | 3 seeds × 500 条 | 相对固定 α=.75 改善 12.43%，oracle 24.07%，但未优于打乱对照 | 物理特异性未通过 |
 | 匹配非物理对照 | 3 seeds × 3 个打乱专家 | 历史路由 12.39%，安全路由 7.54%，oracle 26.96% | 已完成；触发止损条件 |
+| 正交运输候选 | 3 seeds × 3 个候选 | 历史路由 20.52%，安全路由 15.30%，四分区均不退化 | 当前 uniform 最强结果 |
+| 第一代局部突变 | 3 seeds × 3 个子代 | 安全路由 13.33%，但 ID 退化 7.05% | 未超过亲本，负结果 |
 
 当前一句话结论：**EvoShadow 能在冻结世界模型的前提下，通过时序物理状态、外部专家记忆和带拒绝的 shadow 写回缓解长程漂移；OOD 改善是重要分解结果，但目前还不能声称普遍的条件安全保证。**
 
@@ -43,11 +45,13 @@
 6. 将专家池从不同 α 扩展到恒加速度与阻尼专家后，历史选择器增益为 **12.43%**，oracle 为 **24.07%**；但匹配打乱物理对照分别达到 **12.39%** 和 **26.96%**，路由后标定也以 **7.54%** 高于 typed 的 **6.58%**。因此当前结果只能证明“多样化运输候选”有用，不能证明收益来自正确物理语义。
 7. 候选级 Bonferroni conformal 在 δ=.1 下仍为 0% 覆盖；改为“300 条拟合单候选路由 + 100 条独立 split-conformal 标定”后，uniform typed 池获得 **16.33% 覆盖率和 6.58% 长程增益**，parabola 获得 **14.00% 覆盖率和 2.42% 增益**，两者四分区平均均为正。但该保证仅为边际保证，collision 的 r/m-OOD 仍失败。
 8. parabola 的 K=3 时序状态解码将单帧重力注入的全面退化翻转为三种子正结果：固定 α=.10 平均改善 **1.20% ± 0.59%**，400 条历史反馈路由改善 **3.72% ± 3.30%**，且四个分区平均全部为正。
-9. collision 二维法向冲量专家在两个可用种子上完成审计：历史全池平均改善 **9.01%**，小 α 池改善 **3.47%**，oracle 为 **32.52%**；但全池伤害 r/m-OOD，小池 ID 约退化 1.02%，安全路由仍未解决。
+9. collision 二维法向冲量专家已完成三种子审计：历史全池平均改善 **7.88%**，小 α 池改善 **2.31%**，安全路由改善 **5.64%**，oracle 为 **33.15%**；三个种子总体均可获得正增益，但 r/m-OOD 仍分别退化 17.85%/10.97%。
+10. 更严格的标准化正交对照显著超过 typed physics：历史路由改善 **20.52%**，路由后标定改善 **15.30%**，oracle 为 **36.37%**；安全路由在 ID、r/m-OOD、v-OOD、both-OOD 上分别为 **0.00%/+7.42%/+12.29%/+21.98%**。这说明有效对象是 latent 运输基，而不是当前手工物理语义。
+11. 用前 300 条历史反馈选择 ortho47 亲本并生成三个正交流形子代后，历史/安全/oracle 分别为 **17.75%/13.33%/33.38%**，均未超过亲本池，且安全路由 ID 退化 7.05%。第一代局部突变不构成持续自进化证据。
 
 最终建议方法为 **EvoShadow：冻结 LeWM + 时序状态接口 + 多样化候选运输 + 外部记忆 + 风险校准拒绝 + Shadow 写回**。有类型物理专家保留为待验证模块，不再作为已证实的核心贡献。
 
-当前结论强度：uniform_motion 与 parabola 已形成三种子正结果，collision 已形成两种子探索性正结果，支持“时序状态解码 + 外部记忆 + 选择性 shadow 写回”缓解长程漂移；但尚未形成完整 ICLR 主结果。uniform 的匹配对照已经否定当前 typed physics 的特异性解释，仍缺 collision 第三种子、分布切换、parabola/collision 匹配对照和跨数据集验证。
+当前结论强度：uniform_motion、parabola 与 collision 均已形成三种子结果，支持“时序状态接口 + 外部运输记忆 + 选择性 shadow 写回”缓解长程漂移；但尚未形成完整 ICLR 主结果。uniform 的两级匹配对照已经否定当前 typed physics 的特异性解释，并发现标准化正交运输显著更强；仍缺分布切换、parabola/collision 匹配对照和跨数据集验证。
 
 ## 2. 研究问题与失败机制
 
@@ -126,7 +130,7 @@ Shadow-State 不替换当前预测输出，而是：
 flowchart LR
     A["前三帧/当前观测"] --> B["冻结 LeWM"]
     B --> C["原始预测输出"]
-    B --> D["有类型物理专家群体"]
+    B --> D["物理/正交候选运输池"]
     E["预测—观测失配"] --> F["动力学记忆"]
     E --> G["Gauge/外观记忆"]
     F --> H["收益与不确定性选择器"]
@@ -264,13 +268,13 @@ flowchart LR
 | uniform α-only | 固定 α=.75 | 15.67% | **+6.49%** | +1.27% | +2.81% | +3.07% | **+11.08%** |
 | uniform typed | 固定 α=.75 | 16.33% | **+6.58%** | +1.20% | +3.00% | +3.62% | **+10.76%** |
 | parabola K=3 | baseline | 14.00% | **+2.42%** | +1.18% | **+10.05%** | +0.90% | +2.14% |
-| collision 冲量 | baseline | 38.00% | **+7.67%** | -0.02% | **-7.61%** | +0.12% | +12.23% |
+| collision 冲量 | baseline | 27.67% | **+5.64%** | -0.02% | **-10.97%** | +0.08% | +10.05% |
 
 逐种子审计：
 
 - uniform typed：seed 1234/42 分别覆盖 40%/9% 并改善 10.95%/8.78%，seed 3072 全部拒绝；
 - parabola：三个种子覆盖 9%/11%/22%，分别改善 1.47%/0.57%/5.22%，每个种子的四分区均未观察到退化；
-- collision：seed 1234 改善 13.69%，seed 3072 虽总体改善 1.65%，但 r/m-OOD 退化 28.78%。
+- collision：seed 1234/3072/42 覆盖 33%/43%/7%，总体分别改善 13.69%/1.65%/1.57%；seed 3072 的 r/m-OOD 仍退化 28.78%。
 
 判决：路由后标定恢复了非零覆盖，并在 uniform/parabola 上得到当前最可信的无测试泄漏结果；但 split conformal 只提供交换性假设下的**边际**风险控制，不提供每个 OOD 分区的条件保证。collision 反例证明不能把总体安全外推为分区安全，下一步必须做 Mondrian/分组校准、最差组风险约束或 gauge 条件化回退。
 
@@ -311,7 +315,34 @@ flowchart LR
 
 机器结果：`reports/iclr_gipp/evoshadow_control_summary.json`。
 
-### 5.10 parabola：K=3 时序状态解码三种子结果
+### 5.10 标准化正交运输与第一代外部进化
+
+为排除“置换只是过弱对照”，进一步在标准化状态空间构造随机正交变换。对原解码器使用 `D Q D^{-1}` 左乘，其中 `D` 为状态尺度、`Q` 为跨位置/速度块的 Haar 正交矩阵。该操作保持参数量、解码器秩、latent 经验协方差以及标准化解码器奇异谱不变，只改变候选运输基。每个种子使用 3 个固定随机候选，候选总数与 typed 池同为 8。
+
+| 候选池 | 历史路由增益 | 路由后标定增益 | oracle 增益 |
+|---|---:|---:|---:|
+| typed physics | +12.43% | +6.58% | +24.07% |
+| 跨块置换 | +12.39% | +7.54% | +26.96% |
+| 标准化正交运输 | **+20.52%** | **+15.30%** | **+36.37%** |
+
+正交池安全路由的平均非固定覆盖率为 **19.67%**。逐种子覆盖率为 21%/4%/34%，长程增益为 15.66%/2.66%/27.57%，三种子均为正但标准差较大（**15.30% ± 12.46%**）；四分区平均增益为：
+
+| ID | r/m-OOD | v-OOD | both-OOD |
+|---:|---:|---:|---:|
+| 0.00% | +7.42% | +12.29% | +21.98% |
+
+随后进行一代外部进化实验：只用最前 300 条历史轨迹比较初代正交候选，三个模型种子均选择 `ortho47` 为正交亲本；在其正交流形邻域以 0.08/0.16/0.32 三个步长生成子代。后 100 条校准轨迹和最终 100 条测试轨迹不参与亲本选择。
+
+| 候选池 | 历史路由增益 | 路由后标定增益 | oracle 增益 | ID 安全路由 |
+|---|---:|---:|---:|---:|
+| 初代正交池 | **+20.52%** | **+15.30%** | **+36.37%** | 0.00% |
+| 第一代局部子代 | +17.75% | +13.33% | +33.38% | **-7.05%** |
+
+判决：随机正交运输候选是当前 uniform_motion 最强结果，并显著反驳“手工物理语义是收益来源”的解释；但第一代局部突变没有超过亲本，且重新引入 ID 风险。因此可以主张“反馈选择的外部运输基”有潜力，不能声称已经实现持续自进化。下一轮应让进化目标直接包含校准后最差组风险，而不是只按历史平均损失选择亲本。
+
+机器结果：`reports/iclr_gipp/evoshadow_orthogonal_control_summary.json`、`reports/iclr_gipp/evoshadow_evolved_control_summary.json`。
+
+### 5.11 parabola：K=3 时序状态解码三种子结果
 
 单帧状态解码器上的固定重力专家全部退化：seed 1234 的 α=.05/.10/.25 长程 SSE 分别为 115.52/118.71/129.81，均差于 baseline 113.01。诊断表明，真实帧 latent 可读不代表递归预测 latent 上的单帧速度读出可靠。
 
@@ -341,23 +372,24 @@ K=3 解码器用连续三个真实 latent 条件化当前状态，但协方差�
 
 判决：时序解码修复了物理注入的方向性错误，且 400 条历史反馈选择器在三个种子、四个分区平均全部为正。这是第二个物理域的三种子证据。限制是 α=.10 来自本轮 sweep，不能写成预注册固定超参；历史路由仍使用 400 条完整信息反馈，种子间方差较大。
 
-### 5.11 collision：二维冲量两种子结果
+### 5.12 collision：二维冲量三种子结果
 
-等质量冲量专家已改为支持两个二维物体：根据接触法向交换等质量物体的法向速度分量，保留切向分量，并兼容原一维测试。9 个 GIPP 单元测试全部通过。
+等质量冲量专家支持两个二维物体：根据接触法向交换等质量物体的法向速度分量，保留切向分量，并兼容原一维测试。10 个 GIPP 单元测试全部通过。
 
-候选池包含 baseline、恒速、三种接触距离和多档 α。两个现有 collision baseline 种子的结果：
+候选池包含 baseline、恒速、三种接触距离和多档 α。seed42 完成独立 20 epoch baseline 训练、状态解码拟合和 13 路评测后，三种子结果如下：
 
 | 方法 | 长程 SSE↓ | 相对 baseline | ID | r/m-OOD | v-OOD | both-OOD |
 |---|---:|---:|---:|---:|---:|---:|
-| baseline | 73.801 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
-| 历史全池路由 | 66.801 | **+9.01%** | -1.04% | -17.93% | +0.12% | **+16.04%** |
-| 历史小 α 路由 | 71.098 | **+3.47%** | -1.02% | +2.33% | +0.09% | +4.51% |
-| 全池 oracle | 49.297 | **+32.52%** | +2.36% | +17.84% | +8.41% | **+40.79%** |
-| 小 α oracle | 68.315 | +7.34% | +0.97% | +7.21% | +1.45% | +8.75% |
+| baseline | 74.208 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| 历史全池路由 | 68.137 | **+7.88%** | -0.69% | **-17.85%** | +0.08% | **+14.53%** |
+| 历史小 α 路由 | 72.409 | +2.31% | -0.68% | +1.55% | +0.06% | +3.00% |
+| 路由后 split-conformal | 69.688 | **+5.64%** | -0.02% | **-10.97%** | +0.08% | **+10.05%** |
+| 全池 oracle | 49.272 | **+33.15%** | +8.18% | +20.66% | +7.98% | **+41.22%** |
+| 小 α oracle | 69.410 | +6.41% | +2.99% | +7.28% | +1.87% | +7.27% |
 
-固定专家总体只提供约 0.3% 的小幅收益，主要价值来自轨迹互补性。全池路由会让少量强专家进入 both-OOD，但同时严重伤害 r/m-OOD；小 α 池更稳健，却仍略超出 ID 退化 1% 的门槛。
+逐种子历史全池增益为 **12.99%/5.04%/5.62%**，安全路由增益为 **13.69%/1.65%/1.57%**，说明第三种子没有推翻总体正方向。固定专家总体仍只提供很小收益，主要价值来自逐轨迹互补性。全池路由会让少量强专家进入 both-OOD，但同时严重伤害 r/m-OOD；小 α 池更稳健，ID 平均退化控制在 1% 内。
 
-限制：服务器只有 seed 1234/3072 的 collision baseline 与解码器，尚缺第三种子；当前专家假设等质量，而数据质量会变化，因此下一步应引入质量条件化冲量或守恒量残差，并对相同候选数量的随机/非物理专家做匹配对照。
+限制：当前专家假设等质量，而数据质量会变化；split-conformal 只做边际控制，seed3072 的 r/m-OOD 仍严重失败。下一步应引入质量条件化冲量或守恒量残差，并在 collision 上加入与 uniform 相同的标准化正交运输对照。
 
 
 ## 6. 最终方法建议
@@ -366,17 +398,16 @@ K=3 解码器用连续三个真实 latent 条件化当前状态，但协方差�
 
 冻结 encoder、projector、predictor 和 readout。训练版 Shadow 的失败已经表明，继续让主干适应校正分布会破坏短程和 ID。
 
-### 6.2 有类型的物理专家
+### 6.2 谱保持候选运输族
 
-专家不应只是不同 α，而应对应明确动力学模式：
+当前证据不再支持把手工方程池作为核心。候选族应同时包含：
 
-- 恒速；
-- 恒加速度/重力；
-- 阻尼；
-- 碰撞冲量；
-- 自由残差/黑盒回退。
+- 原模型与固定 Shadow 回退；
+- 时序状态接口上的恒速、重力、阻尼和碰撞冲量；
+- 保持标准化解码谱的正交运输基；
+- 参数量匹配的自由低秩残差对照。
 
-每个专家只演化少量物理参数和 horizon-dependent 校正强度。
+物理候选作为可解释先验保留，但必须与非物理运输竞争，不能预设其正确。外部演化目标应同时优化历史收益、覆盖率和最差组风险；第一代只按平均损失做局部突变已经失败。
 
 ### 6.3 双外部记忆
 
@@ -411,9 +442,9 @@ K=3 解码器用连续三个真实 latent 条件化当前状态，但协方差�
 
 建议主张的组合创新：
 
-> 在冻结视觉世界模型上，将当前输出与未来递归记忆解耦：时序状态接口提出候选运输，外部记忆持续估计其收益，只有经独立风险标定确认有益的候选才写入 shadow state，否则回退原预测。
+> 在冻结视觉世界模型上，将当前输出与未来递归记忆解耦：以保持解码谱和经验协方差的候选运输基探索长程稳定方向，外部记忆从历史反馈估计其收益，只有经独立风险标定确认有益的候选才写入 shadow state，否则回退原预测。
 
-这一主张聚焦于“只改未来记忆 + 可拒绝外部演化”的组合。匹配对照已经表明，现阶段不能把有类型物理语义列为已验证贡献；它只能作为后续待证模块。
+这一主张聚焦于“只改未来记忆 + 反馈选择运输基 + 可拒绝外部适应”的组合。匹配对照已经表明，现阶段不能把有类型物理语义或持续自进化列为已验证贡献；它们只能作为后续待证模块。
 
 相对普通方法的关键差异：
 
@@ -444,13 +475,13 @@ K=3 解码器用连续三个真实 latent 条件化当前状态，但协方差�
 - 下一轮优先解决 collision 的 r/m-OOD 条件风险，比较 Mondrian/最差组风险与 gauge 条件化回退；
 - post-hoc 10% 门只作为上限参考。
 
-### P1：扩大物理专家族
+### P1：运输基搜索与物理特异性
 
-- 加入恒加速度、阻尼、碰撞冲量和自由残差；
-- 与 α-only pool 匹配选择器容量；
-- 验证收益来自物理模式，而非单纯增加候选数量。
-- 恒加速度、阻尼和 uniform 匹配打乱对照已完成；打乱对照未弱于 typed，当前物理语义路线未通过止损门槛；
-- 若继续，优先做独立非物理低秩运输与自由残差专家，不再无依据扩大手工方程池。
+- 标准化正交运输已完成并显著超过 typed physics；
+- 下一步加入独立低秩残差、Haar 正交池规模曲线和计算量匹配的普通 MoE；
+- 在 parabola/collision 上复现正交运输，检查是否只对 uniform 有效；
+- 物理方程只作为候选先验，不再无依据扩大手工方程池；
+- 验收必须同时报告候选数、评测计算量、coverage 和最差组风险。
 
 ### P2：双记忆消融
 
@@ -464,10 +495,12 @@ K=3 解码器用连续三个真实 latent 条件化当前状态，但协方差�
 
 反馈预算取 0、10、25、50、100、200、400 条，测试 ID→OOD、OOD-A→OOD-B，报告适应速度、遗忘、错误记忆污染和恢复速度。
 
+第一代亲本局部突变未超过初代池，下一轮使用带精英保留的 `(μ+λ)` 策略，并把校准后收益下界和最差组风险写入适应度；若仍不能超过静态池，则将“自进化”降级为“历史反馈选择”。
+
 ### P4：跨领域与跨数据集
 
 - parabola：K=3 时序重力专家三种子已完成，下一步做 K=1/K=3、差分跟踪和随机运输消融；
-- collision：二维冲量两种子已完成，下一步补第三种子、质量条件化冲量与 collision_event 分段选择；
+- collision：二维冲量三种子已完成，下一步做质量条件化冲量、正交运输对照与 collision_event 分段选择；
 - PhyWorld 之外至少一个真实视频或物理数据集；
 - 最终扩展到更长 horizon 和第二 backbone。
 
@@ -491,6 +524,8 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 - shuffled/random physics 与正确物理获得相同收益；
 - 改善只存在于单种子或单分区。
 
+当前状态：第三项止损条件已经触发，因此停止把“正确物理语义”作为 uniform 主解释；论文主线转向谱保持运输基与选择性 shadow 写回。第一代局部突变也未超过静态亲本池，持续自进化仍未通过验收。
+
 ## 10. 当前可写与不可写的论文结论
 
 目前可以写：
@@ -499,9 +534,11 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 >
 > 加入恒加速度和阻尼专家后，历史路由改善 12.43%，但匹配打乱物理对照为 12.39%；其安全路由和 oracle 还分别高于 typed。该对照否定了当前“收益来自正确物理语义”的解释，支持的是更一般的候选运输多样性。
 >
-> 在 parabola 上，K=3 时序状态解码将单帧物理注入的全面退化翻转为三种子正结果；历史反馈路由平均降低 3.72% ± 3.30% 的长程 SSE，四个分区平均均为正。collision 两种子历史路由平均降低 9.01%，但仍存在分区风险。
+> 保持标准化解码谱的随机正交运输进一步把 uniform 历史路由/安全路由/oracle 增益提高到 20.52%/15.30%/36.37%；安全路由四分区平均均不退化。这是当前最强 uniform 结果，但它是非物理运输证据。
 >
-> 不使用测试结果的 routed split-conformal 在 uniform typed 池上以 16.33% 覆盖率取得 6.58% 长程增益，在 parabola 上以 14.00% 覆盖率取得 2.42% 增益；两者四分区平均均为正。
+> 在 parabola 上，K=3 时序状态解码将单帧物理注入的全面退化翻转为三种子正结果；历史反馈路由平均降低 3.72% ± 3.30% 的长程 SSE，四个分区平均均为正。collision 三种子历史路由平均降低 7.88%，但仍存在 r/m-OOD 分区风险。
+>
+> 不使用测试结果的 routed split-conformal 在 uniform 正交池上以 19.67% 覆盖率取得 15.30% 长程增益，在 parabola 上以 14.00% 覆盖率取得 2.42% 增益；两者四分区平均均为非负。
 
 必须同时写明：
 
@@ -510,9 +547,10 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 - 10% 安全门是 post-hoc；
 - parabola 的 α=.10 来自本轮 sweep，不是预注册超参；
 - parabola/collision 历史路由同样使用 400 条完整信息反馈；
-- collision 当前只有两个种子，且等质量专家与变质量数据存在模型失配；
+- collision 已完成三个种子，但等质量专家与变质量数据仍存在模型失配；
 - 24.07% 是逐轨迹 oracle 上界，不是可部署结果；
 - shuffled physics 的历史路由/安全路由/oracle 分别为 12.39%/7.54%/26.96%，因此不得把 uniform typed physics 写成已验证贡献；
+- 正交池的强结果来自非物理运输，第一代局部子代没有超过亲本且 ID 退化 7.05%，因此不得声称已经实现持续自进化；
 - 双记忆的 ID 改善使用了历史分区标签，属于受监督原型；
 - 候选级 conformal 当前仍为 0% 覆盖；routed split-conformal 的保证仅是边际保证，不是分区条件保证；
 - collision 的 routed split-conformal 在 seed 3072 上使 r/m-OOD 退化 28.78%，因此尚不能声称跨域安全；
@@ -523,6 +561,7 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 - 所有分区稳定提升；
 - 已获得跨域、分区条件安全保证；
 - α-only 路由是最终创新；
+- 已证明正确物理语义或持续自进化是收益来源；
 - 已达到完整 ICLR 证据门槛。
 
 ## 11. 复现与产物
@@ -533,6 +572,8 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 - 机器结果：`reports/iclr_gipp/evoshadow_summary.json`
 - typed 专家机器结果：reports/iclr_gipp/evoshadow_typed_summary.json
 - 匹配打乱对照机器结果：reports/iclr_gipp/evoshadow_control_summary.json
+- 标准化正交对照：`reports/iclr_gipp/evoshadow_orthogonal_control_summary.json`
+- 第一代进化子代：`reports/iclr_gipp/evoshadow_evolved_control_summary.json`
 - parabola 时序结果：reports/iclr_gipp/parabola_temporal_summary.json
 - collision 冲量结果：reports/iclr_gipp/collision_evoshadow_summary.json
 - 逐轨迹导出：`phyworld/scripts/rollout_eval_id1k.py`
@@ -548,11 +589,14 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 - 自进化逐轨迹结果：`/data1/likun-share/junjxu/iclr_gipp/evoshadow_oracle/`
 - typed 专家逐轨迹结果：/data1/likun-share/junjxu/iclr_gipp/typed_experts/
 - 匹配打乱对照逐轨迹结果：`/data1/likun-share/junjxu/iclr_gipp/shuffled_controls/`
+- 正交运输逐轨迹结果：`/data1/likun-share/junjxu/iclr_gipp/orthogonal_controls/`
+- 进化子代逐轨迹结果：`/data1/likun-share/junjxu/iclr_gipp/evolved_controls/`
 - 训练权重：`/data1/likun-share/junjxu/.stable_worldmodel/iclr_gipp/`
 - 历史评测日志：`runs/iclr_gipp/eval/`
 - 训练日志：`runs/iclr_gipp/finetune/`
 - typed/parabola/collision 日志：runs/iclr_gipp/typed_experts/
 - 匹配对照日志：`runs/iclr_gipp/shuffled_controls/`
+- 正交/进化日志：`runs/iclr_gipp/orthogonal_controls/`、`runs/iclr_gipp/evolved_controls/`
 
 ### 复现命令
 
@@ -579,6 +623,16 @@ le-wm/.venv/bin/python phyworld/scripts/analyze_evoshadow_oracle.py \
   --input-dir /data1/likun-share/junjxu/iclr_gipp/evoshadow_oracle \
   --control-dir /data1/likun-share/junjxu/iclr_gipp/shuffled_controls \
   --output-json reports/iclr_gipp/evoshadow_control_summary.json
+
+le-wm/.venv/bin/python phyworld/scripts/analyze_evoshadow_oracle.py \
+  --input-dir /data1/likun-share/junjxu/iclr_gipp/evoshadow_oracle \
+  --orthogonal-control-dir /data1/likun-share/junjxu/iclr_gipp/orthogonal_controls \
+  --output-json reports/iclr_gipp/evoshadow_orthogonal_control_summary.json
+
+le-wm/.venv/bin/python phyworld/scripts/analyze_evoshadow_oracle.py \
+  --input-dir /data1/likun-share/junjxu/iclr_gipp/evoshadow_oracle \
+  --evolved-control-dir /data1/likun-share/junjxu/iclr_gipp/evolved_controls \
+  --output-json reports/iclr_gipp/evoshadow_evolved_control_summary.json
 ```
 
 复算 parabola 与 collision：
@@ -592,7 +646,7 @@ le-wm/.venv/bin/python phyworld/scripts/analyze_collision_evoshadow.py \
   --input-dir /data1/likun-share/junjxu/iclr_gipp/typed_experts \
   --eval-h5 /data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_collision_eval.h5 \
   --output-json reports/iclr_gipp/collision_evoshadow_summary.json \
-  --seeds 1234 3072
+  --seeds 1234 3072 42
 ~~~
 
 
@@ -612,9 +666,10 @@ le-wm/.venv/bin/python phyworld/scripts/analyze_collision_evoshadow.py \
 
 本报告及所有实验均在远程服务器完成，本地未保存训练产物。服务器仓库已包含最新实验提交，但 GitHub HTTPS 推送仍需要有效凭据；仓库中遗留的 `127.0.0.1:18089` 代理当前不可用，直连 GitHub 网络正常。
 
-截至 2026-08-16 22:31（Asia/Shanghai）：
+截至 2026-08-16 23:20（Asia/Shanghai）：
 
 - uniform 匹配打乱对照 9/9 已完成，结果和止损结论已写入第 5.9 节；
-- collision seed42 baseline 正在 GPU0 后台训练，日志位于 `runs/iclr_gipp/baseline/collision_s42_af_fr/训练.log`；
-- 权重自动保存到 `/data1/likun-share/junjxu/.stable_worldmodel/iclr_gipp/baseline/collision_s42_af_fr/`；
-- 训练结束后需拟合 seed42 状态解码器、评测冲量专家并把 collision 主表扩展为三种子。
+- 标准化正交对照和第一代局部子代均已完成 9/9，结果写入第 5.10 节；
+- collision seed42 已完成 20 epoch 训练、状态解码和 13 路评测，collision 主表已扩展为三种子；
+- seed42 权重位于 `/data1/likun-share/junjxu/.stable_worldmodel/iclr_gipp/baseline/collision_s42_af_fr/`，日志位于 `runs/iclr_gipp/baseline/collision_s42_af_fr/训练.log`；
+- 当前 GPU0 已无本项目训练/评测进程；下一轮优先做 parabola/collision 正交运输与最差组风险校准。
