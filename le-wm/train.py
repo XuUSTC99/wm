@@ -381,6 +381,9 @@ def run(cfg):
             gravity=_gipp_cfg.get("gravity", None),
             horizon_start=float(_gipp_cfg.get("horizon_start", 8.0)),
             horizon_temperature=float(_gipp_cfg.get("horizon_temperature", 2.0)),
+            damping=float(_gipp_cfg.get("damping", 0.95)),
+            acceleration_clip=float(_gipp_cfg.get("acceleration_clip", 3.0)),
+            collision_distance=float(_gipp_cfg.get("collision_distance", 2.5)),
         )
         world_model.gipp.shadow = bool(_gipp_cfg.get("shadow", False))
         print(f"[gipp] loaded frozen projection from {_state_path}; "

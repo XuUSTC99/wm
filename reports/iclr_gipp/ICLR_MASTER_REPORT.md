@@ -22,9 +22,15 @@
    - 400 条历史反馈：再降低 **11.62% ± 6.27%**；
    - 逐轨迹 oracle 上限：再降低 **22.21% ± 5.79%**。
 4. 当前历史选择器会伤害 ID，说明“自我进化”必须是**有拒绝能力的外部演化**，不能无条件改写，也不能反向更新 LeWM。
-5. 最终建议方法为 **EvoShadow：冻结 LeWM + 有类型物理专家 + 动力学/gauge 双记忆 + 置信选择 + Shadow 写回**。
+5. 新增的动力学/gauge 双记忆原型相对固定 α=.75 将长程误差降低 **9.38%**，同时使 ID 改善 **11.17%**，但 v-OOD 仍退化 **0.85%**。该结果证明“分开建模动力学与视觉 gauge”有价值，但当前版本使用了历史分区标签，只能作为受监督原型。
+6. 将专家池从不同 α 扩展到恒加速度与阻尼专家后，历史选择器增益由 **11.62%** 提高到 **12.43%**，oracle 增益由 **22.21%** 提高到 **24.07%**；类型专家相对 α-only oracle 平均额外降低 **2.35% ± 1.00%** 长程误差。
+7. 严格候选级 conformal 安全门在 δ=.1 下全部回退固定专家，得到 0% 额外收益和 0% 非固定覆盖率；这是安全校准尚未解决的负结果，不应包装成正结果。
+8. parabola 的 K=3 时序状态解码将单帧重力注入的全面退化翻转为三种子正结果：固定 α=.10 平均改善 **1.20% ± 0.59%**，400 条历史反馈路由改善 **3.72% ± 3.30%**，且四个分区平均全部为正。
+9. collision 二维法向冲量专家在两个可用种子上完成审计：历史全池平均改善 **9.01%**，小 α 池改善 **3.47%**，oracle 为 **32.52%**；但全池伤害 r/m-OOD，小池 ID 约退化 1.02%，安全路由仍未解决。
 
-当前结论强度：已经证明 uniform_motion 上的方向可行，但尚未形成完整 ICLR 主结果；缺少无泄漏安全门、parabola/collision 复现、分布切换和跨数据集验证。
+最终建议方法为 **EvoShadow：冻结 LeWM + 有类型物理专家 + 动力学/gauge 双记忆 + 风险校准拒绝 + Shadow 写回**。
+
+当前结论强度：uniform_motion 与 parabola 已形成三种子正结果，collision 已形成两种子探索性正结果，说明“时序状态解码 + typed physics + 历史外部记忆”具备跨物理域证据；但尚未形成完整 ICLR 主结果。仍缺少真正无泄漏且非零覆盖的安全门、collision 第三种子、分布切换、非物理匹配对照和跨数据集验证。
 
 ## 2. 研究问题与失败机制
 
@@ -215,6 +221,105 @@ flowchart LR
 
 该阈值查看过测试曲线，只能说明拒绝机制有潜力，不能作为无泄漏主结果。仅用历史流五折交叉验证选阈值时，seed 3072 的留出 ID 仍退化 79.05%，说明当前收益分数跨分布未校准。
 
+### 5.6 动力学/gauge 双记忆原型
+
+当前原型将前三帧冻结 latent 分解为两组上下文：
+
+- 动力学特征：相邻 latent 的两次一阶差分，用于预测各专家长程损失；
+- gauge 特征：三帧 latent 均值，用于识别视觉/参数分区，并在预测为 ID 时回退 baseline。
+
+| 方法 | 长程 SSE↓ | 相对固定 α=.75 | ID | r/m-OOD | v-OOD | both-OOD |
+|---|---:|---:|---:|---:|---:|---:|
+| 固定 α=.75 | 123.027 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| 普通历史记忆 | 108.479 | +11.62% | -22.91% | +7.32% | +6.79% | +20.10% |
+| 双记忆原型 | 111.301 | **+9.38%** | **+11.17%** | +4.78% | -0.85% | **+19.12%** |
+
+双记忆牺牲了部分总体收益，但把 ID 从严重退化转为改善，同时基本保留 both-OOD 收益。限制是 gauge 分类器使用了 400 条历史轨迹的真实分区标签，因此该数字不是无监督 test-time adaptation；后续必须用无标签漂移分数、episode 元数据不可见协议或自监督聚类替代。
+
+### 5.7 严格候选级 conformal 安全门
+
+我们在历史 400 条轨迹上做 5 折 out-of-fold 预测，对每个候选专家分别估计“预测收益高估量”的分位数，并使用 Bonferroni 修正。只有候选的校准后收益下界为正才允许离开固定 α=.75。
+
+在 δ=.1 下，该方法对三个随机种子的全部测试轨迹均拒绝：
+
+| 指标 | 结果 |
+|---|---:|
+| 相对固定 α=.75 的长程增益 | 0.00% |
+| 非固定专家覆盖率 | 0.00% |
+| ID / r/m-OOD / v-OOD / both-OOD 变化 | 全部 0.00% |
+
+该结果说明候选损失的尾部误差和多重比较惩罚远大于预测收益。它满足“不会比固定策略差”的经验结果，却没有实用性。下一版应比较 risk-controlling prediction sets、分层/局部 conformal、只对路由后的单候选校准，以及 coverage 受约束的选择性风险，而不是降低安全标准。
+
+### 5.8 有类型物理专家：uniform_motion 三种子
+
+在 α-only 专家池之外，新增三类已完成三种子评测的专家：
+
+- 恒加速度，α=.75；
+- 阻尼系数 .95，α=.75；
+- 阻尼系数 .99，α=.75。
+
+| 专家池 / 方法 | 长程 SSE↓ | 相对固定 α=.75 | 相对 baseline |
+|---|---:|---:|---:|
+| α-only 历史选择器 | 108.479 | +11.62% | +20.77% |
+| typed 历史选择器 | 107.456 | **+12.43%** | **+21.52%** |
+| α-only 双记忆 | 111.301 | +9.38% | +18.74% |
+| typed 双记忆 | 112.002 | +8.82% | +18.24% |
+| α-only oracle | 95.454 | +22.21% | +30.28% |
+| typed oracle | 93.195 | **+24.07%** | **+31.94%** |
+
+相对 α-only oracle，typed oracle 在种子 1234、3072、42 上分别额外改善 3.47%、2.02%、1.55%，平均 **2.35% ± 1.00%**。按分区计算，额外 oracle 空间在 ID、r/m-OOD、v-OOD、both-OOD 上分别约为 6.09%、4.15%、1.60%、2.02%。
+
+判决：物理类型确实提供了不同于 α 扫描的互补轨迹，但当前增量较小；普通历史路由只从 11.62% 提高到 12.43%，双记忆甚至略降。因此不能只用 oracle 证明类型专家有效，必须完成匹配候选数量、随机/打乱物理专家和非物理残差专家对照。
+
+### 5.9 parabola：K=3 时序状态解码三种子结果
+
+单帧状态解码器上的固定重力专家全部退化：seed 1234 的 α=.05/.10/.25 长程 SSE 分别为 115.52/118.71/129.81，均差于 baseline 113.01。诊断表明，真实帧 latent 可读不代表递归预测 latent 上的单帧速度读出可靠。
+
+K=3 解码器用连续三个真实 latent 条件化当前状态，但协方差最小运输只作用于候选当前 latent。seed 1234 的离线解码 MSE 变化如下：
+
+| 状态维度 | K=1 MSE | K=3 MSE | 相对下降 |
+|---|---:|---:|---:|
+| x 位置 | 0.7480 | 0.4399 | 41.2% |
+| y 位置 | 0.6733 | 0.1939 | 71.2% |
+| x 速度 | 0.00519 | 0.00140 | 73.0% |
+| y 速度 | 0.00265 | 0.00087 | 67.2% |
+
+真实 rollout 结果：
+
+| 种子 | baseline 长程 SSE | 固定 α=.10 | 固定增益 | 历史路由 | 路由增益 | oracle | oracle 增益 |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1234 | 113.008 | 111.744 | +1.12% | 110.011 | +2.65% | 105.369 | +6.76% |
+| 3072 | 115.969 | 115.206 | +0.66% | 114.704 | +1.09% | 112.155 | +3.29% |
+| 42 | 111.028 | 109.000 | +1.83% | 102.777 | +7.43% | 100.607 | +9.39% |
+| 均值 | 113.335 | 111.983 | **+1.20% ± 0.59%** | 109.164 | **+3.72% ± 3.30%** | 106.044 | **+6.48% ± 3.06%** |
+
+历史路由相对 baseline 的分区平均增益：
+
+| ID | r/m-OOD | v-OOD | both-OOD |
+|---:|---:|---:|---:|
+| +1.91% | **+11.39%** | +2.14% | +3.59% |
+
+判决：时序解码修复了物理注入的方向性错误，且 400 条历史反馈选择器在三个种子、四个分区平均全部为正。这是第二个物理域的三种子证据。限制是 α=.10 来自本轮 sweep，不能写成预注册固定超参；历史路由仍使用 400 条完整信息反馈，种子间方差较大。
+
+### 5.10 collision：二维冲量两种子结果
+
+等质量冲量专家已改为支持两个二维物体：根据接触法向交换等质量物体的法向速度分量，保留切向分量，并兼容原一维测试。9 个 GIPP 单元测试全部通过。
+
+候选池包含 baseline、恒速、三种接触距离和多档 α。两个现有 collision baseline 种子的结果：
+
+| 方法 | 长程 SSE↓ | 相对 baseline | ID | r/m-OOD | v-OOD | both-OOD |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline | 73.801 | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
+| 历史全池路由 | 66.801 | **+9.01%** | -1.04% | -17.93% | +0.12% | **+16.04%** |
+| 历史小 α 路由 | 71.098 | **+3.47%** | -1.02% | +2.33% | +0.09% | +4.51% |
+| 全池 oracle | 49.297 | **+32.52%** | +2.36% | +17.84% | +8.41% | **+40.79%** |
+| 小 α oracle | 68.315 | +7.34% | +0.97% | +7.21% | +1.45% | +8.75% |
+
+固定专家总体只提供约 0.3% 的小幅收益，主要价值来自轨迹互补性。全池路由会让少量强专家进入 both-OOD，但同时严重伤害 r/m-OOD；小 α 池更稳健，却仍略超出 ID 退化 1% 的门槛。
+
+限制：服务器只有 seed 1234/3072 的 collision baseline 与解码器，尚缺第三种子；当前专家假设等质量，而数据质量会变化，因此下一步应引入质量条件化冲量或守恒量残差，并对相同候选数量的随机/非物理专家做匹配对照。
+
+
 ## 6. 最终方法建议
 
 ### 6.1 冻结主干
@@ -278,10 +383,13 @@ flowchart LR
 
 相关工作边界：
 
-- [WorldEvolver](https://arxiv.org/abs/2606.30639)：冻结模型的 episodic/semantic memory；
-- [ReDRAW](https://proceedings.mlr.press/v331/lanier26a.html)：latent residual test-time adaptation；
+- [WorldEvolver](https://arxiv.org/abs/2606.30639)：冻结参数、episodic/semantic memory 与选择性 foresight，因此不能声称“冻结模型外部记忆”本身新颖；
+- [ReDRAW](https://proceedings.mlr.press/v331/lanier26a.html)：latent-state dynamics residual adaptation，因此不能声称“测试时 latent residual”本身新颖；
+- [MoLEM](https://arxiv.org/abs/2605.21951)：冻结基础模型、动态混合 latent memories 与 fallback，因此普通 mixture-of-memory 路由也不是新颖点；
+- [World Action Verifier](https://arxiv.org/abs/2604.01985)：通过预测验证进行世界模型自改进，说明“验证驱动自提升”已有直接邻近工作；
 - [Vid2Param](https://arxiv.org/abs/1907.06422)：从视频在线辨识物理参数；
-- [LW-PR2](https://proceedings.mlr.press/v100/williams20a.html)：在线适应与灾难性遗忘风险。
+- [LW-PR2](https://proceedings.mlr.press/v100/williams20a.html)：在线适应与灾难性遗忘风险；
+- [Selective Conformal Risk Control](https://arxiv.org/abs/2512.12844) 与 [SCoRE](https://arxiv.org/abs/2603.24704)：选择性风险控制已有系统方法，因此应主张其与 typed physics、dual memory、shadow writeback 的组合，而不是声称首次 conformal abstention。
 
 ## 8. 下一阶段实验计划
 
@@ -290,6 +398,7 @@ flowchart LR
 - 用历史数据标定收益下界；
 - 验收：ID 长程退化不超过 1%，both-OOD 相对固定 α=.75 改善至少 10%；
 - 完整报告 coverage—gain、分区风险和阈值跨 seed 迁移；
+- 当前 candidate-wise conformal 在 δ=.1 下 0% 覆盖，下一轮需在不放宽风险定义的前提下恢复非零覆盖；
 - post-hoc 10% 门只作为上限参考。
 
 ### P1：扩大物理专家族
@@ -297,6 +406,7 @@ flowchart LR
 - 加入恒加速度、阻尼、碰撞冲量和自由残差；
 - 与 α-only pool 匹配选择器容量；
 - 验证收益来自物理模式，而非单纯增加候选数量。
+- 恒加速度与阻尼三种子已完成；碰撞冲量、自由残差及随机物理对照仍待完成。
 
 ### P2：双记忆消融
 
@@ -312,8 +422,8 @@ flowchart LR
 
 ### P4：跨领域与跨数据集
 
-- parabola：恒重力专家；
-- collision：接触前/瞬间/后分段与冲量专家；
+- parabola：K=3 时序重力专家三种子已完成，下一步做 K=1/K=3、差分跟踪和随机运输消融；
+- collision：二维冲量两种子已完成，下一步补第三种子、质量条件化冲量与 collision_event 分段选择；
 - PhyWorld 之外至少一个真实视频或物理数据集；
 - 最终扩展到更长 horizon 和第二 backbone。
 
@@ -342,13 +452,22 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 目前可以写：
 
 > 零训练 Shadow-State Writeback 在 uniform_motion 的 3 个随机种子上保持 h1 不变，并将 h16/h28 平均误差降低 10.3%/5.0%。在冻结主模型的前提下，历史反馈式外部专家记忆相对固定 Shadow 进一步降低 11.62% 的长程误差，并在 both-OOD 上平均降低 20.10%。
+>
+> 加入恒加速度和阻尼专家后，逐轨迹 oracle 相对固定 Shadow 的长程增益从 22.21% 提高到 24.07%，历史反馈选择器从 11.62% 提高到 12.43%，说明有类型动力学提供了可测但有限的专家互补性。
+>
+> 在 parabola 上，K=3 时序状态解码将单帧物理注入的全面退化翻转为三种子正结果；历史反馈路由平均降低 3.72% ± 3.30% 的长程 SSE，四个分区平均均为正。collision 两种子历史路由平均降低 9.01%，但仍存在分区风险。
 
 必须同时写明：
 
 - 11.62% 使用了 400 条历史反馈，不是 pure zero-shot；
 - 当前无门历史选择器会伤害 ID；
 - 10% 安全门是 post-hoc；
-- 自进化结果目前只在 uniform_motion 完成。
+- parabola 的 α=.10 来自本轮 sweep，不是预注册超参；
+- parabola/collision 历史路由同样使用 400 条完整信息反馈；
+- collision 当前只有两个种子，且等质量专家与变质量数据存在模型失配；
+- 24.07% 是逐轨迹 oracle 上界，不是可部署结果；
+- 双记忆的 ID 改善使用了历史分区标签，属于受监督原型；
+- 严格候选级 conformal 当前为 0% 覆盖，安全选择仍未解决；
 
 目前不能写：
 
@@ -364,17 +483,25 @@ EvoShadow 只有同时满足下列条件才进入论文主表：
 
 - 总报告：`reports/iclr_gipp/ICLR_MASTER_REPORT.md`
 - 机器结果：`reports/iclr_gipp/evoshadow_summary.json`
+- typed 专家机器结果：reports/iclr_gipp/evoshadow_typed_summary.json
+- parabola 时序结果：reports/iclr_gipp/parabola_temporal_summary.json
+- collision 冲量结果：reports/iclr_gipp/collision_evoshadow_summary.json
 - 逐轨迹导出：`phyworld/scripts/rollout_eval_id1k.py`
-- 自进化审计：`phyworld/scripts/analyze_evoshadow_oracle.py`
+- uniform 审计：`phyworld/scripts/analyze_evoshadow_oracle.py`
+- parabola 审计：phyworld/scripts/analyze_parabola_temporal.py
+- collision 审计：phyworld/scripts/analyze_collision_evoshadow.py
+- 时序状态拟合：phyworld/scripts/fit_gipp_state.py
 - GIPP 实现：`le-wm/gipp.py`
 - 主模型接入：`le-wm/jepa.py`
 
 ### 数据、权重与日志
 
 - 自进化逐轨迹结果：`/data1/likun-share/junjxu/iclr_gipp/evoshadow_oracle/`
+- typed 专家逐轨迹结果：/data1/likun-share/junjxu/iclr_gipp/typed_experts/
 - 训练权重：`/data1/likun-share/junjxu/.stable_worldmodel/iclr_gipp/`
 - 历史评测日志：`runs/iclr_gipp/eval/`
 - 训练日志：`runs/iclr_gipp/finetune/`
+- typed/parabola/collision 日志：runs/iclr_gipp/typed_experts/
 
 ### 复现命令
 
@@ -397,6 +524,21 @@ le-wm/.venv/bin/python phyworld/scripts/analyze_evoshadow_oracle.py \
   --input-dir /data1/likun-share/junjxu/iclr_gipp/evoshadow_oracle \
   --output-json reports/iclr_gipp/evoshadow_summary.json
 ```
+
+复算 parabola 与 collision：
+
+~~~bash
+le-wm/.venv/bin/python phyworld/scripts/analyze_parabola_temporal.py \
+  --input-dir /data1/likun-share/junjxu/iclr_gipp/typed_experts \
+  --output-json reports/iclr_gipp/parabola_temporal_summary.json
+
+le-wm/.venv/bin/python phyworld/scripts/analyze_collision_evoshadow.py \
+  --input-dir /data1/likun-share/junjxu/iclr_gipp/typed_experts \
+  --eval-h5 /data1/likun-share/junjxu/.stable_worldmodel/datasets/phyworld_collision_eval.h5 \
+  --output-json reports/iclr_gipp/collision_evoshadow_summary.json \
+  --seeds 1234 3072
+~~~
+
 
 ## 12. 历史文档索引
 

@@ -45,3 +45,88 @@ def test_innovation_gate_suppresses_small_residuals():
     large = p.correction_strength(torch.full((2, 4), 3.0))
     assert torch.all(small < 1e-3)
     assert torch.all(large > 0.999)
+
+
+def _identity_projection(physics, state_dim=4, **kwargs):
+    return GaugeInvariantPhysicsProjection(
+        torch.eye(state_dim), torch.zeros(state_dim), torch.eye(state_dim),
+        physics=physics, **kwargs)
+
+
+def test_observed_velocity_expert_uses_position_difference():
+    p = _identity_projection("observed_velocity")
+    history = torch.tensor([[[0.0, 10.0, 7.0, 7.0],
+                             [2.0, 12.0, 9.0, 9.0]]])
+    target = p.physics_target(history)
+    expected = torch.tensor([[4.0, 14.0, 2.0, 2.0]])
+    assert torch.equal(target, expected)
+
+
+def test_constant_acceleration_expert_extrapolates_velocity_change():
+    p = _identity_projection(
+        "constant_acceleration", acceleration_clip=0.0)
+    history = torch.tensor([[[0.0, 10.0, 1.0, 1.0],
+                             [1.0, 11.0, 2.0, 2.0]]])
+    target = p.physics_target(history)
+    expected = torch.tensor([[3.5, 13.5, 3.0, 3.0]])
+    assert torch.equal(target, expected)
+
+
+def test_damped_velocity_expert_uses_trapezoidal_position_step():
+    p = _identity_projection("damped_velocity", damping=0.5)
+    history = torch.tensor([[[10.0, 20.0, 2.0, -2.0]]])
+    target = p.physics_target(history)
+    expected = torch.tensor([[11.5, 18.5, 1.0, -1.0]])
+    assert torch.equal(target, expected)
+
+
+def test_equal_mass_collision_expert_resolves_within_step_impact():
+    p = _identity_projection(
+        "elastic_collision_equal_mass", collision_distance=2.0)
+    history = torch.tensor([[[0.0, 3.0, 1.0, -1.0]]])
+    target = p.physics_target(history)
+    expected = torch.tensor([[0.0, 3.0, -1.0, 1.0]])
+    assert torch.allclose(target, expected)
+
+
+def test_equal_mass_collision_expert_keeps_separating_objects_free():
+    p = _identity_projection(
+        "elastic_collision_equal_mass", collision_distance=2.0)
+    history = torch.tensor([[[0.0, 3.0, -1.0, 1.0]]])
+    target = p.physics_target(history)
+    expected = torch.tensor([[-1.0, 4.0, -1.0, 1.0]])
+    assert torch.equal(target, expected)
+
+
+def test_equal_mass_collision_expert_supports_two_2d_objects():
+    p = _identity_projection(
+        "elastic_collision_equal_mass", state_dim=8,
+        collision_distance=2.0)
+    history = torch.tensor([[[
+        0.0, 5.0, 3.0, 5.0,
+        1.0, 0.5, -1.0, 0.5,
+    ]]])
+    target = p.physics_target(history)
+    expected = torch.tensor([[
+        0.0, 5.5, 3.0, 5.5,
+        -1.0, 0.5, 1.0, 0.5,
+    ]])
+    assert torch.allclose(target, expected)
+
+def test_temporal_decoder_transports_only_candidate_latent():
+    identity = torch.eye(4)
+    history_weight = torch.cat([0.1 * identity, -0.2 * identity], dim=1)
+    projection = GaugeInvariantPhysicsProjection(
+        identity, torch.zeros(4), identity,
+        history_weight=history_weight, eps=1e-7,
+    )
+    history = torch.randn(2, 3, 4)
+    predicted = torch.randn(2, 4)
+    output = projection(predicted, history)
+    assert projection.temporal_history_size == 3
+    assert torch.allclose(
+        projection.decode_candidate(output, history),
+        projection.physics_target(history),
+        atol=2e-5,
+        rtol=2e-5,
+    )
