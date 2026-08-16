@@ -74,6 +74,8 @@ def main():
     ap.add_argument("--max-trajs", type=int, default=400, help="cap eval trajs for speed")
     ap.add_argument("--ckpt", default=None, help="override ckpt (e.g. +probe model); norm/data still per-domain")
     ap.add_argument("--tag", default="", help="label for this run in the header")
+    ap.add_argument("--dump-npz", default=None,
+                    help="optional per-trajectory diagnostic dump (no model updates)")
     ap.add_argument("--use-action", action="store_true",
                     help="privileged legacy upper bound; default is leak-free action-free rollout")
     args = ap.parse_args()
@@ -158,6 +160,8 @@ def main():
     # ---- pass 1: encode all selected trajs, collect real & predicted embs ----
     real_E, pred_E, meta = [], [], []  # meta: (ep, frame_k, partition, in_train)
     pos_all, vel_all = [], []
+    episode_ids, episode_parts = [], []
+    episode_context, episode_in_train = [], []
     n_done = 0
     for ep in sel_eps:
         rows = np.nonzero(ep_idx == ep)[0]
@@ -167,6 +171,11 @@ def main():
             continue
         frames = pixels[rows[0]:rows[0] + T] if np.all(np.diff(rows) == 1) else pixels[:][rows]
         real_emb = encode_frames(frames)  # (T, D)
+        if args.dump_npz:
+            episode_ids.append(int(ep))
+            episode_parts.append(int(parts[ep]))
+            episode_context.append(real_emb[:HS].float().cpu().numpy().reshape(-1))
+            episode_in_train.append(bool(ep in train_eps))
         raw_act = np.nan_to_num(action[rows]).astype(np.float64)
         if args.use_action:
             act_np = ((raw_act - a_mean) / a_std).astype(np.float32)
@@ -199,6 +208,23 @@ def main():
     pos_all = np.array(pos_all); vel_all = np.array(vel_all)
     meta = np.array(meta)  # (N, 4): ep, horizon, part, in_train
     horizon = meta[:, 1]; part_arr = meta[:, 2]; in_train = meta[:, 3].astype(bool)
+    if args.dump_npz:
+        dump_path = Path(args.dump_npz)
+        dump_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            dump_path,
+            frame_sse=((pred_E - real_E) ** 2).sum(axis=1).astype(np.float32),
+            frame_cos=((pred_E * real_E).sum(1) / (
+                np.linalg.norm(pred_E, axis=1) * np.linalg.norm(real_E, axis=1) + 1e-8
+            )).astype(np.float32),
+            meta=meta.astype(np.int64),
+            episode_ids=np.asarray(episode_ids, dtype=np.int64),
+            episode_parts=np.asarray(episode_parts, dtype=np.int64),
+            episode_context=np.asarray(episode_context, dtype=np.float32),
+            episode_in_train=np.asarray(episode_in_train, dtype=np.bool_),
+            checkpoint=np.asarray(str(ckpt_path)),
+        )
+        print(f"[dump] saved per-trajectory diagnostics to {dump_path}", flush=True)
     print(f"\n[data] {n_done} trajs, {len(real_E)} (frame,pred) pairs, emb dim={real_E.shape[1]}", flush=True)
 
     # ---- train probe on REAL embs (train trajs), apply to predicted embs ----
